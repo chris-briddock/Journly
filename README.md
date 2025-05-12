@@ -93,7 +93,8 @@ npm start
    - Configure the following environment variables:
 
      ```
-     DATABASE_URL=your-postgresql-connection-string
+     DATABASE_URL=postgresql://username:password@host:port/database?pgbouncer=true&sslmode=require&sslaccept=accept_invalid_certs
+     DIRECT_URL=postgresql://username:password@host:5432/database?sslmode=require&sslaccept=accept_invalid_certs
      NEXTAUTH_SECRET=your-generated-secret
      NEXTAUTH_URL=https://your-vercel-deployment-url.vercel.app
      NEXT_PUBLIC_APP_URL=https://your-vercel-deployment-url.vercel.app
@@ -114,7 +115,7 @@ npm start
    - To add initial data, you can run the seed script:
 
      ```bash
-     
+
      npx prisma db seed
      ```
 
