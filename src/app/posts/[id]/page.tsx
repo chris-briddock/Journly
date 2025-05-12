@@ -6,6 +6,7 @@ import { MessageSquare, Eye } from "lucide-react";
 import type { Metadata } from "next/types";
 
 import { auth } from "@/lib/auth";
+import { getApiUrl } from "@/lib/getApiUrl";
 import Navigation from "@/app/components/Navigation";
 import { Button } from "@/app/components/ui/button";
 import { Badge } from "@/app/components/ui/badge";
@@ -67,8 +68,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 async function getPost(id: string): Promise<Post | null> {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/posts/${id}/view`, {
-      cache: 'no-store'
+    const response = await fetch(getApiUrl(`/api/posts/${id}/view`), {
+      next: { revalidate: 60 } // Revalidate every 60 seconds
     });
 
     if (response.status === 404) {
@@ -88,8 +89,8 @@ async function getPost(id: string): Promise<Post | null> {
 
 async function getPostComments(postId: string): Promise<CommentType[]> {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/posts/${postId}/comments`, {
-      cache: 'no-store'
+    const response = await fetch(getApiUrl(`/api/posts/${postId}/comments`), {
+      next: { revalidate: 60 } // Revalidate every 60 seconds
     });
 
     if (!response.ok) {
@@ -108,8 +109,8 @@ async function getRelatedPosts(postId: string, categoryIds: string[]): Promise<P
 
   try {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/posts/${postId}/related?categoryIds=${categoryIds.join(',')}&limit=3`,
-      { cache: 'no-store' }
+      getApiUrl(`/api/posts/${postId}/related?categoryIds=${categoryIds.join(',')}&limit=3`),
+      { next: { revalidate: 60 } } // Revalidate every 60 seconds
     );
 
     if (!response.ok) {

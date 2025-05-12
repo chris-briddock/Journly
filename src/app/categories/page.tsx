@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next/types";
 import { Layers3, ArrowRight, FileText } from "lucide-react";
 
+import { getApiUrl } from "@/lib/getApiUrl";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { Button } from "@/app/components/ui/button";
 import Navigation from "@/app/components/Navigation";
@@ -20,7 +21,7 @@ export const metadata: Metadata = {
 
 async function getCategories(): Promise<Category[]> {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/categories`, {
+    const response = await fetch(getApiUrl('/api/categories'), {
       next: { revalidate: 60 } // Revalidate every 60 seconds
     });
 

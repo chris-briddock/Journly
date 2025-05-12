@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 
 import { auth } from "@/lib/auth";
+import { getApiUrl } from "@/lib/getApiUrl";
 import { Button } from "@/app/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card";
 import PostForm from "@/app/components/PostForm";
@@ -15,7 +16,7 @@ interface Category {
 async function getCategories(): Promise<Category[]> {
   try {
     // Add a dashboard parameter to indicate this is a dashboard request
-    const url = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/categories/editor?dashboard=true`;
+    const url = getApiUrl('/api/categories/editor?dashboard=true');
     console.log('Fetching categories with URL:', url);
 
     const response = await fetch(url, {

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import SimpleNavigation from "./components/SimpleNavigation";
+import { getApiUrl } from "@/lib/getApiUrl";
 
 interface Post {
   id: string;
@@ -31,7 +32,7 @@ interface Category {
 }
 
 async function getRecentPosts(): Promise<Post[]> {
-  const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/posts/recent?limit=8`, {
+  const response = await fetch(getApiUrl('/api/posts/recent?limit=8'), {
     next: { revalidate: 60 } // Revalidate every 60 seconds
   });
 
@@ -43,7 +44,7 @@ async function getRecentPosts(): Promise<Post[]> {
 }
 
 async function getCategories(): Promise<Category[]> {
-  const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/categories/popular?limit=12`, {
+  const response = await fetch(getApiUrl('/api/categories/popular?limit=12'), {
     next: { revalidate: 60 } // Revalidate every 60 seconds
   });
 

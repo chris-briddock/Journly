@@ -5,14 +5,16 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '**', // Not officially supported, but you can use wildcards for subdomains
+        hostname: '**', // Allow images from any HTTPS source
       },
       {
         protocol: 'http',
-        hostname: '**',
+        hostname: '**', // Allow images from any HTTP source
       },
     ],
   },
+  // Disable static generation for routes that use dynamic data
+  staticPageGenerationTimeout: 120,
 };
 
 export default nextConfig;

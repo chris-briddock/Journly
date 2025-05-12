@@ -1,4 +1,5 @@
 // Client-side API functions for fetching data
+import { getApiUrl } from './getApiUrl';
 
 /**
  * Get posts with optional filtering and pagination
@@ -22,10 +23,7 @@ export async function getPosts(options: {
   if (status) params.append('status', status);
   if (q) params.append('q', q);
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||
-    (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
-
-  const response = await fetch(`${baseUrl}/api/posts?${params.toString()}`, {
+  const response = await fetch(getApiUrl(`/api/posts?${params.toString()}`), {
     next: { revalidate: 60 } // Revalidate every 60 seconds
   });
 
@@ -40,10 +38,7 @@ export async function getPosts(options: {
  * Get a single post by ID
  */
 export async function getPost(id: string) {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||
-    (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
-
-  const response = await fetch(`${baseUrl}/api/posts/${id}`, {
+  const response = await fetch(getApiUrl(`/api/posts/${id}`), {
     next: { revalidate: 60 } // Revalidate every 60 seconds
   });
 
@@ -61,10 +56,7 @@ export async function getPost(id: string) {
  * Get all categories
  */
 export async function getCategories() {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||
-    (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
-
-  const response = await fetch(`${baseUrl}/api/categories`, {
+  const response = await fetch(getApiUrl('/api/categories'), {
     next: { revalidate: 60 } // Revalidate every 60 seconds
   });
 
@@ -79,10 +71,7 @@ export async function getCategories() {
  * Get a single category by ID
  */
 export async function getCategory(id: string) {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||
-    (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
-
-  const response = await fetch(`${baseUrl}/api/categories/${id}`, {
+  const response = await fetch(getApiUrl(`/api/categories/${id}`), {
     next: { revalidate: 60 } // Revalidate every 60 seconds
   });
 
@@ -100,10 +89,7 @@ export async function getCategory(id: string) {
  * Get user profile by ID
  */
 export async function getUser(id: string) {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||
-    (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
-
-  const response = await fetch(`${baseUrl}/api/users/${id}`, {
+  const response = await fetch(getApiUrl(`/api/users/${id}`), {
     next: { revalidate: 60 } // Revalidate every 60 seconds
   });
 
@@ -122,15 +108,13 @@ export async function getUser(id: string) {
  */
 export async function getUserPosts(userId: string, options: { limit?: number; page?: number } = {}) {
   const { limit = 9, page = 1 } = options;
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||
-    (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
 
   const params = new URLSearchParams();
   params.append('page', page.toString());
   params.append('limit', limit.toString());
   params.append('status', 'published');
 
-  const response = await fetch(`${baseUrl}/api/users/${userId}/posts?${params.toString()}`, {
+  const response = await fetch(getApiUrl(`/api/users/${userId}/posts?${params.toString()}`), {
     next: { revalidate: 60 } // Revalidate every 60 seconds
   });
 
@@ -145,10 +129,7 @@ export async function getUserPosts(userId: string, options: { limit?: number; pa
  * Get recent posts
  */
 export async function getRecentPosts(limit = 5) {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||
-    (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
-
-  const response = await fetch(`${baseUrl}/api/posts/recent?limit=${limit}`, {
+  const response = await fetch(getApiUrl(`/api/posts/recent?limit=${limit}`), {
     next: { revalidate: 60 } // Revalidate every 60 seconds
   });
 
@@ -163,10 +144,7 @@ export async function getRecentPosts(limit = 5) {
  * Get popular categories
  */
 export async function getPopularCategories(limit = 10) {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||
-    (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
-
-  const response = await fetch(`${baseUrl}/api/categories/popular?limit=${limit}`, {
+  const response = await fetch(getApiUrl(`/api/categories/popular?limit=${limit}`), {
     next: { revalidate: 60 } // Revalidate every 60 seconds
   });
 
@@ -181,10 +159,7 @@ export async function getPopularCategories(limit = 10) {
  * Check if a user is following another user
  */
 export async function isFollowing(userId: string) {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||
-    (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
-
-  const response = await fetch(`${baseUrl}/api/users/${userId}/is-following`, {
+  const response = await fetch(getApiUrl(`/api/users/${userId}/is-following`), {
     next: { revalidate: 0 } // Always revalidate to get the latest follow status
   });
 
