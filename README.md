@@ -32,7 +32,7 @@ npm install
 
 Create a `.env.local` file with the following variables:
 
-```
+``` plaintext
 # Database
 DATABASE_URL="postgresql://username:password@localhost:5432/journly"
 
@@ -72,6 +72,51 @@ Then start the production server:
 ```bash
 npm start
 ```
+
+## Deploying to Vercel
+
+### Prerequisites
+
+1. A Vercel account
+2. A PostgreSQL database (e.g., Vercel Postgres, Supabase, Railway, etc.)
+
+### Steps to Deploy
+
+1. **Fork or clone this repository**
+
+2. **Set up your database**
+   - Create a PostgreSQL database
+   - Get your database connection string
+
+3. **Deploy to Vercel**
+   - Import your GitHub repository to Vercel
+   - Configure the following environment variables:
+
+     ```
+     DATABASE_URL=your-postgresql-connection-string
+     NEXTAUTH_SECRET=your-generated-secret
+     NEXTAUTH_URL=https://your-vercel-deployment-url.vercel.app
+     NEXT_PUBLIC_APP_URL=https://your-vercel-deployment-url.vercel.app
+     ```
+
+   - Deploy the project
+
+4. **Run database migrations**
+   - After the first deployment, you can use the Vercel CLI to run the migrations:
+
+     ```bash
+
+     vercel env pull .env.production.local
+     npx prisma migrate deploy
+     ```
+
+5. **Seed the database (optional)**
+   - To add initial data, you can run the seed script:
+
+     ```bash
+     
+     npx prisma db seed
+     ```
 
 ### Note on TypeScript Errors
 
