@@ -71,7 +71,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       <header className="sticky top-0 z-10 border-b bg-background">
         <div className="container mx-auto px-4 max-w-7xl flex h-16 items-center justify-between py-4">
           <div className="flex items-center gap-4">
-            <Link href="/" className="text-xl font-bold">
+            <Link href="/" className="text-xl font-bold font-serif">
               Journly
             </Link>
             <span className="text-muted-foreground">Dashboard</span>

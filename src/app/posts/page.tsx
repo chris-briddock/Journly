@@ -3,11 +3,11 @@ import { Suspense } from "react";
 import { Filter } from "lucide-react";
 
 import { getPosts as getPostsApi, getCategories as getCategoriesApi } from "@/lib/api";
-import Navigation from "@/app/components/Navigation";
 import PostCard from "@/app/components/PostCard";
 import { Button } from "@/app/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { Separator } from "@/app/components/ui/separator";
+import SimpleNavigation from "../components/SimpleNavigation";
 
 type SearchParams = {
   categoryId?: string;
@@ -82,7 +82,7 @@ export default async function PostsPage({
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
+      <SimpleNavigation />
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row gap-8">

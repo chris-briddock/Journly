@@ -4,8 +4,8 @@ import { ChevronLeft } from "lucide-react";
 
 import prisma from "@/lib/prisma";
 import { Button } from "@/app/components/ui/button";
-import Navigation from "@/app/components/Navigation";
 import PostCard from "@/app/components/PostCard";
+import SimpleNavigation from "@/app/components/SimpleNavigation";
 
 type SearchParams = {
   page?: string;
@@ -102,7 +102,7 @@ export default async function UserPostsPage({
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
+      <SimpleNavigation />
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
           <div className="mb-8">

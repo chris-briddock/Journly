@@ -11,6 +11,7 @@ import { Button } from "@/app/components/ui/button";
 import { Switch } from "@/app/components/ui/switch";
 import { UserSettingsForm } from "@/app/components/dashboard/UserSettingsForm";
 import { NotificationSettingsForm } from "@/app/components/dashboard/NotificationSettingsForm";
+import { PasswordUpdateForm } from "@/app/components/dashboard/PasswordUpdateForm";
 
 interface User {
   id: string;
@@ -67,8 +68,9 @@ export default async function SettingsPage() {
           <TabsTrigger value="display">Display</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="account">
+        <TabsContent value="account" className="space-y-6">
           <UserSettingsForm user={user} />
+          <PasswordUpdateForm />
         </TabsContent>
 
         <TabsContent value="notifications">

@@ -9,9 +9,9 @@ import { Button } from "@/app/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/components/ui/tabs";
 import { Separator } from "@/app/components/ui/separator";
-import Navigation from "@/app/components/Navigation";
 import PostCard from "@/app/components/PostCard";
 import { FollowButton } from "@/app/components/FollowButton";
+import SimpleNavigation from "@/app/components/SimpleNavigation";
 
 interface Post {
   id: string;
@@ -89,7 +89,7 @@ export default async function ProfilePage({
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
+      <SimpleNavigation />
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
           {/* Profile Header */}

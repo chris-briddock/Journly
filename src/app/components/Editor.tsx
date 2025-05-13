@@ -1,6 +1,6 @@
 "use client";
 
-import { RichTextEditor } from "./RichTextEditor";
+import { TipTapEditor } from "./TipTapEditor";
 
 type EditorProps = {
   value: string;
@@ -10,7 +10,7 @@ type EditorProps = {
 
 export function Editor({ value, onChange, placeholder }: EditorProps) {
   return (
-    <RichTextEditor
+    <TipTapEditor
       value={value}
       onChange={onChange}
       placeholder={placeholder}

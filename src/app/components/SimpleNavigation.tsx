@@ -32,7 +32,7 @@ export default function SimpleNavigation() {
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <div className="flex items-center">
-            <Link href="/" className="text-xl font-bold">
+            <Link href="/" className="text-xl font-bold font-serif">
               Journly
             </Link>
           </div>
@@ -44,6 +44,9 @@ export default function SimpleNavigation() {
             </Button>
             <Button asChild variant="ghost">
               <Link href="/posts">Posts</Link>
+            </Button>
+            <Button asChild variant="ghost">
+              <Link href="/categories">Categories</Link>
             </Button>
             {session && (
               <Button asChild variant="ghost">

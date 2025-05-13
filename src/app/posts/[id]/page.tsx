@@ -1,13 +1,11 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import { format } from "date-fns";
 import { MessageSquare, Eye } from "lucide-react";
 import type { Metadata } from "next/types";
 
 import { auth } from "@/lib/auth";
 import { getApiUrl } from "@/lib/getApiUrl";
-import Navigation from "@/app/components/Navigation";
 import { Button } from "@/app/components/ui/button";
 import { Badge } from "@/app/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar";
@@ -16,6 +14,10 @@ import { CommentType } from "@/app/components/CommentList";
 import { CommentsSection } from "@/app/components/CommentsSection";
 import { ShareButton } from "@/app/components/ShareButton";
 import { LikeButton } from "@/app/components/LikeButton";
+import { EmbedRenderer } from "@/app/components/EmbedRenderer";
+import { FeaturedImage } from "@/app/components/FeaturedImage";
+import { RelatedPostImage } from "@/app/components/RelatedPostImage";
+import SimpleNavigation from "@/app/components/SimpleNavigation";
 
 interface Post {
   id: string;
@@ -157,7 +159,7 @@ export default async function PostPage({ params }: Props) {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
+      <SimpleNavigation />
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           {/* Post Header */}
@@ -195,24 +197,21 @@ export default async function PostPage({ params }: Props) {
 
             {post.featuredImage && (
               <div className="relative w-full h-[400px] rounded-lg overflow-hidden mb-8">
-                <Image
+                <FeaturedImage
                   src={post.featuredImage}
                   alt={post.title}
-                  fill
-                  className="object-cover"
                   priority
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = "https://placehold.co/600x400?text=Image+Not+Found";
-                  }}
                 />
               </div>
             )}
           </div>
 
           {/* Post Content */}
-          <div className="prose prose-lg dark:prose-invert max-w-none mb-8">
-            <div dangerouslySetInnerHTML={{ __html: post.content }} />
-          </div>
+          <article className="mb-8 post-content-wrapper">
+            <div className="bg-card rounded-lg p-6 shadow-sm">
+              <EmbedRenderer content={post.content} />
+            </div>
+          </article>
 
           {/* Post Footer */}
           <div className="flex items-center justify-between py-4 border-t border-b">
@@ -276,14 +275,9 @@ export default async function PostPage({ params }: Props) {
                     {relatedPost.featuredImage && (
                       <div className="relative w-full h-32 overflow-hidden">
                         <Link href={`/posts/${relatedPost.id}`}>
-                          <Image
+                          <RelatedPostImage
                             src={relatedPost.featuredImage}
                             alt={relatedPost.title}
-                            fill
-                            className="object-cover transition-transform hover:scale-105"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = "https://placehold.co/600x400?text=Image+Not+Found";
-                            }}
                           />
                         </Link>
                       </div>

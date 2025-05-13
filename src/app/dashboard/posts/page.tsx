@@ -3,11 +3,11 @@ import { redirect } from "next/navigation";
 import type { Metadata } from "next/types";
 
 import { auth } from "@/lib/auth";
-import Navigation from "@/app/components/Navigation";
 import { DashboardHeader } from "@/app/components/dashboard/DashboardHeader";
 import { DashboardShell } from "@/app/components/dashboard/DashboardShell";
 import { PostsTableClient } from "@/app/components/dashboard/PostsTableClient";
 import { PostsTableSkeleton } from "@/app/components/dashboard/PostsTableSkeleton";
+import SimpleNavigation from "@/app/components/SimpleNavigation";
 
 export const metadata: Metadata = {
   title: "Posts - Journly Dashboard",
@@ -128,7 +128,7 @@ export default async function PostsPage({ searchParams }: Props) {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
+      <SimpleNavigation />
       <DashboardShell>
         <DashboardHeader
           heading="Posts"
