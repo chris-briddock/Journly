@@ -36,7 +36,7 @@ const customJestConfig = {
     '^.+\\.(ts|tsx|js|jsx)$': ['babel-jest', { presets: ['next/babel'] }],
   },
   transformIgnorePatterns: [
-    '/node_modules/(?!next-auth|@next-auth|@tiptap|@auth)/',
+    '/node_modules/(?!next-auth|@next-auth|@tiptap|@auth|@babel|@radix-ui|uuid|nanoid|jose|@prisma|@auth)/',
   ],
   collectCoverage: true,
   collectCoverageFrom: [

@@ -8,7 +8,7 @@ export interface MentionSuggestionProps {
   items: {
     id: string;
     label: string;
-    avatar?: string;
+    avatar?: string | null;
   }[];
   command: (item: { id: string; label: string }) => void;
 }

@@ -1,5 +1,2 @@
-// Mock file for SVG imports
-module.exports = {
-  ReactComponent: 'svg',
-  default: 'SvgURL',
-};
+module.exports = 'SvgMock';
+module.exports.ReactComponent = 'SvgMockReactComponent';

@@ -36,7 +36,9 @@ export function createMockNextRequest(options: MockRequestOptions): NextRequest 
   } = options;
 
   // Create URL with search params
-  const urlObj = new URL(url);
+  // Use a base URL for testing to avoid URL parsing errors
+  const baseUrl = 'http://localhost:3000';
+  const urlObj = new URL(url, baseUrl);
   Object.entries(searchParams).forEach(([key, value]) => {
     urlObj.searchParams.append(key, value);
   });
@@ -47,34 +49,26 @@ export function createMockNextRequest(options: MockRequestOptions): NextRequest 
     headersWithContentType['content-type'] = 'application/json';
   }
 
-  // Create request
-  const request = new NextRequest(urlObj, {
+  // Create a mock NextRequest
+  const request = {
     method,
-    headers: headersWithContentType,
-    body: body ? JSON.stringify(body) : null,
-  });
+    url: urlObj.toString(),
+    nextUrl: urlObj,
+    headers: new Headers(headersWithContentType),
+    json: jest.fn().mockResolvedValue(body),
+    formData: formData ? jest.fn().mockResolvedValue(formData) : jest.fn(),
+    cookies: {
+      get: jest.fn((name: string) => {
+        const cookie = cookies[name];
+        return cookie ? { name, value: cookie } : undefined;
+      }),
+      has: jest.fn((name: string) => name in cookies),
+      getAll: jest.fn(() => Object.entries(cookies).map(([name, value]) => ({ name, value }))),
+    },
+    clone: jest.fn().mockReturnThis(),
+  } as unknown as NextRequest;
 
-  // Mock the json method
-  request.json = jest.fn().mockResolvedValue(body);
-
-  // Mock formData method if formData is provided
-  if (formData) {
-    request.formData = jest.fn().mockResolvedValue(formData);
-  }
-
-  // Mock cookies
-  Object.entries(cookies).forEach(([key, value]) => {
-    // This is a simplified mock since we can't directly set cookies on NextRequest
-    Object.defineProperty(request.cookies, 'get', {
-      value: jest.fn((name: string) => name === key ? { name, value } : undefined),
-      configurable: true,
-    });
-
-    Object.defineProperty(request.cookies, 'has', {
-      value: jest.fn((name: string) => name === key),
-      configurable: true,
-    });
-  });
+  // The cookies are already mocked in the request object
 
   return request;
 }

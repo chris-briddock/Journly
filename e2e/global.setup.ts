@@ -12,19 +12,19 @@ if (!fs.existsSync(authDir)) {
 setup('authenticate', async ({ page }) => {
   // Navigate to login page
   await page.goto('/login');
-  
+
   // Fill in login form with test credentials
   await page.getByLabel('Email').fill('admin@journly.com');
-  await page.getByLabel('Password').fill('pass123');
-  
+  await page.getByLabel('Password').fill('admin123');
+
   // Submit the form
   await page.getByRole('button', { name: 'Sign in' }).click();
-  
+
   // Wait for navigation to dashboard
   await expect(page).toHaveURL(/.*dashboard/);
-  
+
   // Save authentication state
-  await page.context().storageState({ 
-    path: path.join(authDir, 'user.json') 
+  await page.context().storageState({
+    path: path.join(authDir, 'user.json')
   });
 });

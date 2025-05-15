@@ -9,14 +9,14 @@ import { Card, CardContent, CardFooter, CardHeader } from "../components/ui/card
 import { Badge } from "../components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
 
-type Category = {
+interface Category {
   category: {
     id: string;
     name: string;
   };
 };
 
-type Post = {
+interface Post {
   id: string;
   title: string;
   excerpt: string | null;
@@ -35,7 +35,7 @@ type Post = {
   categories: Category[];
 };
 
-type PostCardProps = {
+interface PostCardProps {
   post: Post;
 };
 

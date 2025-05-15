@@ -5,10 +5,50 @@ import '@testing-library/jest-dom';
 import { toHaveNoViolations } from 'jest-axe';
 expect.extend(toHaveNoViolations);
 
+// Configure Testing Library
+import { configure } from '@testing-library/react';
+
+configure({
+  // Increase the timeout for async utilities like waitFor
+  asyncUtilTimeout: 5000,
+  // Throw more helpful errors
+  getElementError: (message) => {
+    const error = new Error(message);
+    error.name = 'TestingLibraryElementError';
+    error.stack = null;
+    return error;
+  },
+});
+
 // Polyfill for TextEncoder/TextDecoder and Request/Response
 import { TextEncoder, TextDecoder } from 'util';
 global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder;
+
+// Mock window.matchMedia
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: jest.fn().mockImplementation(query => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: jest.fn(), // deprecated
+    removeListener: jest.fn(), // deprecated
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+    dispatchEvent: jest.fn(),
+  })),
+});
+
+// Mock ResizeObserver
+global.ResizeObserver = class ResizeObserver {
+  constructor(callback) {
+    this.callback = callback;
+  }
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
 
 // Mock Headers, Request and Response for Next.js API routes
 if (typeof Headers === 'undefined') {
@@ -207,56 +247,101 @@ console.error = (...args) => {
   originalConsoleError(...args);
 };
 
+// Mock NextResponse
+jest.mock('next/server', () => {
+  return {
+    __esModule: true,
+    NextResponse: {
+      json: jest.fn((data, options = {}) => {
+        return {
+          status: options.status || 200,
+          headers: new Headers(options.headers || {}),
+          json: jest.fn().mockResolvedValue(data),
+          clone: jest.fn().mockReturnThis(),
+        };
+      }),
+      redirect: jest.fn((url) => {
+        return {
+          status: 302,
+          headers: new Headers({ Location: url }),
+          json: jest.fn().mockRejectedValue(new Error('Cannot call json() on redirect response')),
+          clone: jest.fn().mockReturnThis(),
+        };
+      }),
+      next: jest.fn((options = {}) => {
+        return {
+          status: 200,
+          headers: new Headers(options.headers || {}),
+          json: jest.fn().mockResolvedValue({}),
+          clone: jest.fn().mockReturnThis(),
+        };
+      }),
+    },
+    NextRequest: jest.fn().mockImplementation((url, options = {}) => {
+      return {
+        url,
+        method: options.method || 'GET',
+        headers: new Headers(options.headers || {}),
+        json: jest.fn().mockResolvedValue(options.body ? JSON.parse(options.body) : null),
+        formData: jest.fn().mockResolvedValue(new FormData()),
+        cookies: {
+          get: jest.fn(),
+          has: jest.fn(),
+          getAll: jest.fn(),
+        },
+        clone: jest.fn().mockReturnThis(),
+        nextUrl: new URL(url),
+      };
+    }),
+  };
+});
+
 // Mock next/navigation
+const mockRouter = {
+  push: jest.fn(),
+  replace: jest.fn(),
+  prefetch: jest.fn(),
+  back: jest.fn(),
+  forward: jest.fn(),
+  refresh: jest.fn(),
+  pathname: '/',
+  query: {},
+  asPath: '/',
+  events: {
+    on: jest.fn(),
+    off: jest.fn(),
+    emit: jest.fn(),
+  },
+};
+
+const mockSearchParams = {
+  get: jest.fn(),
+  getAll: jest.fn(),
+  has: jest.fn(),
+  forEach: jest.fn(),
+  entries: jest.fn(),
+  keys: jest.fn(),
+  values: jest.fn(),
+  toString: jest.fn(),
+  delete: jest.fn(),
+  append: jest.fn(),
+  set: jest.fn(),
+  sort: jest.fn(),
+};
+
 jest.mock('next/navigation', () => ({
-  useRouter() {
-    return {
-      push: jest.fn(),
-      replace: jest.fn(),
-      prefetch: jest.fn(),
-      back: jest.fn(),
-      forward: jest.fn(),
-      refresh: jest.fn(),
-      pathname: '/',
-      query: {},
-      asPath: '/',
-      events: {
-        on: jest.fn(),
-        off: jest.fn(),
-        emit: jest.fn(),
-      },
-    };
-  },
-  useSearchParams() {
-    return {
-      get: jest.fn(),
-      getAll: jest.fn(),
-      has: jest.fn(),
-      forEach: jest.fn(),
-      entries: jest.fn(),
-      keys: jest.fn(),
-      values: jest.fn(),
-      toString: jest.fn(),
-      delete: jest.fn(),
-      append: jest.fn(),
-      set: jest.fn(),
-      sort: jest.fn(),
-    };
-  },
-  usePathname() {
-    return '/';
-  },
+  useRouter: () => mockRouter,
+  useSearchParams: () => mockSearchParams,
+  usePathname: () => '/',
   redirect: jest.fn(),
 }));
 
 // Mock next-auth
 jest.mock('next-auth/react', () => {
-  const originalModule = jest.requireActual('next-auth/react');
   return {
     __esModule: true,
-    ...originalModule,
-    signIn: jest.fn(),
-    signOut: jest.fn(),
+    signIn: jest.fn().mockResolvedValue({ ok: true }),
+    signOut: jest.fn().mockResolvedValue({ ok: true }),
     useSession: jest.fn(() => {
       return {
         data: {
@@ -265,16 +350,51 @@ jest.mock('next-auth/react', () => {
             name: 'Test User',
             email: 'test@example.com',
             image: null,
+            role: 'user',
           },
           expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
         },
         status: 'authenticated',
+        update: jest.fn(),
       };
+    }),
+    getSession: jest.fn(() => {
+      return Promise.resolve({
+        user: {
+          id: 'test-user-id',
+          name: 'Test User',
+          email: 'test@example.com',
+          image: null,
+          role: 'user',
+        },
+        expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      });
+    }),
+    getCsrfToken: jest.fn(() => {
+      return Promise.resolve('mocked-csrf-token');
+    }),
+    getProviders: jest.fn(() => {
+      return Promise.resolve({
+        google: {
+          id: 'google',
+          name: 'Google',
+          type: 'oauth',
+          signinUrl: 'https://example.com/api/auth/signin/google',
+          callbackUrl: 'https://example.com/api/auth/callback/google',
+        },
+        github: {
+          id: 'github',
+          name: 'GitHub',
+          type: 'oauth',
+          signinUrl: 'https://example.com/api/auth/signin/github',
+          callbackUrl: 'https://example.com/api/auth/callback/github',
+        },
+      });
     }),
   };
 });
 
-// Mock next-auth/next
+// Mock next-auth
 jest.mock('next-auth', () => {
   return {
     __esModule: true,
@@ -284,14 +404,18 @@ jest.mock('next-auth', () => {
         name: 'Test User',
         email: 'test@example.com',
         image: null,
-      }
+        role: 'user',
+      },
+      expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     })),
     handlers: {
       GET: jest.fn(),
       POST: jest.fn(),
     },
-    signIn: jest.fn(),
-    signOut: jest.fn(),
+    signIn: jest.fn().mockResolvedValue({ ok: true }),
+    signOut: jest.fn().mockResolvedValue({ ok: true }),
+    unstable_update: jest.fn(),
+    default: jest.fn(),
   };
 });
 

@@ -2,28 +2,16 @@ import { render, screen, waitFor } from '../../utils/test-utils';
 import LoginForm from '@/app/components/LoginForm';
 import { signIn, getProviders } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { UserEvent } from '@testing-library/user-event/dist/types/setup/setup';
+import type { UserEvent } from '@testing-library/user-event'
 import '@testing-library/jest-dom';
 
-/**
- * Mock the modules
- */
-jest.mock('next-auth/react', () => ({
-  signIn: jest.fn(),
-  getProviders: jest.fn(),
-}));
-
-jest.mock('next/navigation', () => ({
-  useRouter: jest.fn(),
-}));
+// Using the mocks from jest.setup.js
 
 describe('LoginForm', () => {
   // Mock setup
   const mockSignIn = signIn as jest.Mock;
   const mockGetProviders = getProviders as jest.Mock;
-  const mockRouter = useRouter as jest.Mock;
-  const mockPush = jest.fn();
-  const mockRefresh = jest.fn();
+  const mockRouter = useRouter();
 
   // Test data
   const validEmail = 'test@example.com';
@@ -40,10 +28,7 @@ describe('LoginForm', () => {
     await user.type(screen.getByLabelText(/password/i), password);
 
     // Get the submit button directly
-    const submitButton = document.querySelector('button[type="submit"]');
-    if (!submitButton) {
-      throw new Error('Submit button not found');
-    }
+    const submitButton = screen.getByRole('button', { name: /sign in$/i });
     await user.click(submitButton);
   };
 
@@ -51,14 +36,8 @@ describe('LoginForm', () => {
     // Reset all mocks before each test
     jest.clearAllMocks();
 
-    // Setup router mock
-    mockRouter.mockReturnValue({
-      push: mockPush,
-      refresh: mockRefresh,
-    });
-
-    // Setup providers mock
-    mockGetProviders.mockResolvedValue({
+    // Setup providers mock - resolve immediately to avoid act() warnings
+    const mockProviders = {
       credentials: {
         id: 'credentials',
         name: 'Credentials',
@@ -69,29 +48,34 @@ describe('LoginForm', () => {
         name: 'Google',
         type: 'oauth',
       },
-    });
+    };
+
+    mockGetProviders.mockImplementation(() => Promise.resolve(mockProviders));
   });
 
-  it('renders the login form with all required elements', () => {
+  it('renders the login form with all required elements', async () => {
     render(<LoginForm />);
 
-    // Check if form elements are rendered with correct attributes
-    const emailInput = screen.getByLabelText(/email/i);
-    const passwordInput = screen.getByLabelText(/password/i);
-    const submitButton = screen.getByRole('button', { name: /sign in/i });
+    // Wait for the component to finish loading providers
+    await waitFor(() => {
+      // Check if form elements are rendered with correct attributes
+      const emailInput = screen.getByLabelText(/email/i);
+      const passwordInput = screen.getByLabelText(/password/i);
+      const submitButton = screen.getByRole('button', { name: /sign in$/i });
 
-    // Verify elements are in the document
-    expect(emailInput).toBeInTheDocument();
-    expect(passwordInput).toBeInTheDocument();
-    expect(submitButton).toBeInTheDocument();
+      // Verify elements are in the document
+      expect(emailInput).toBeInTheDocument();
+      expect(passwordInput).toBeInTheDocument();
+      expect(submitButton).toBeInTheDocument();
 
-    // Verify input types for accessibility
-    expect(emailInput).toHaveAttribute('placeholder', 'Enter your email');
-    expect(passwordInput).toHaveAttribute('type', 'password');
-    expect(passwordInput).toHaveAttribute('placeholder', 'Enter your password');
+      // Verify input types for accessibility
+      expect(emailInput).toHaveAttribute('placeholder', 'Enter your email');
+      expect(passwordInput).toHaveAttribute('type', 'password');
+      expect(passwordInput).toHaveAttribute('placeholder', 'Enter your password');
 
-    // Verify button is enabled
-    expect(submitButton).toBeEnabled();
+      // Verify button is enabled
+      expect(submitButton).toBeEnabled();
+    });
   });
 
   // Accessibility tests removed as we simplified the test utils
@@ -164,7 +148,7 @@ describe('LoginForm', () => {
 
     // Wait for the redirect to happen, which indicates the loading state is complete
     await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith('/dashboard');
+      expect(mockRouter.push).toHaveBeenCalledWith('/dashboard');
     });
   });
 
@@ -179,13 +163,13 @@ describe('LoginForm', () => {
 
     // Check if redirect happens
     await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith('/dashboard');
-      expect(mockRefresh).toHaveBeenCalled();
+      expect(mockRouter.push).toHaveBeenCalledWith('/dashboard');
+      expect(mockRouter.refresh).toHaveBeenCalled();
     });
   });
 
   it('renders OAuth provider buttons when available', async () => {
-    // Mock providers
+    // Mock providers with additional properties
     mockGetProviders.mockResolvedValue({
       credentials: {
         id: 'credentials',
@@ -204,13 +188,15 @@ describe('LoginForm', () => {
     render(<LoginForm />);
 
     // Wait for providers to load
-    const googleButton = await screen.findByRole('button', { name: /sign in with google/i });
-    expect(googleButton).toBeInTheDocument();
+    await waitFor(async () => {
+      const googleButton = await screen.findByRole('button', { name: /sign in with google/i });
+      expect(googleButton).toBeInTheDocument();
 
-    // Verify button styling
-    expect(googleButton).toHaveClass('w-full');
-    // Check for border class instead of variant attribute
-    expect(googleButton).toHaveClass('border');
+      // Verify button styling
+      expect(googleButton).toHaveClass('w-full');
+      // Check for border class instead of variant attribute
+      expect(googleButton).toHaveClass('border');
+    });
   });
 
   it('handles unexpected errors gracefully', async () => {

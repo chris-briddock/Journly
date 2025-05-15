@@ -175,12 +175,13 @@ export function TipTapEditor({
 
   return (
     <div
+      data-testid="tiptap-editor"
       className={cn(
         "border border-input rounded-md overflow-hidden",
         className
       )}
     >
-      <div className="bg-muted/50 p-1 border-b flex flex-wrap gap-1">
+      <div data-testid="editor-toolbar" className="bg-muted/50 p-1 border-b flex flex-wrap gap-1">
         <TooltipProvider delayDuration={100}>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -199,6 +200,7 @@ export function TipTapEditor({
                   editor.chain().focus().toggleHeading({ level: 1 }).run();
                   console.log('H1 button clicked, editor HTML:', editor.getHTML());
                 }}
+                aria-label="Heading 1"
               >
                 <Heading1 className="h-4 w-4" />
               </Button>
@@ -223,6 +225,7 @@ export function TipTapEditor({
                   editor.chain().focus().toggleHeading({ level: 2 }).run();
                   console.log('H2 button clicked, editor HTML:', editor.getHTML());
                 }}
+                aria-label="Heading 2"
               >
                 <Heading2 className="h-4 w-4" />
               </Button>
@@ -238,6 +241,7 @@ export function TipTapEditor({
                 size="icon"
                 className={cn("h-8 w-8", editor.isActive("paragraph") && "bg-accent")}
                 onClick={() => editor.chain().focus().setParagraph().run()}
+                aria-label="Paragraph"
               >
                 <Pilcrow className="h-4 w-4" />
               </Button>
@@ -253,6 +257,7 @@ export function TipTapEditor({
                 size="icon"
                 className={cn("h-8 w-8", editor.isActive("bold") && "bg-accent")}
                 onClick={() => editor.chain().focus().toggleBold().run()}
+                aria-label="Bold"
               >
                 <Bold className="h-4 w-4" />
               </Button>
@@ -268,6 +273,7 @@ export function TipTapEditor({
                 size="icon"
                 className={cn("h-8 w-8", editor.isActive("italic") && "bg-accent")}
                 onClick={() => editor.chain().focus().toggleItalic().run()}
+                aria-label="Italic"
               >
                 <Italic className="h-4 w-4" />
               </Button>
@@ -283,6 +289,7 @@ export function TipTapEditor({
                 size="icon"
                 className={cn("h-8 w-8", editor.isActive("bulletList") && "bg-accent")}
                 onClick={() => editor.chain().focus().toggleBulletList().run()}
+                aria-label="Bullet List"
               >
                 <List className="h-4 w-4" />
               </Button>
@@ -298,6 +305,7 @@ export function TipTapEditor({
                 size="icon"
                 className={cn("h-8 w-8", editor.isActive("orderedList") && "bg-accent")}
                 onClick={() => editor.chain().focus().toggleOrderedList().run()}
+                aria-label="Ordered List"
               >
                 <ListOrdered className="h-4 w-4" />
               </Button>
@@ -313,6 +321,7 @@ export function TipTapEditor({
                 size="icon"
                 className={cn("h-8 w-8", editor.isActive("link") && "bg-accent")}
                 onClick={setLink}
+                aria-label="Link"
               >
                 <LinkIcon className="h-4 w-4" />
               </Button>
@@ -328,6 +337,7 @@ export function TipTapEditor({
                 size="icon"
                 className="h-8 w-8"
                 onClick={addImage}
+                aria-label="Image"
               >
                 <ImageIcon className="h-4 w-4" />
               </Button>
@@ -346,6 +356,7 @@ export function TipTapEditor({
                   setEmbedDialogOpen(true);
                   // Default to YouTube embed
                 }}
+                aria-label="Embed Media"
               >
                 <YoutubeIcon className="h-4 w-4" />
               </Button>
@@ -366,6 +377,7 @@ export function TipTapEditor({
                     editor.chain().focus().insertContent('@').run();
                   }
                 }}
+                aria-label="Mention User"
               >
                 <AtSign className="h-4 w-4" />
               </Button>
@@ -382,6 +394,7 @@ export function TipTapEditor({
                 className="h-8 w-8"
                 onClick={() => editor.chain().focus().undo().run()}
                 disabled={!editor.can().undo()}
+                aria-label="Undo"
               >
                 <Undo className="h-4 w-4" />
               </Button>
@@ -398,6 +411,7 @@ export function TipTapEditor({
                 className="h-8 w-8"
                 onClick={() => editor.chain().focus().redo().run()}
                 disabled={!editor.can().redo()}
+                aria-label="Redo"
               >
                 <Redo className="h-4 w-4" />
               </Button>
@@ -424,7 +438,7 @@ export function TipTapEditor({
         </TooltipProvider>
       </div>
 
-      <EditorContent editor={editor} />
+      <EditorContent data-testid="editor-content" editor={editor} />
 
       {/* Link Dialog */}
       <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>

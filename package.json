@@ -16,7 +16,7 @@
     "test:watch": "jest --watch",
     "test:unit": "jest --testPathPattern=src/__tests__/unit",
     "test:integration": "jest --testPathPattern=src/__tests__/integration",
-    "test:e2e": "playwright test",
+    "test:e2e": "npx playwright test --project='chromium'",
     "test:e2e:ui": "playwright test --ui",
     "test:coverage": "jest --coverage"
   },
@@ -50,6 +50,7 @@
     "@tiptap/react": "^2.12.0",
     "@tiptap/starter-kit": "^2.12.0",
     "@tiptap/suggestion": "^2.12.0",
+    "@vercel/speed-insights": "^1.2.0",
     "bcryptjs": "^3.0.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

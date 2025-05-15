@@ -18,7 +18,7 @@ We use a three-tiered testing approach:
 
 ## Directory Structure
 
-```
+``` plaintext
 src/
 ├── __tests__/
 │   ├── unit/
