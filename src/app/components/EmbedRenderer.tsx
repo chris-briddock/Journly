@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from 'react';
+import { cleanHtml } from '@/lib/cleanHtml';
 
 interface EmbedRendererProps {
   content: string;
@@ -73,12 +74,29 @@ export function EmbedRenderer({ content }: EmbedRendererProps) {
         const headings = containerRef.current.querySelectorAll('h1, h2, h3, h4, h5, h6');
         headings.forEach(heading => {
           heading.classList.add('font-semibold', 'mb-4', 'mt-6');
+
+          // Fix for raw HTML tags showing up in content
+          if (heading.textContent?.includes('<h1') ||
+              heading.textContent?.includes('<h2') ||
+              heading.textContent?.includes('<h3') ||
+              heading.textContent?.includes('<h4') ||
+              heading.textContent?.includes('<h5') ||
+              heading.textContent?.includes('<h6')) {
+            // Use our cleanHtml utility
+            heading.textContent = cleanHtml(heading.textContent);
+          }
         });
 
         // Add proper styling to paragraphs
         const paragraphs = containerRef.current.querySelectorAll('p');
         paragraphs.forEach(paragraph => {
           paragraph.classList.add('my-4');
+
+          // Fix for raw HTML tags showing up in content
+          if (paragraph.textContent?.includes('<') && paragraph.textContent?.includes('>')) {
+            // Use our cleanHtml utility for any HTML tags
+            paragraph.textContent = cleanHtml(paragraph.textContent);
+          }
         });
 
         // Add proper styling to lists
