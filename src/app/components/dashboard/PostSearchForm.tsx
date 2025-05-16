@@ -15,25 +15,25 @@ export function PostSearchForm() {
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
   useEffect(() => {
-    const params = new URLSearchParams(searchParams);
-    
-    if (debouncedSearchQuery) {
-      params.set("q", debouncedSearchQuery);
-    } else {
-      params.delete("q");
-    }
-    
-    // Keep the current page and status
-    const status = searchParams.get("status");
-    if (status) {
-      params.set("status", status);
-    }
-    
-    // Reset to page 1 when searching
-    params.set("page", "1");
-    
-    // Only update the URL if the query has changed
+    // Only proceed if the search query has actually changed
     if (debouncedSearchQuery !== searchParams.get("q")) {
+      const params = new URLSearchParams(searchParams);
+
+      if (debouncedSearchQuery) {
+        params.set("q", debouncedSearchQuery);
+      } else {
+        params.delete("q");
+      }
+
+      // Keep the current status
+      const status = searchParams.get("status");
+      if (status) {
+        params.set("status", status);
+      }
+
+      // Reset to page 1 only when the search query changes
+      params.set("page", "1");
+
       router.push(`${pathname}?${params.toString()}`);
     }
   }, [debouncedSearchQuery, router, pathname, searchParams]);

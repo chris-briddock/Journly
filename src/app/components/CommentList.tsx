@@ -33,7 +33,10 @@ import { CommentForm } from "@/app/components/CommentForm";
 export type CommentType = {
   id: string;
   content: string;
-  createdAt: Date;
+  createdAt: Date | string; // Allow both Date and string (ISO format)
+  updatedAt?: Date | string; // Make this optional and allow both Date and string
+  postId?: string; // Make this optional for tests
+  authorId?: string; // Make this optional for tests
   likeCount: number;
   author: {
     id: string;
@@ -240,7 +243,10 @@ export function CommentList({ postId, comments, onCommentAdded }: CommentListPro
                   {comment.author.name || "Anonymous"}
                 </Link>
                 <span className="text-xs text-muted-foreground ml-2">
-                  {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
+                  {formatDistanceToNow(
+                    comment.createdAt instanceof Date ? comment.createdAt : new Date(comment.createdAt),
+                    { addSuffix: true }
+                  )}
                 </span>
               </div>
               {isAuthor && (

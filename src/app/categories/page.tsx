@@ -5,7 +5,7 @@ import { Layers3, ArrowRight, FileText } from "lucide-react";
 import { getApiUrl } from "@/lib/getApiUrl";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { Button } from "@/app/components/ui/button";
-import Navigation from "@/app/components/Navigation";
+import SimpleNavigation from "@/app/components/SimpleNavigation";
 
 interface Category {
   id: string;
@@ -43,7 +43,7 @@ export default async function CategoriesPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
+      <SimpleNavigation />
       <div className="container mx-auto px-4 py-10 max-w-7xl">
         <div className="flex flex-col gap-6">
           <div className="flex flex-col gap-2">

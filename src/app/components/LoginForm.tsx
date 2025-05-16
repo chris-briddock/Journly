@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { signIn, getProviders } from "next-auth/react";
 import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { AlertCircle, Loader2 } from "lucide-react";
 
 import { Button } from "@/app/components/ui/button";
@@ -17,10 +19,16 @@ import {
   FormMessage,
 } from "@/app/components/ui/form";
 
-type FormValues = {
-  email: string;
-  password: string;
-};
+// Define validation schema
+const loginSchema = z.object({
+  email: z.string()
+    .min(1, "Email is required")
+    .email("Please enter a valid email address"),
+  password: z.string()
+    .min(1, "Password is required")
+});
+
+type FormValues = z.infer<typeof loginSchema>;
 
 interface Provider {
   id: string;
@@ -45,10 +53,12 @@ export default function LoginForm() {
   }, []);
 
   const form = useForm<FormValues>({
+    resolver: zodResolver(loginSchema),
     defaultValues: {
       email: "",
       password: "",
     },
+    mode: "onBlur",
   });
 
   const onSubmit = async (values: FormValues) => {
@@ -81,7 +91,7 @@ export default function LoginForm() {
       {error && (
         <div className="flex items-center gap-2 rounded-md bg-destructive/10 p-3 text-destructive">
           <AlertCircle className="h-4 w-4" />
-          <p className="text-sm">{error}</p>
+          <p className="text-sm font-medium">Login failed</p>
         </div>
       )}
 

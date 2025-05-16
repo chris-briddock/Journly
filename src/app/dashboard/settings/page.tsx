@@ -4,13 +4,10 @@ import { auth } from "@/lib/auth";
 import { DashboardHeader } from "@/app/components/dashboard/DashboardHeader";
 import { DashboardShell } from "@/app/components/dashboard/DashboardShell";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/app/components/ui/card";
-import { Label } from "@/app/components/ui/label";
-import { Input } from "@/app/components/ui/input";
-import { Button } from "@/app/components/ui/button";
-import { Switch } from "@/app/components/ui/switch";
 import { UserSettingsForm } from "@/app/components/dashboard/UserSettingsForm";
 import { NotificationSettingsForm } from "@/app/components/dashboard/NotificationSettingsForm";
+import { PasswordUpdateForm } from "@/app/components/dashboard/PasswordUpdateForm";
+import { DisplaySettingsForm } from "@/app/components/dashboard/DisplaySettingsForm";
 
 interface User {
   id: string;
@@ -67,8 +64,9 @@ export default async function SettingsPage() {
           <TabsTrigger value="display">Display</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="account">
+        <TabsContent value="account" className="space-y-6">
           <UserSettingsForm user={user} />
+          <PasswordUpdateForm />
         </TabsContent>
 
         <TabsContent value="notifications">
@@ -76,56 +74,7 @@ export default async function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="display">
-          <Card>
-            <CardHeader>
-              <CardTitle>Display Settings</CardTitle>
-              <CardDescription>
-                Customize how Journly looks and feels for you.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="theme-mode">Dark Mode</Label>
-                  <Switch id="theme-mode" defaultChecked={false} />
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Enable dark mode for a more comfortable reading experience in low light.
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="compact-view">Compact View</Label>
-                  <Switch id="compact-view" defaultChecked={false} />
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Show more content with less spacing between items.
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="font-size">Font Size</Label>
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm">A</span>
-                  <Input
-                    id="font-size"
-                    type="range"
-                    min="80"
-                    max="120"
-                    defaultValue="100"
-                  />
-                  <span className="text-lg">A</span>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Adjust the font size for better readability.
-                </p>
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button>Save Display Settings</Button>
-            </CardFooter>
-          </Card>
+          <DisplaySettingsForm />
         </TabsContent>
       </Tabs>
     </DashboardShell>

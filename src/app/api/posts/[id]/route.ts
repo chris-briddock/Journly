@@ -136,19 +136,36 @@ export async function PUT(
 
         // Add new categories
         if (categoriesToAdd.length > 0) {
-          await tx.postCategory.createMany({
-            data: categoriesToAdd.map((categoryId: string) => ({
-              postId: id,
-              categoryId,
-            })),
+          // First, validate that all categories exist
+          const validCategories = await tx.category.findMany({
+            where: {
+              id: {
+                in: categoriesToAdd
+              }
+            },
+            select: {
+              id: true
+            }
           });
 
-          // Increment post count for added categories
-          for (const categoryId of categoriesToAdd) {
-            await tx.category.update({
-              where: { id: categoryId },
-              data: { postCount: { increment: 1 } },
+          const validCategoryIds = validCategories.map(cat => cat.id);
+
+          if (validCategoryIds.length > 0) {
+            // Only create connections for valid categories
+            await tx.postCategory.createMany({
+              data: validCategoryIds.map((categoryId: string) => ({
+                postId: id,
+                categoryId,
+              })),
             });
+
+            // Increment post count for added categories
+            for (const categoryId of validCategoryIds) {
+              await tx.category.update({
+                where: { id: categoryId },
+                data: { postCount: { increment: 1 } },
+              });
+            }
           }
         }
       }
@@ -159,8 +176,14 @@ export async function PUT(
     return NextResponse.json(updatedPost);
   } catch (error) {
     console.error('Error updating post:', error);
+
+    // Provide more detailed error message
+    const errorMessage = error instanceof Error
+      ? `Failed to update post: ${error.message}`
+      : 'Failed to update post';
+
     return NextResponse.json(
-      { error: 'Failed to update post' },
+      { error: errorMessage },
       { status: 500 }
     );
   }
@@ -168,7 +191,7 @@ export async function PUT(
 
 // DELETE /api/posts/[id] - Delete a post
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {

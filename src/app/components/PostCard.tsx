@@ -1,3 +1,5 @@
+'use client'
+
 import Link from "next/link";
 import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
@@ -6,15 +8,16 @@ import { MessageSquare, Heart, Eye } from "lucide-react";
 import { Card, CardContent, CardFooter, CardHeader } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
+import { cleanHtml } from "@/lib/cleanHtml";
 
-type Category = {
+interface Category {
   category: {
     id: string;
     name: string;
   };
 };
 
-type Post = {
+interface Post {
   id: string;
   title: string;
   excerpt: string | null;
@@ -33,7 +36,7 @@ type Post = {
   categories: Category[];
 };
 
-type PostCardProps = {
+interface PostCardProps {
   post: Post;
 };
 
@@ -93,7 +96,7 @@ export default function PostCard({ post }: PostCardProps) {
       <CardContent className="p-4 pt-0 flex-1">
         {post.excerpt && (
           <p className="text-muted-foreground text-sm line-clamp-3 mb-4">
-            {post.excerpt}
+            {cleanHtml(post.excerpt)}
           </p>
         )}
         <div className="flex items-center gap-2 mt-auto">

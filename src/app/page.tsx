@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import SimpleNavigation from "./components/SimpleNavigation";
 import { getApiUrl } from "@/lib/getApiUrl";
+import { cleanHtml, truncateText } from "@/lib/cleanHtml";
 
 interface Post {
   id: string;
@@ -62,7 +63,7 @@ export default async function Home() {
   ]);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background">
       <SimpleNavigation />
 
       {/* Hero Section - Medium-like with featured post */}
@@ -80,14 +81,14 @@ export default async function Home() {
                 </p>
                 <Link
                   href="/posts"
-                  className="bg-black text-white px-8 py-3 rounded-full font-medium hover:bg-gray-800 transition inline-block"
+                  className="bg-black text-white dark:bg-white dark:text-black px-8 py-3 rounded-full font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition inline-block"
                 >
                   Start reading
                 </Link>
               </div>
 
               {recentPosts.length > 0 && (
-                <div className="bg-gray-50 p-6 rounded-xl shadow-sm border border-gray-100">
+                <div className="bg-gray-50 dark:bg-background p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800">
                   <div className="flex items-center mb-4">
                     <div className="w-10 h-10 rounded-full bg-gray-300 mr-3 overflow-hidden">
                       {recentPosts[0].author.image && (
@@ -119,7 +120,9 @@ export default async function Home() {
                   </h2>
 
                   <p className="text-gray-600 mb-4 line-clamp-3">
-                    {recentPosts[0].excerpt || recentPosts[0].content.substring(0, 160) + '...'}
+                    {recentPosts[0].excerpt
+                      ? cleanHtml(recentPosts[0].excerpt)
+                      : truncateText(recentPosts[0].content, 160)}
                   </p>
 
                   {recentPosts[0].featuredImage && (
@@ -140,12 +143,12 @@ export default async function Home() {
       </section>
 
       {/* Categories Section - Horizontal scrollable */}
-      <section className="py-6 border-b border-gray-200 sticky top-0 bg-white z-10">
+      <section className="py-6 border-b border-gray-200 sticky top-0 bg-background z-10">
         <div className="container mx-auto px-4">
           <div className="flex items-center space-x-1 overflow-x-auto pb-2 scrollbar-hide">
             <Link
               href="/posts"
-              className="whitespace-nowrap px-4 py-2 rounded-full bg-black text-white text-sm font-medium"
+              className="whitespace-nowrap px-4 py-2 rounded-full bg-black text-white dark:bg-white dark:text-black text-sm font-medium"
             >
               For You
             </Link>
@@ -153,7 +156,7 @@ export default async function Home() {
               <Link
                 key={category.id}
                 href={`/posts?categoryId=${category.id}`}
-                className="whitespace-nowrap px-4 py-2 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium transition"
+                className="whitespace-nowrap px-4 py-2 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-300 text-sm font-medium transition"
               >
                 {category.name}
               </Link>
@@ -192,7 +195,9 @@ export default async function Home() {
                     </h3>
 
                     <p className="text-gray-600 line-clamp-2">
-                      {post.excerpt || post.content.substring(0, 140) + '...'}
+                      {post.excerpt
+                        ? cleanHtml(post.excerpt)
+                        : truncateText(post.content, 140)}
                     </p>
 
                     <div className="flex items-center justify-between text-sm text-gray-500">
@@ -211,7 +216,7 @@ export default async function Home() {
                           <Link
                             key={category.id}
                             href={`/posts?categoryId=${category.id}`}
-                            className="text-xs bg-gray-100 px-2 py-1 rounded-full text-gray-600 hover:bg-gray-200 transition"
+                            className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition"
                           >
                             {category.name}
                           </Link>
@@ -230,8 +235,8 @@ export default async function Home() {
                       />
                     </div>
                   ) : (
-                    <div className="md:col-span-1 h-40 bg-gray-100 rounded-lg flex items-center justify-center">
-                      <span className="text-gray-400">No image</span>
+                    <div className="md:col-span-1 h-40 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+                      <span className="text-gray-400 dark:text-gray-500">No image</span>
                     </div>
                   )}
                 </article>
@@ -241,7 +246,7 @@ export default async function Home() {
             <div className="text-center mt-12">
               <Link
                 href="/posts"
-                className="bg-green-600 text-white px-6 py-3 rounded-full font-medium hover:bg-green-700 transition inline-block"
+                className="bg-green-600 text-white dark:bg-white dark:text-black px-6 py-3 rounded-full font-medium hover:bg-green-700 dark:hover:bg-gray-200 transition inline-block"
               >
                 See more stories
               </Link>
@@ -251,16 +256,16 @@ export default async function Home() {
       </section>
 
       {/* Start Writing Section */}
-      <section className="py-16 bg-gray-50 border-t border-gray-200">
+      <section className="py-16 bg-muted dark:bg-background border-t border-gray-200">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-3xl font-bold mb-4 font-serif">Share your ideas with the world</h2>
-            <p className="text-xl text-gray-600 mb-8">
+            <h2 className="text-3xl font-bold mb-4 font-serif dark:text-white">Share your ideas with the world</h2>
+            <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
               Join our community of writers and readers. Start writing today.
             </p>
             <Link
               href="/login"
-              className="bg-black text-white px-8 py-3 rounded-full font-medium hover:bg-gray-800 transition inline-block"
+              className="bg-black text-white dark:bg-white dark:text-black px-8 py-3 rounded-full font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition inline-block"
             >
               Start Writing
             </Link>
@@ -269,22 +274,22 @@ export default async function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-white text-gray-800 py-12 border-t border-gray-200">
+      <footer className="bg-background text-foreground py-12 border-t border-gray-200">
         <div className="container mx-auto px-4">
           <div className="max-w-6xl mx-auto">
             <div className="flex flex-col md:flex-row justify-between items-center">
               <div className="mb-6 md:mb-0">
                 <h2 className="text-2xl font-bold font-serif">Journly</h2>
-                <p className="text-gray-600 mt-2">Where good ideas find you.</p>
+                <p className="text-muted-foreground mt-2">Where good ideas find you.</p>
               </div>
               <div className="flex flex-wrap gap-8">
-                <Link href="/about" className="hover:text-gray-600 transition">About</Link>
-                <Link href="/contact" className="hover:text-gray-600 transition">Contact</Link>
-                <Link href="/privacy" className="hover:text-gray-600 transition">Privacy</Link>
-                <Link href="/terms" className="hover:text-gray-600 transition">Terms</Link>
+                <Link href="/about" className="hover:text-muted-foreground transition">About</Link>
+                <Link href="/contact" className="hover:text-muted-foreground transition">Contact</Link>
+                <Link href="/privacy" className="hover:text-muted-foreground transition">Privacy</Link>
+                <Link href="/terms" className="hover:text-muted-foreground transition">Terms</Link>
               </div>
             </div>
-            <div className="border-t border-gray-200 mt-8 pt-8 text-center text-gray-500">
+            <div className="border-t border-gray-200 mt-8 pt-8 text-center text-muted-foreground">
               <p>© {new Date().getFullYear()} Journly. All rights reserved.</p>
             </div>
           </div>

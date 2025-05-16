@@ -12,6 +12,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "../components/ui/sheet";
 
 export default function SimpleNavigation() {
   const { data: session } = useSession();
@@ -32,7 +39,7 @@ export default function SimpleNavigation() {
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <div className="flex items-center">
-            <Link href="/" className="text-xl font-bold">
+            <Link href="/" className="text-xl font-bold font-serif">
               Journly
             </Link>
           </div>
@@ -44,6 +51,9 @@ export default function SimpleNavigation() {
             </Button>
             <Button asChild variant="ghost">
               <Link href="/posts">Posts</Link>
+            </Button>
+            <Button asChild variant="ghost">
+              <Link href="/categories">Categories</Link>
             </Button>
             {session && (
               <Button asChild variant="ghost">
@@ -98,16 +108,49 @@ export default function SimpleNavigation() {
 
           {/* Mobile Menu Button */}
           <div className="md:hidden">
-            <Button variant="ghost" size="icon" className="h-9 w-9" asChild>
-              <Link href="/menu">
-                <span className="sr-only">Menu</span>
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="4" x2="20" y1="12" y2="12" />
-                  <line x1="4" x2="20" y1="6" y2="6" />
-                  <line x1="4" x2="20" y1="18" y2="18" />
-                </svg>
-              </Link>
-            </Button>
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-9 w-9">
+                  <span className="sr-only">Menu</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="4" x2="20" y1="12" y2="12" />
+                    <line x1="4" x2="20" y1="6" y2="6" />
+                    <line x1="4" x2="20" y1="18" y2="18" />
+                  </svg>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left">
+                <SheetHeader>
+                  <SheetTitle>Menu</SheetTitle>
+                </SheetHeader>
+                <div className="flex flex-col gap-4 py-4">
+                  <Button asChild variant="ghost" className="justify-start">
+                    <Link href="/">Home</Link>
+                  </Button>
+                  <Button asChild variant="ghost" className="justify-start">
+                    <Link href="/posts">Posts</Link>
+                  </Button>
+                  <Button asChild variant="ghost" className="justify-start">
+                    <Link href="/categories">Categories</Link>
+                  </Button>
+                  {session && (
+                    <Button asChild variant="ghost" className="justify-start">
+                      <Link href="/dashboard">Dashboard</Link>
+                    </Button>
+                  )}
+                  {!session && (
+                    <>
+                      <Button variant="ghost" onClick={() => signIn()} className="justify-start">
+                        Sign In
+                      </Button>
+                      <Button asChild variant="default" className="justify-start">
+                        <Link href="/register">Sign Up</Link>
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
       </div>

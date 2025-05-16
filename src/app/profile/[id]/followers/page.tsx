@@ -8,8 +8,8 @@ import { auth } from "@/lib/auth";
 import { Button } from "@/app/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card";
-import Navigation from "@/app/components/Navigation";
 import { FollowButton } from "@/app/components/FollowButton";
+import SimpleNavigation from "@/app/components/SimpleNavigation";
 
 interface FollowersPageProps {
   params: Promise<{ id: string }>;
@@ -128,7 +128,7 @@ export default async function FollowersPage({ params, searchParams }: FollowersP
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
+      <SimpleNavigation />
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center gap-2 mb-6">

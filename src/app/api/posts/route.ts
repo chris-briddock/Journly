@@ -116,19 +116,36 @@ export async function POST(request: NextRequest) {
 
       // Connect categories if provided
       if (categoryIds && categoryIds.length > 0) {
-        await tx.postCategory.createMany({
-          data: categoryIds.map((categoryId: string) => ({
-            postId: newPost.id,
-            categoryId,
-          })),
+        // First, validate that all categories exist
+        const validCategories = await tx.category.findMany({
+          where: {
+            id: {
+              in: categoryIds
+            }
+          },
+          select: {
+            id: true
+          }
         });
 
-        // Update category post counts
-        for (const categoryId of categoryIds) {
-          await tx.category.update({
-            where: { id: categoryId },
-            data: { postCount: { increment: 1 } },
+        const validCategoryIds = validCategories.map(cat => cat.id);
+
+        if (validCategoryIds.length > 0) {
+          // Only create connections for valid categories
+          await tx.postCategory.createMany({
+            data: validCategoryIds.map((categoryId: string) => ({
+              postId: newPost.id,
+              categoryId,
+            })),
           });
+
+          // Update category post counts
+          for (const categoryId of validCategoryIds) {
+            await tx.category.update({
+              where: { id: categoryId },
+              data: { postCount: { increment: 1 } },
+            });
+          }
         }
       }
 
@@ -144,8 +161,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(post, { status: 201 });
   } catch (error) {
     console.error('Error creating post:', error);
+
+    // Provide more detailed error message
+    const errorMessage = error instanceof Error
+      ? `Failed to create post: ${error.message}`
+      : 'Failed to create post';
+
     return NextResponse.json(
-      { error: 'Failed to create post' },
+      { error: errorMessage },
       { status: 500 }
     );
   }

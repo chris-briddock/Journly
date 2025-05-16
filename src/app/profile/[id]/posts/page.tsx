@@ -4,8 +4,16 @@ import { ChevronLeft } from "lucide-react";
 
 import prisma from "@/lib/prisma";
 import { Button } from "@/app/components/ui/button";
-import Navigation from "@/app/components/Navigation";
 import PostCard from "@/app/components/PostCard";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious
+} from "@/app/components/ui/pagination";
+import SimpleNavigation from "@/app/components/SimpleNavigation";
 
 type SearchParams = {
   page?: string;
@@ -88,9 +96,9 @@ export default async function UserPostsPage({
 }) {
   const { id } = await params;
   const searchParamsValue = await searchParams;
-  
+
   const page = Number(searchParamsValue.page) || 1;
-  
+
   const [user, { posts, pagination }] = await Promise.all([
     getUser(id),
     getUserPosts(id, page),
@@ -102,7 +110,7 @@ export default async function UserPostsPage({
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
+      <SimpleNavigation />
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
           <div className="mb-8">
@@ -132,25 +140,40 @@ export default async function UserPostsPage({
 
           {/* Pagination */}
           {pagination.totalPages > 1 && (
-            <div className="flex justify-center mt-8">
-              <div className="flex gap-2">
-                {Array.from({ length: pagination.totalPages }).map((_, i) => {
-                  const pageNumber = i + 1;
-                  const isCurrentPage = pageNumber === pagination.page;
-                  const href = `/profile/${id}/posts?page=${pageNumber}`;
+            <div className="mt-8">
+              <Pagination>
+                <PaginationContent>
+                  {pagination.page > 1 && (
+                    <PaginationItem>
+                      <PaginationPrevious
+                        href={`/profile/${id}/posts?page=${pagination.page - 1}`}
+                      />
+                    </PaginationItem>
+                  )}
 
-                  return (
-                    <Button
-                      key={pageNumber}
-                      variant={isCurrentPage ? "default" : "outline"}
-                      size="sm"
-                      asChild
-                    >
-                      <Link href={href}>{pageNumber}</Link>
-                    </Button>
-                  );
-                })}
-              </div>
+                  {Array.from({ length: pagination.totalPages }).map((_, i) => {
+                    const pageNumber = i + 1;
+                    const isCurrentPage = pageNumber === pagination.page;
+                    const href = `/profile/${id}/posts?page=${pageNumber}`;
+
+                    return (
+                      <PaginationItem key={pageNumber}>
+                        <PaginationLink href={href} isActive={isCurrentPage}>
+                          {pageNumber}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
+                  })}
+
+                  {pagination.page < pagination.totalPages && (
+                    <PaginationItem>
+                      <PaginationNext
+                        href={`/profile/${id}/posts?page=${pagination.page + 1}`}
+                      />
+                    </PaginationItem>
+                  )}
+                </PaginationContent>
+              </Pagination>
             </div>
           )}
         </div>
