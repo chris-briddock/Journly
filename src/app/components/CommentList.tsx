@@ -6,6 +6,8 @@ import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { MessageSquare, ThumbsUp, MoreVertical, Reply, Pencil, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { formatCommentWithMentions } from "@/lib/commentMentions";
+import "./comment-mentions.css";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar";
 import { Button } from "@/app/components/ui/button";
@@ -320,7 +322,10 @@ export function CommentList({ postId, comments, onCommentAdded }: CommentListPro
                 </div>
               </div>
             ) : (
-              <div className="text-sm text-foreground">{comment.content}</div>
+              <div
+                className="text-sm text-foreground"
+                dangerouslySetInnerHTML={{ __html: formatCommentWithMentions(comment.content) }}
+              />
             )}
 
             {!isEditing && (

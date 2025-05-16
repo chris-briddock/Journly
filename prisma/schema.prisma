@@ -41,6 +41,10 @@ model User {
   followedBy    Follow[]  @relation("Following")
   following     Follow[]  @relation("Follower")
   categories    Category[]
+  notifications Notification[] @relation("ReceivedNotifications")
+  actions       Notification[] @relation("ActionUser")
+  readingHistory ReadingHistory[]
+  notificationPreferences UserNotificationPreferences?
 }
 
 // Post model
@@ -65,6 +69,8 @@ model Post {
   comments      Comment[]
   likes         Like[]
   categories    PostCategory[]
+  notifications Notification[]
+  readingHistory ReadingHistory[]
 }
 
 // Category model
@@ -111,6 +117,7 @@ model Comment {
   parentId  String?
   replies   Comment[] @relation("CommentToComment")
   likes     CommentLike[]
+  notifications Notification[]
 }
 
 // Like model
@@ -153,4 +160,68 @@ model CommentLike {
   userId    String
 
   @@unique([userId, commentId])
+}
+
+// Notification model
+model Notification {
+  id          String   @id @default(cuid())
+  type        String   // like, comment, follow, mention, post_update, comment_reply, system
+  read        Boolean  @default(false)
+  message     String
+  link        String?  // URL to redirect when clicked
+  createdAt   DateTime @default(now())
+  groupId     String?  // For grouping similar notifications
+  data        String?  // JSON data for additional context
+
+  // Relations
+  user        User     @relation("ReceivedNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  userId      String   // User receiving the notification
+  actionUser  User?    @relation("ActionUser", fields: [actionUserId], references: [id], onDelete: SetNull)
+  actionUserId String?  // User who triggered the notification
+
+  // Optional relations based on notification type
+  post        Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId      String?
+  comment     Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  commentId   String?
+}
+
+// ReadingHistory model
+model ReadingHistory {
+  id          String   @id @default(cuid())
+  progress    Float    @default(0) // Reading progress (0-100%)
+  lastRead    DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  post        Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId      String
+
+  @@unique([userId, postId])
+}
+
+// UserNotificationPreferences model
+model UserNotificationPreferences {
+  id                  String   @id @default(cuid())
+  emailNotifications  Boolean  @default(true)
+  browserNotifications Boolean  @default(false)
+  newComments         Boolean  @default(true)
+  newLikes            Boolean  @default(true)
+  newFollowers        Boolean  @default(true)
+  mentions            Boolean  @default(true)
+  newsletter          Boolean  @default(false)
+  marketingEmails     Boolean  @default(false)
+  postUpdates         Boolean  @default(true)  // Notification for post updates
+  commentReplies      Boolean  @default(true)  // Notification for comment replies
+  newPostsFromFollowing Boolean @default(true)  // Notification for new posts from followed users
+  mentionsInPosts     Boolean  @default(true)  // Notification for mentions in posts
+  mentionsInComments  Boolean  @default(true)  // Notification for mentions in comments
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // Relations
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId              String   @unique
 }

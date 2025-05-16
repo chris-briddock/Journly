@@ -49,7 +49,7 @@ Category Management
 User ability to create custom categories
 Category management interface
 Trending categories display
- 
+
 Social Features
 Like/bookmark posts
 Share posts to social media

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { calculateReadingTime } from '@/lib/readingTime';
+import { processPostMentions } from '@/lib/mentions';
+import { createNewPostNotification } from '@/lib/notifications';
 
 // GET /api/posts - Get all posts
 export async function GET(request: NextRequest) {
@@ -87,12 +89,31 @@ export async function POST(request: NextRequest) {
   try {
     const session = await auth();
 
-    if (!session || !session.user) {
+    if (!session || !session.user || !session.user.id) {
       return NextResponse.json(
         { error: 'You must be logged in to create a post' },
         { status: 401 }
       );
     }
+
+    // Verify that the user exists in the database
+    const userId = session.user.id;
+    console.log('Creating post with user ID:', userId);
+
+    const userExists = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true }
+    });
+
+    if (!userExists) {
+      console.error('User not found in database with ID:', userId);
+      return NextResponse.json(
+        { error: 'User not found. Please log in again.' },
+        { status: 404 }
+      );
+    }
+
+    console.log('User verified in database:', userExists);
 
     const { title, content, excerpt, status, featuredImage, categoryIds } = await request.json();
 
@@ -110,7 +131,7 @@ export async function POST(request: NextRequest) {
           status: status || 'draft',
           featuredImage,
           readingTime,
-          authorId: session.user?.id as string,
+          authorId: userId,
         },
       });
 
@@ -151,12 +172,29 @@ export async function POST(request: NextRequest) {
 
       // Increment user's post count
       await tx.user.update({
-        where: { id: session.user?.id as string },
+        where: { id: userId },
         data: { postCount: { increment: 1 } },
       });
 
       return newPost;
     });
+
+    // Process mentions in the post content
+    if (post.status === 'published') {
+      // Only process mentions and send notifications for published posts
+      await processPostMentions(
+        post.id,
+        content,
+        userId,
+        title
+      );
+
+      // Notify followers about the new post
+      await createNewPostNotification({
+        postId: post.id,
+        authorId: userId
+      });
+    }
 
     return NextResponse.json(post, { status: 201 });
   } catch (error) {
