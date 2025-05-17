@@ -60,7 +60,9 @@ export function ReadingHistoryList() {
   const fetchReadingHistory = useCallback(async (page = 1) => {
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/reading-history?page=${page}&limit=${pagination.limit}`);
+      const response = await fetch(`/api/reading-history?page=${page}&limit=${pagination.limit}`, {
+        next: { revalidate: 0 }
+      });
 
       if (!response.ok) {
         throw new Error("Failed to fetch reading history");

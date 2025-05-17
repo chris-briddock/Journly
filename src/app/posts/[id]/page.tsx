@@ -74,7 +74,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 async function getPost(id: string): Promise<Post | null> {
   try {
     const response = await fetch(getApiUrl(`/api/posts/${id}/view`), {
-      next: { revalidate: 60 } // Revalidate every 60 seconds
+      next: { revalidate: 0 }
     });
 
     if (response.status === 404) {
@@ -95,7 +95,7 @@ async function getPost(id: string): Promise<Post | null> {
 async function getPostComments(postId: string): Promise<CommentType[]> {
   try {
     const response = await fetch(getApiUrl(`/api/posts/${postId}/comments`), {
-      next: { revalidate: 60 } // Revalidate every 60 seconds
+      next: { revalidate: 0 }
     });
 
     if (!response.ok) {
@@ -115,7 +115,7 @@ async function getRelatedPosts(postId: string, categoryIds: string[]): Promise<P
   try {
     const response = await fetch(
       getApiUrl(`/api/posts/${postId}/related?categoryIds=${categoryIds.join(',')}&limit=3`),
-      { next: { revalidate: 60 } } // Revalidate every 60 seconds
+      { next: { revalidate: 0 } }
     );
 
     if (!response.ok) {

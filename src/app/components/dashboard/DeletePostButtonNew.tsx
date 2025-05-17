@@ -34,6 +34,7 @@ export function DeletePostButtonNew({ postId, postTitle }: DeletePostButtonProps
     try {
       const response = await fetch(`/api/posts/${postId}`, {
         method: "DELETE",
+        next: { revalidate: 0 }
       });
       
       if (!response.ok) {

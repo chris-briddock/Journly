@@ -63,6 +63,7 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
         headers: {
           "Content-Type": "application/json",
         },
+        next: { revalidate: 0 },
         body: JSON.stringify(values),
       });
 

@@ -50,6 +50,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
         headers: {
           "Content-Type": "application/json",
         },
+        next: { revalidate: 0 },
         body: JSON.stringify({ ids: [notification.id] }),
       });
 

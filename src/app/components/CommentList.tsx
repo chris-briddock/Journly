@@ -121,6 +121,7 @@ export function CommentList({ postId, comments, onCommentAdded }: CommentListPro
         headers: {
           "Content-Type": "application/json",
         },
+        next: { revalidate: 0 },
         body: JSON.stringify({
           content: editContent.trim(),
         }),
@@ -156,6 +157,7 @@ export function CommentList({ postId, comments, onCommentAdded }: CommentListPro
     try {
       const response = await fetch(`/api/comments/${commentId}`, {
         method: "DELETE",
+        next: { revalidate: 0 }
       });
 
       const data = await response.json();
@@ -188,6 +190,7 @@ export function CommentList({ postId, comments, onCommentAdded }: CommentListPro
     try {
       const response = await fetch(`/api/comments/${commentId}/like`, {
         method: "POST",
+        next: { revalidate: 0 }
       });
 
       const data = await response.json();

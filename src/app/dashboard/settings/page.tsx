@@ -27,7 +27,8 @@ async function getUserById(userId: string): Promise<User> {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||
     (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
   const response = await fetch(`${baseUrl}/api/users/${userId}`, {
-    cache: 'no-store'
+    cache: 'no-store',
+    next: { revalidate: 0 }
   });
 
   if (!response.ok) {

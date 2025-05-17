@@ -58,7 +58,9 @@ export function NotificationDropdown() {
   const fetchNotifications = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch("/api/notifications?limit=10&grouped=true");
+      const response = await fetch("/api/notifications?limit=10&grouped=true", {
+        next: { revalidate: 0 }
+      });
 
       if (!response.ok) {
         throw new Error("Failed to fetch notifications");
@@ -108,6 +110,7 @@ export function NotificationDropdown() {
         headers: {
           "Content-Type": "application/json",
         },
+        next: { revalidate: 0 },
         body: JSON.stringify(ids ? { ids } : { all: true }),
       });
 

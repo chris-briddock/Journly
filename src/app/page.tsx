@@ -34,7 +34,7 @@ interface Category {
 
 async function getRecentPosts(): Promise<Post[]> {
   const response = await fetch(getApiUrl('/api/posts/recent?limit=8'), {
-    next: { revalidate: 60 } // Revalidate every 60 seconds
+    next: { revalidate: 0 }
   });
 
   if (!response.ok) {
@@ -46,7 +46,7 @@ async function getRecentPosts(): Promise<Post[]> {
 
 async function getCategories(): Promise<Category[]> {
   const response = await fetch(getApiUrl('/api/categories/popular?limit=12'), {
-    next: { revalidate: 60 } // Revalidate every 60 seconds
+    next: { revalidate: 0 }
   });
 
   if (!response.ok) {

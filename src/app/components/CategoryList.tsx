@@ -45,6 +45,7 @@ export default function CategoryList({ categories, userId }: CategoryListProps) 
     try {
       const response = await fetch(`/api/categories/${categoryId}`, {
         method: "DELETE",
+        next: { revalidate: 0 }
       });
 
       const data = await response.json();

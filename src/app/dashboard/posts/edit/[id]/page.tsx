@@ -47,7 +47,7 @@ async function getPost(id: string): Promise<Post | null> {
 
     const response = await fetch(url, {
       // Use next.js cache instead of no-store to allow static rendering
-      next: { revalidate: 60 }, // Revalidate every 60 seconds
+      next: { revalidate: 0 }, // Revalidate every 60 seconds
       credentials: 'include', // Include credentials (cookies) for authentication
       headers: {
         'Content-Type': 'application/json',
@@ -82,7 +82,7 @@ async function getCategories(): Promise<Category[]> {
     const response = await fetch(url, {
       // Use next.js cache instead of no-store to allow static rendering
       // This will be revalidated when categories are updated
-      next: { revalidate: 60 }, // Revalidate every 60 seconds
+      next: { revalidate: 0 }, // Revalidate every 60 seconds
       credentials: 'include', // Include credentials (cookies) for authentication
       headers: {
         'Content-Type': 'application/json',

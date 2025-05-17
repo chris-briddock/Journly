@@ -58,7 +58,8 @@ async function getPosts(userId: string, page = 1, status?: string, query?: strin
 
     const response = await fetch(url, {
       cache: 'no-store',
-      credentials: 'include'
+      credentials: 'include',
+      next: { revalidate: 0 }
     });
 
     if (!response.ok) {

@@ -17,7 +17,9 @@ export function CommentsSection({ postId, initialComments }: CommentsSectionProp
   const fetchComments = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/comments?postId=${postId}`);
+      const response = await fetch(`/api/comments?postId=${postId}`, {
+        next: { revalidate: 0 }
+      });
       if (!response.ok) {
         throw new Error("Failed to fetch comments");
       }

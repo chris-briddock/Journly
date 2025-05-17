@@ -51,7 +51,9 @@ export function RecommendedPosts({
     const fetchRecommendations = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch(`/api/recommendations?limit=${limit}`);
+        const response = await fetch(`/api/recommendations?limit=${limit}`, {
+          next: { revalidate: 0 }
+        });
 
         if (!response.ok) {
           throw new Error("Failed to fetch recommendations");

@@ -47,6 +47,7 @@ export function BulkActionMenu({ selectedIds, onActionComplete, disabled = false
         selectedIds.map(id =>
           fetch(`/api/posts/${id}`, {
             method: "DELETE",
+            next: { revalidate: 0 }
           })
         )
       );

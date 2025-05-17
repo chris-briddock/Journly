@@ -55,7 +55,9 @@ export function UserActivityFeed({ userId, userName }: UserActivityFeedProps) {
   const fetchActivities = useCallback(async (page = 1) => {
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/users/${userId}/activity?page=${page}&limit=${pagination.limit}`);
+      const response = await fetch(`/api/users/${userId}/activity?page=${page}&limit=${pagination.limit}`, {
+        next: { revalidate: 0 }
+      });
 
       if (!response.ok) {
         throw new Error("Failed to fetch user activity");

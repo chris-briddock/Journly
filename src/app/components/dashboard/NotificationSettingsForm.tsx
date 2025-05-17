@@ -43,7 +43,9 @@ export function NotificationSettingsForm() {
     const fetchPreferences = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch('/api/user/notification-preferences');
+        const response = await fetch('/api/user/notification-preferences', {
+          next: { revalidate: 0 }
+        });
 
         if (response.ok) {
           const data = await response.json();
@@ -104,6 +106,7 @@ export function NotificationSettingsForm() {
         headers: {
           'Content-Type': 'application/json',
         },
+        next: { revalidate: 0 },
         body: JSON.stringify(settings),
       });
 

@@ -173,6 +173,7 @@ export function CommentForm({ postId, parentId = null, onCommentSubmitted }: Com
         headers: {
           "Content-Type": "application/json",
         },
+        next: { revalidate: 0 },
         body: JSON.stringify({
           postId,
           content: content.trim(),
