@@ -34,7 +34,7 @@ interface Category {
 
 async function getRecentPosts(): Promise<Post[]> {
   const response = await fetch(getApiUrl('/api/posts/recent?limit=8'), {
-    next: { revalidate: 60 } // Revalidate every 60 seconds
+    next: { revalidate: 0 }
   });
 
   if (!response.ok) {
@@ -46,7 +46,7 @@ async function getRecentPosts(): Promise<Post[]> {
 
 async function getCategories(): Promise<Category[]> {
   const response = await fetch(getApiUrl('/api/categories/popular?limit=12'), {
-    next: { revalidate: 60 } // Revalidate every 60 seconds
+    next: { revalidate: 0 }
   });
 
   if (!response.ok) {
@@ -114,7 +114,7 @@ export default async function Home() {
                   </div>
 
                   <h2 className="text-2xl font-bold mb-3 font-serif">
-                    <Link href={`/posts/${recentPosts[0].id}`} className="hover:text-gray-700 transition">
+                    <Link href={`/posts/${recentPosts[0].id}`} className="hover:text-gray-200 transition">
                       {recentPosts[0].title}
                     </Link>
                   </h2>
@@ -189,7 +189,7 @@ export default async function Home() {
                     </div>
 
                     <h3 className="text-xl font-bold font-serif">
-                      <Link href={`/posts/${post.id}`} className="hover:text-gray-700 transition">
+                      <Link href={`/posts/${post.id}`} className="hover:text-gray-200 transition">
                         {post.title}
                       </Link>
                     </h3>

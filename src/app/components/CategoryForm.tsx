@@ -64,6 +64,7 @@ export default function CategoryForm({
         headers: {
           "Content-Type": "application/json",
         },
+        next: { revalidate: 0 },
         body: JSON.stringify(values),
       });
 

@@ -6,6 +6,8 @@ import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { MessageSquare, ThumbsUp, MoreVertical, Reply, Pencil, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { formatCommentWithMentions } from "@/lib/commentMentions";
+import "./comment-mentions.css";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar";
 import { Button } from "@/app/components/ui/button";
@@ -29,6 +31,7 @@ import {
   AlertDialogTrigger,
 } from "@/app/components/ui/alert-dialog";
 import { CommentForm } from "@/app/components/CommentForm";
+import { getInitials } from "@/lib/utils";
 
 export type CommentType = {
   id: string;
@@ -118,6 +121,7 @@ export function CommentList({ postId, comments, onCommentAdded }: CommentListPro
         headers: {
           "Content-Type": "application/json",
         },
+        next: { revalidate: 0 },
         body: JSON.stringify({
           content: editContent.trim(),
         }),
@@ -153,6 +157,7 @@ export function CommentList({ postId, comments, onCommentAdded }: CommentListPro
     try {
       const response = await fetch(`/api/comments/${commentId}`, {
         method: "DELETE",
+        next: { revalidate: 0 }
       });
 
       const data = await response.json();
@@ -185,6 +190,7 @@ export function CommentList({ postId, comments, onCommentAdded }: CommentListPro
     try {
       const response = await fetch(`/api/comments/${commentId}/like`, {
         method: "POST",
+        next: { revalidate: 0 }
       });
 
       const data = await response.json();
@@ -212,16 +218,6 @@ export function CommentList({ postId, comments, onCommentAdded }: CommentListPro
     } finally {
       setIsLiking((prev) => ({ ...prev, [commentId]: false }));
     }
-  };
-
-  const getInitials = (name: string | null) => {
-    if (!name) return "U";
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .substring(0, 2);
   };
 
   const renderComment = (comment: CommentType, isReply = false) => {
@@ -320,7 +316,10 @@ export function CommentList({ postId, comments, onCommentAdded }: CommentListPro
                 </div>
               </div>
             ) : (
-              <div className="text-sm text-foreground">{comment.content}</div>
+              <div
+                className="text-sm text-foreground"
+                dangerouslySetInnerHTML={{ __html: formatCommentWithMentions(comment.content) }}
+              />
             )}
 
             {!isEditing && (

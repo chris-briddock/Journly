@@ -6,7 +6,9 @@ import { usePathname } from "next/navigation";
 import { signIn, signOut, useSession } from "next-auth/react";
 import { Menu } from "lucide-react";
 
-import { cn } from "@/lib/utils";
+import { NotificationDropdown } from "./NotificationDropdown";
+
+import { cn, getInitials } from "@/lib/utils";
 import { Button } from "../components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
 import {
@@ -29,6 +31,7 @@ export default function Navigation() {
   const { data: session } = useSession();
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const userInitials = getInitials(session?.user?.name);
 
   const navItems = [
     { href: "/", label: "Home" },
@@ -51,16 +54,6 @@ export default function Navigation() {
   };
 
   const userNavItems = getUserNavItems();
-
-  const getInitials = (name: string | null | undefined) => {
-    if (!name) return "U";
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .substring(0, 2);
-  };
 
   return (
     <nav className="border-b bg-background">
@@ -104,34 +97,37 @@ export default function Navigation() {
           {/* Auth Buttons / User Menu */}
           <div className="hidden md:flex md:items-center md:space-x-2">
             {session ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-                    <Avatar className="h-9 w-9">
-                      <AvatarImage src={session.user?.image || ""} alt={session.user?.name || "User"} />
-                      <AvatarFallback>{getInitials(session.user?.name)}</AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>
-                    {session.user?.name || "User"}
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {userNavItems.map((item) => (
-                    <DropdownMenuItem key={item.href} asChild>
-                      <Link href={item.href}>{item.label}</Link>
+              <>
+                <NotificationDropdown />
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+                      <Avatar className="h-9 w-9">
+                        <AvatarImage src={session.user?.image || ""} alt={session.user?.name || "User"} />
+                        <AvatarFallback>{userInitials}</AvatarFallback>
+                      </Avatar>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>
+                      {session.user?.name || "User"}
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {userNavItems.map((item) => (
+                      <DropdownMenuItem key={item.href} asChild>
+                        <Link href={item.href}>{item.label}</Link>
+                      </DropdownMenuItem>
+                    ))}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      className="text-destructive focus:text-destructive"
+                      onClick={() => signOut()}
+                    >
+                      Sign Out
                     </DropdownMenuItem>
-                  ))}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    className="text-destructive focus:text-destructive"
-                    onClick={() => signOut()}
-                  >
-                    Sign Out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
             ) : (
               <>
                 <Button variant="ghost" onClick={() => signIn()}>

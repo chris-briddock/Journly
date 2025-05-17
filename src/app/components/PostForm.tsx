@@ -98,6 +98,7 @@ export default function PostForm({
         headers: {
           "Content-Type": "application/json",
         },
+        next: { revalidate: 0 },
         body: JSON.stringify(postData),
       });
 

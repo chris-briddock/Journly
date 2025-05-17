@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { auth } from '@/lib/auth';
+import { createLikeNotification } from '@/lib/notifications';
 
 // POST /api/posts/[id]/like - Like a post
 export async function POST(
@@ -62,6 +63,12 @@ export async function POST(
       });
     });
 
+    // Create notification
+    await createLikeNotification({
+      postId,
+      actionUserId: userId,
+    });
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error liking post:', error);
@@ -74,7 +81,7 @@ export async function POST(
 
 // DELETE /api/posts/[id]/like - Unlike a post
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {

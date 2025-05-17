@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { FollowButton } from "@/app/components/FollowButton";
 import SimpleNavigation from "@/app/components/SimpleNavigation";
+import { getInitials } from "@/lib/utils";
 
 interface FollowersPageProps {
   params: Promise<{ id: string }>;
@@ -28,7 +29,7 @@ async function getUser(id: string) {
   return user;
 }
 
-async function getFollowers(userId: string, page = 1, limit = 20) {
+async function getFollowers(userId: string, page: number = 1, limit: number = 20) {
   const skip = (page - 1) * limit;
 
   const [followers, total] = await Promise.all([
@@ -115,16 +116,6 @@ export default async function FollowersPage({ params, searchParams }: FollowersP
   if (!user) {
     notFound();
   }
-
-  const getInitials = (name: string | null) => {
-    if (!name) return "U";
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .substring(0, 2);
-  };
 
   return (
     <div className="min-h-screen bg-background">

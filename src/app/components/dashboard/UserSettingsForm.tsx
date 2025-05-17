@@ -11,6 +11,7 @@ import { Input } from "@/app/components/ui/input";
 import { Textarea } from "@/app/components/ui/textarea";
 import { Button } from "@/app/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar";
+import { getInitials } from "@/lib/utils";
 
 interface User {
   id: string;
@@ -50,6 +51,7 @@ export function UserSettingsForm({ user }: UserSettingsFormProps) {
         headers: {
           "Content-Type": "application/json",
         },
+        next: { revalidate: 0 },
         body: JSON.stringify(formData),
       });
 
@@ -67,16 +69,6 @@ export function UserSettingsForm({ user }: UserSettingsFormProps) {
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const getInitials = (name: string | null) => {
-    if (!name) return "U";
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .substring(0, 2);
   };
 
   return (

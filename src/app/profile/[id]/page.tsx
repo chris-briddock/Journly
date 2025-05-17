@@ -11,7 +11,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/components/ui/ta
 import { Separator } from "@/app/components/ui/separator";
 import PostCard from "@/app/components/PostCard";
 import { FollowButton } from "@/app/components/FollowButton";
+import { UserActivityFeed } from "@/app/components/UserActivityFeed";
 import SimpleNavigation from "@/app/components/SimpleNavigation";
+import { getInitials } from "@/lib/utils";
 
 interface Post {
   id: string;
@@ -73,15 +75,6 @@ export default async function ProfilePage({
 
   const isCurrentUser = currentUserId === user.id;
 
-  const getInitials = (name: string | null) => {
-    if (!name) return "U";
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .substring(0, 2);
-  };
 
   const formatDate = (date: Date) => {
     return format(new Date(date), "MMMM yyyy");
@@ -165,6 +158,7 @@ export default async function ProfilePage({
           <Tabs defaultValue="posts" className="mt-8">
             <TabsList className="mb-8">
               <TabsTrigger value="posts">Posts</TabsTrigger>
+              <TabsTrigger value="activity">Activity</TabsTrigger>
               <TabsTrigger value="about">About</TabsTrigger>
             </TabsList>
             <TabsContent value="posts">
@@ -199,6 +193,12 @@ export default async function ProfilePage({
                   </Button>
                 </div>
               )}
+            </TabsContent>
+
+            <TabsContent value="activity">
+              <div className="max-w-3xl mx-auto">
+                <UserActivityFeed userId={user.id} userName={user.name} />
+              </div>
             </TabsContent>
             <TabsContent value="about">
               <div className="max-w-3xl mx-auto space-y-6">

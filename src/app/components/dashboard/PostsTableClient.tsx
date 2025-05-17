@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Edit, Plus, Eye } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Edit, Plus, Eye, ChevronLeft, ChevronRight } from "lucide-react";
 
 import { Button } from "../../components/ui/button";
 import { Card, CardContent } from "../../components/ui/card";
@@ -16,7 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "../../components/ui/table";
-import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "../../components/ui/pagination";
+import { Pagination, PaginationContent, PaginationItem } from "../../components/ui/pagination";
 import { PostStatusFilter } from "./PostStatusFilter";
 import { PostSearchForm } from "./PostSearchForm";
 import { DeletePostButton } from "./DeletePostButton";
@@ -58,6 +59,7 @@ export function PostsTableClient({
   pagination: PostsResponse['pagination'];
   searchParams: SearchParams;
 }) {
+  const router = useRouter();
   const { page = 1, totalPages = 1 } = pagination;
   const currentStatus = searchParams.status || 'all';
   const [selectedPosts, setSelectedPosts] = useState<string[]>([]);
@@ -80,6 +82,27 @@ export function PostsTableClient({
 
   const clearSelection = () => {
     setSelectedPosts([]);
+  };
+
+  // Helper function to navigate with consistent parameters
+  const navigateToPage = (pageNumber: number) => {
+    const params = new URLSearchParams();
+
+    // Add page parameter
+    params.set("page", pageNumber.toString());
+
+    // Add status parameter if not 'all'
+    if (currentStatus !== 'all') {
+      params.set("status", currentStatus);
+    }
+
+    // Add search query if exists
+    if (searchParams.q) {
+      params.set("q", searchParams.q);
+    }
+
+    // Navigate to the new URL
+    router.push(`/dashboard/posts?${params.toString()}`);
   };
 
   return (
@@ -181,28 +204,37 @@ export function PostsTableClient({
               <PaginationContent>
                 {page > 1 && (
                   <PaginationItem>
-                    <PaginationPrevious
-                      href={`/dashboard/posts?page=${page - 1}${currentStatus !== 'all' ? `&status=${currentStatus}` : ''}${searchParams.q ? `&q=${encodeURIComponent(searchParams.q)}` : ''}`}
-                    />
+                    <button
+                      onClick={() => navigateToPage(page - 1)}
+                      className="flex items-center gap-1 px-2.5 py-2 text-sm font-medium rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      <span>Previous</span>
+                    </button>
                   </PaginationItem>
                 )}
 
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
                   <PaginationItem key={pageNum}>
-                    <PaginationLink
-                      href={`/dashboard/posts?page=${pageNum}${currentStatus !== 'all' ? `&status=${currentStatus}` : ''}${searchParams.q ? `&q=${encodeURIComponent(searchParams.q)}` : ''}`}
-                      isActive={pageNum === page}
+                    <button
+                      onClick={() => navigateToPage(pageNum)}
+                      className={`flex h-9 w-9 items-center justify-center rounded-md text-sm font-medium ${pageNum === page ? 'border border-input bg-background' : 'hover:bg-accent hover:text-accent-foreground'}`}
+                      aria-current={pageNum === page ? "page" : undefined}
                     >
                       {pageNum}
-                    </PaginationLink>
+                    </button>
                   </PaginationItem>
                 ))}
 
                 {page < totalPages && (
                   <PaginationItem>
-                    <PaginationNext
-                      href={`/dashboard/posts?page=${page + 1}${currentStatus !== 'all' ? `&status=${currentStatus}` : ''}${searchParams.q ? `&q=${encodeURIComponent(searchParams.q)}` : ''}`}
-                    />
+                    <button
+                      onClick={() => navigateToPage(page + 1)}
+                      className="flex items-center gap-1 px-2.5 py-2 text-sm font-medium rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground"
+                    >
+                      <span>Next</span>
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
                   </PaginationItem>
                 )}
               </PaginationContent>

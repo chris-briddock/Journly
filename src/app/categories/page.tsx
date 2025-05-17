@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 async function getCategories(): Promise<Category[]> {
   try {
     const response = await fetch(getApiUrl('/api/categories'), {
-      next: { revalidate: 60 } // Revalidate every 60 seconds
+      next: { revalidate: 0 }
     });
 
     if (!response.ok) {

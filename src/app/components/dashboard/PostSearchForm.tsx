@@ -17,12 +17,11 @@ export function PostSearchForm() {
   useEffect(() => {
     // Only proceed if the search query has actually changed
     if (debouncedSearchQuery !== searchParams.get("q")) {
-      const params = new URLSearchParams(searchParams);
+      const params = new URLSearchParams();
 
+      // Add search query if it exists
       if (debouncedSearchQuery) {
         params.set("q", debouncedSearchQuery);
-      } else {
-        params.delete("q");
       }
 
       // Keep the current status
@@ -34,7 +33,8 @@ export function PostSearchForm() {
       // Reset to page 1 only when the search query changes
       params.set("page", "1");
 
-      router.push(`${pathname}?${params.toString()}`);
+      // Use router.replace instead of push to avoid adding to history stack
+      router.replace(`${pathname}?${params.toString()}`);
     }
   }, [debouncedSearchQuery, router, pathname, searchParams]);
 

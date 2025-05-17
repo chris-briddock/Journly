@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { auth } from '@/lib/auth';
+import { createCommentNotification, createCommentReplyNotification } from '@/lib/notifications';
+import { processCommentMentions } from '@/lib/mentions';
 
 // GET /api/comments - Get comments for a post
 export async function GET(request: NextRequest) {
@@ -110,6 +112,40 @@ export async function POST(request: NextRequest) {
       where: { id: postId },
       data: { commentCount: { increment: 1 } },
     });
+
+    // Get post title for notifications
+    const postDetails = await prisma.post.findUnique({
+      where: { id: postId },
+      select: { title: true }
+    });
+
+    const postTitle = postDetails?.title || 'a post';
+
+    // Process mentions in the comment
+    await processCommentMentions(
+      comment.id,
+      content,
+      session.user.id as string,
+      postId,
+      postTitle
+    );
+
+    // Create appropriate notifications
+    if (parentId) {
+      // This is a reply to another comment
+      await createCommentReplyNotification({
+        parentCommentId: parentId,
+        replyCommentId: comment.id,
+        actionUserId: session.user.id as string,
+      });
+    } else {
+      // This is a top-level comment
+      await createCommentNotification({
+        postId,
+        commentId: comment.id,
+        actionUserId: session.user.id as string,
+      });
+    }
 
     return NextResponse.json(comment);
   } catch (error) {

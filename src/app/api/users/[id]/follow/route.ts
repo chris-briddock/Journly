@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { auth } from '@/lib/auth';
+import { createFollowNotification } from '@/lib/notifications';
 
 // POST /api/users/[id]/follow - Follow or unfollow a user
 export async function POST(
@@ -91,6 +92,12 @@ export async function POST(
           data: { followerCount: { increment: 1 } },
         }),
       ]);
+
+      // Create notification
+      await createFollowNotification({
+        followerId,
+        followingId,
+      });
 
       return NextResponse.json({ following: true });
     }

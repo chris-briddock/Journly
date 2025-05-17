@@ -25,14 +25,45 @@ export function NotificationSettingsForm() {
     mentions: true,
     newsletter: false,
     marketingEmails: false,
+    postUpdates: true,
+    commentReplies: true,
+    newPostsFromFollowing: true,
+    mentionsInPosts: true,
+    mentionsInComments: true,
   });
+
+  const [isLoading, setIsLoading] = useState(true);
 
   // Check if browser notifications are supported
   const [notificationsSupported, setNotificationsSupported] = useState(false);
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | null>(null);
 
+  // Fetch user's notification preferences
   useEffect(() => {
-    // Check if the browser supports notifications
+    const fetchPreferences = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch('/api/user/notification-preferences', {
+          next: { revalidate: 0 }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setSettings(data);
+        }
+      } catch (error) {
+        console.error('Error fetching notification preferences:', error);
+        toast.error('Failed to load notification preferences');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchPreferences();
+  }, []);
+
+  // Check if browser notifications are supported
+  useEffect(() => {
     if ('Notification' in window) {
       setNotificationsSupported(true);
       setNotificationPermission(Notification.permission);
@@ -75,6 +106,7 @@ export function NotificationSettingsForm() {
         headers: {
           'Content-Type': 'application/json',
         },
+        next: { revalidate: 0 },
         body: JSON.stringify(settings),
       });
 
@@ -100,6 +132,12 @@ export function NotificationSettingsForm() {
           <CardDescription>
             Manage how and when you receive notifications.
           </CardDescription>
+          {isLoading && (
+            <div className="flex items-center mt-2 text-sm text-muted-foreground">
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Loading your preferences...
+            </div>
+          )}
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-4">
@@ -179,6 +217,20 @@ export function NotificationSettingsForm() {
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
+                <Label htmlFor="comment-replies">Comment Replies</Label>
+                <Switch
+                  id="comment-replies"
+                  checked={settings.commentReplies}
+                  onCheckedChange={() => handleToggle("commentReplies")}
+                />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Notify me when someone replies to my comments.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
                 <Label htmlFor="new-likes">New Likes</Label>
                 <Switch
                   id="new-likes"
@@ -216,6 +268,62 @@ export function NotificationSettingsForm() {
               </div>
               <p className="text-sm text-muted-foreground">
                 Notify me when someone mentions me in a comment.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="post-updates">Post Updates</Label>
+                <Switch
+                  id="post-updates"
+                  checked={settings.postUpdates}
+                  onCheckedChange={() => handleToggle("postUpdates")}
+                />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Notify me when posts I follow are updated.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="new-posts-following">New Posts from Following</Label>
+                <Switch
+                  id="new-posts-following"
+                  checked={settings.newPostsFromFollowing}
+                  onCheckedChange={() => handleToggle("newPostsFromFollowing")}
+                />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Notify me when users I follow publish new posts.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="mentions-in-posts">Mentions in Posts</Label>
+                <Switch
+                  id="mentions-in-posts"
+                  checked={settings.mentionsInPosts}
+                  onCheckedChange={() => handleToggle("mentionsInPosts")}
+                />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Notify me when I am mentioned in a post.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="mentions-in-comments">Mentions in Comments</Label>
+                <Switch
+                  id="mentions-in-comments"
+                  checked={settings.mentionsInComments}
+                  onCheckedChange={() => handleToggle("mentionsInComments")}
+                />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Notify me when I am mentioned in a comment.
               </p>
             </div>
           </div>

@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Edit, FileText, BarChart2, Tag, Settings } from "lucide-react";
+import { Edit, FileText, BarChart2, Tag, Settings, BookOpen } from "lucide-react";
 
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { Button } from "@/app/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/app/components/ui/card";
+import { RecommendedPosts } from "@/app/components/RecommendedPosts";
 
 interface DashboardStats {
   totalPosts: number;
@@ -127,6 +128,12 @@ export default async function DashboardPage() {
       href: "/dashboard/categories",
     },
     {
+      title: "Reading History",
+      icon: BookOpen,
+      description: "View your reading history",
+      href: "/dashboard/reading-history",
+    },
+    {
       title: "Analytics",
       icon: BarChart2,
       description: "View your content performance",
@@ -227,68 +234,90 @@ export default async function DashboardPage() {
           </Card>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Posts</CardTitle>
-            <CardDescription>
-              Your most recently created posts
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {recentPosts.length === 0 ? (
-              <div className="text-center py-6">
-                <p className="text-muted-foreground mb-4">
-                  You haven&apos;t created any posts yet
-                </p>
-                <Button asChild>
-                  <Link href="/dashboard/posts/new">Create Your First Post</Link>
-                </Button>
-              </div>
-            ) : (
-              <div className="divide-y">
-                {recentPosts.map((post) => (
-                  <div key={post.id} className="py-4 flex justify-between items-center">
-                    <div>
-                      <Link
-                        href={`/dashboard/posts/edit/${post.id}`}
-                        className="font-medium hover:underline"
-                      >
-                        {post.title}
-                      </Link>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs text-muted-foreground">
-                          {new Date(post.createdAt).toLocaleDateString()}
-                        </span>
-                        <span
-                          className={`text-xs px-2 py-0.5 rounded-full ${
-                            post.status === "published"
-                              ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100"
-                              : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100"
-                          }`}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <Card className="md:col-span-1">
+            <CardHeader>
+              <CardTitle>Recent Posts</CardTitle>
+              <CardDescription>
+                Your most recently created posts
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {recentPosts.length === 0 ? (
+                <div className="text-center py-6">
+                  <p className="text-muted-foreground mb-4">
+                    You haven&apos;t created any posts yet
+                  </p>
+                  <Button asChild>
+                    <Link href="/dashboard/posts/new">Create Your First Post</Link>
+                  </Button>
+                </div>
+              ) : (
+                <div className="divide-y">
+                  {recentPosts.map((post) => (
+                    <div key={post.id} className="py-4 flex justify-between items-center">
+                      <div>
+                        <Link
+                          href={`/dashboard/posts/edit/${post.id}`}
+                          className="font-medium hover:underline"
                         >
-                          {post.status === "published" ? "Published" : "Draft"}
-                        </span>
+                          {post.title}
+                        </Link>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(post.createdAt).toLocaleDateString()}
+                          </span>
+                          <span
+                            className={`text-xs px-2 py-0.5 rounded-full ${
+                              post.status === "published"
+                                ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100"
+                                : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100"
+                            }`}
+                          >
+                            {post.status === "published" ? "Published" : "Draft"}
+                          </span>
+                        </div>
                       </div>
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href={`/dashboard/posts/edit/${post.id}`}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit
+                        </Link>
+                      </Button>
                     </div>
-                    <Button variant="outline" size="sm" asChild>
-                      <Link href={`/dashboard/posts/edit/${post.id}`}>
-                        <Edit className="h-4 w-4 mr-2" />
-                        Edit
-                      </Link>
-                    </Button>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+            {recentPosts.length > 0 && (
+              <CardFooter>
+                <Button variant="outline" asChild className="w-full">
+                  <Link href="/dashboard/posts">View All Posts</Link>
+                </Button>
+              </CardFooter>
             )}
-          </CardContent>
-          {recentPosts.length > 0 && (
+          </Card>
+
+          <Card className="md:col-span-1">
+            <CardHeader>
+              <CardTitle>Reading Recommendations</CardTitle>
+              <CardDescription>
+                Personalized content based on your reading history
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <RecommendedPosts limit={3} title="" description="" />
+            </CardContent>
             <CardFooter>
               <Button variant="outline" asChild className="w-full">
-                <Link href="/dashboard/posts">View All Posts</Link>
+                <Link href="/dashboard/reading-history">
+                  <BookOpen className="h-4 w-4 mr-2" />
+                  View Reading History
+                </Link>
               </Button>
             </CardFooter>
-          )}
-        </Card>
+          </Card>
+        </div>
       </div>
     </div>
   );

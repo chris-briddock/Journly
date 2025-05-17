@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { signIn, signOut, useSession } from "next-auth/react";
+import { NotificationDropdown } from "./NotificationDropdown";
 import { Button } from "../components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
 import {
@@ -19,19 +20,10 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "../components/ui/sheet";
+import { getInitials } from "@/lib/utils";
 
 export default function SimpleNavigation() {
   const { data: session } = useSession();
-
-  const getInitials = (name: string | null | undefined) => {
-    if (!name) return "U";
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .substring(0, 2);
-  };
 
   return (
     <nav className="border-b bg-background">
@@ -65,35 +57,38 @@ export default function SimpleNavigation() {
           {/* Auth Buttons / User Menu */}
           <div className="hidden md:flex md:items-center md:space-x-2">
             {session ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-                    <Avatar className="h-9 w-9">
-                      <AvatarImage src={session.user?.image || ""} alt={session.user?.name || "User"} />
-                      <AvatarFallback>{getInitials(session.user?.name)}</AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>
-                    {session.user?.name || "User"}
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href={`/profile/${session.user?.id}`}>Profile</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard/posts/new">Write Post</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    className="text-destructive focus:text-destructive"
-                    onClick={() => signOut()}
-                  >
-                    Sign Out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <>
+                <NotificationDropdown />
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+                      <Avatar className="h-9 w-9">
+                        <AvatarImage src={session.user?.image || ""} alt={session.user?.name || "User"} />
+                        <AvatarFallback>{getInitials(session.user?.name)}</AvatarFallback>
+                      </Avatar>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>
+                      {session.user?.name || "User"}
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link href={`/profile/${session.user?.id}`}>Profile</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/dashboard/posts/new">Write Post</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      className="text-destructive focus:text-destructive"
+                      onClick={() => signOut()}
+                    >
+                      Sign Out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
             ) : (
               <>
                 <Button variant="ghost" onClick={() => signIn()}>

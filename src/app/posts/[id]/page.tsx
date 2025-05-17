@@ -17,7 +17,10 @@ import { LikeButton } from "@/app/components/LikeButton";
 import { EmbedRenderer } from "@/app/components/EmbedRenderer";
 import { FeaturedImage } from "@/app/components/FeaturedImage";
 import { RelatedPostImage } from "@/app/components/RelatedPostImage";
+import { RecommendedPosts } from "@/app/components/RecommendedPosts";
 import SimpleNavigation from "@/app/components/SimpleNavigation";
+import { getInitials } from "@/lib/utils";
+import { ReadingProgressTracker } from "@/app/components/ReadingProgressTracker";
 
 interface Post {
   id: string;
@@ -71,7 +74,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 async function getPost(id: string): Promise<Post | null> {
   try {
     const response = await fetch(getApiUrl(`/api/posts/${id}/view`), {
-      next: { revalidate: 60 } // Revalidate every 60 seconds
+      next: { revalidate: 0 }
     });
 
     if (response.status === 404) {
@@ -92,7 +95,7 @@ async function getPost(id: string): Promise<Post | null> {
 async function getPostComments(postId: string): Promise<CommentType[]> {
   try {
     const response = await fetch(getApiUrl(`/api/posts/${postId}/comments`), {
-      next: { revalidate: 60 } // Revalidate every 60 seconds
+      next: { revalidate: 0 }
     });
 
     if (!response.ok) {
@@ -112,7 +115,7 @@ async function getRelatedPosts(postId: string, categoryIds: string[]): Promise<P
   try {
     const response = await fetch(
       getApiUrl(`/api/posts/${postId}/related?categoryIds=${categoryIds.join(',')}&limit=3`),
-      { next: { revalidate: 60 } } // Revalidate every 60 seconds
+      { next: { revalidate: 0 } }
     );
 
     if (!response.ok) {
@@ -143,16 +146,6 @@ export default async function PostPage({ params }: Props) {
   const categoryIds = post.categories.map((c: { category: { id: string } }) => c.category.id);
   const relatedPosts = await getRelatedPosts(post.id, categoryIds);
 
-  const getInitials = (name: string | null) => {
-    if (!name) return "U";
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .substring(0, 2);
-  };
-
   const formatDate = (date: Date) => {
     return format(new Date(date), "MMMM d, yyyy");
   };
@@ -160,6 +153,8 @@ export default async function PostPage({ params }: Props) {
   return (
     <div className="min-h-screen bg-background">
       <SimpleNavigation />
+      {/* Client-side component to track reading progress */}
+      <ReadingProgressTracker postId={post.id} />
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           {/* Post Header */}
@@ -301,6 +296,11 @@ export default async function PostPage({ params }: Props) {
               </div>
             </div>
           )}
+        </div>
+
+        {/* Recommended Posts based on reading history */}
+        <div className="max-w-7xl mx-auto mt-16">
+          <RecommendedPosts limit={3} />
         </div>
       </div>
     </div>

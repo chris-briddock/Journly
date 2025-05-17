@@ -26,7 +26,8 @@ async function getUserPosts(userId: string): Promise<Post[]> {
       (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
     const response = await fetch(`${baseUrl}/api/users/${userId}/posts?status=published`, {
       cache: 'no-store',
-      credentials: 'include'
+      credentials: 'include',
+      next: { revalidate: 0 }
     });
 
     if (!response.ok) {

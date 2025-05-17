@@ -29,7 +29,8 @@ async function getCategories(): Promise<Category[]> {
       credentials: 'include', // Include credentials (cookies) for authentication
       headers: {
         'Content-Type': 'application/json',
-      }
+      },
+      next: { revalidate: 0 }
     });
 
     console.log('Categories fetch response status:', response.status);

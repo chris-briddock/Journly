@@ -40,6 +40,7 @@ export function LikeButton({
     try {
       const response = await fetch(`/api/posts/${postId}/like`, {
         method: liked ? "DELETE" : "POST",
+        next: { revalidate: 0 }
       });
 
       const data = await response.json();

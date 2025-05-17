@@ -9,6 +9,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "../components/ui/card
 import { Badge } from "../components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
 import { cleanHtml } from "@/lib/cleanHtml";
+import { getInitials } from "@/lib/utils";
 
 interface Category {
   category: {
@@ -41,16 +42,6 @@ interface PostCardProps {
 };
 
 export default function PostCard({ post }: PostCardProps) {
-  const getInitials = (name: string | null) => {
-    if (!name) return "U";
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .substring(0, 2);
-  };
-
   const formatDate = (date: Date) => {
     return formatDistanceToNow(new Date(date), { addSuffix: true });
   };

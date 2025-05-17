@@ -24,7 +24,7 @@ export async function getPosts(options: {
   if (q) params.append('q', q);
 
   const response = await fetch(getApiUrl(`/api/posts?${params.toString()}`), {
-    next: { revalidate: 60 } // Revalidate every 60 seconds
+    next: { revalidate: 0 }
   });
 
   if (!response.ok) {
@@ -39,7 +39,7 @@ export async function getPosts(options: {
  */
 export async function getPost(id: string) {
   const response = await fetch(getApiUrl(`/api/posts/${id}`), {
-    next: { revalidate: 60 } // Revalidate every 60 seconds
+    next: { revalidate: 0 }
   });
 
   if (!response.ok) {
@@ -57,7 +57,7 @@ export async function getPost(id: string) {
  */
 export async function getCategories() {
   const response = await fetch(getApiUrl('/api/categories'), {
-    next: { revalidate: 60 } // Revalidate every 60 seconds
+    next: { revalidate: 0 }
   });
 
   if (!response.ok) {
@@ -72,7 +72,7 @@ export async function getCategories() {
  */
 export async function getCategory(id: string) {
   const response = await fetch(getApiUrl(`/api/categories/${id}`), {
-    next: { revalidate: 60 } // Revalidate every 60 seconds
+    next: { revalidate: 0 }
   });
 
   if (!response.ok) {
@@ -90,7 +90,7 @@ export async function getCategory(id: string) {
  */
 export async function getUser(id: string) {
   const response = await fetch(getApiUrl(`/api/users/${id}`), {
-    next: { revalidate: 60 } // Revalidate every 60 seconds
+    next: { revalidate: 0 }
   });
 
   if (!response.ok) {
@@ -115,7 +115,7 @@ export async function getUserPosts(userId: string, options: { limit?: number; pa
   params.append('status', 'published');
 
   const response = await fetch(getApiUrl(`/api/users/${userId}/posts?${params.toString()}`), {
-    next: { revalidate: 60 } // Revalidate every 60 seconds
+    next: { revalidate: 0 }
   });
 
   if (!response.ok) {
@@ -130,7 +130,7 @@ export async function getUserPosts(userId: string, options: { limit?: number; pa
  */
 export async function getRecentPosts(limit = 5) {
   const response = await fetch(getApiUrl(`/api/posts/recent?limit=${limit}`), {
-    next: { revalidate: 60 } // Revalidate every 60 seconds
+    next: { revalidate: 0 }
   });
 
   if (!response.ok) {
@@ -145,7 +145,7 @@ export async function getRecentPosts(limit = 5) {
  */
 export async function getPopularCategories(limit = 10) {
   const response = await fetch(getApiUrl(`/api/categories/popular?limit=${limit}`), {
-    next: { revalidate: 60 } // Revalidate every 60 seconds
+    next: { revalidate: 0 }
   });
 
   if (!response.ok) {
