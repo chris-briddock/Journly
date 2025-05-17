@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { FollowButton } from "@/app/components/FollowButton";
 import SimpleNavigation from "@/app/components/SimpleNavigation";
+import { getInitials } from "@/lib/utils";
 
 interface FollowingPageProps {
   params: Promise<{ id: string }>;
@@ -115,16 +116,6 @@ export default async function FollowingPage({ params, searchParams }: FollowingP
   if (!user) {
     notFound();
   }
-
-  const getInitials = (name: string | null) => {
-    if (!name) return "U";
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .substring(0, 2);
-  };
 
   return (
     <div className="min-h-screen bg-background">

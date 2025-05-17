@@ -3,7 +3,7 @@
 import { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FileText, Tag, BarChart2, Settings, Home } from "lucide-react";
+import { FileText, Tag, BarChart2, Settings, Home, BookOpen } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/app/components/ui/button";
@@ -30,6 +30,11 @@ function DashboardNav() {
       title: "Categories",
       href: "/dashboard/categories",
       icon: Tag,
+    },
+    {
+      title: "Reading History",
+      href: "/dashboard/reading-history",
+      icon: BookOpen,
     },
     {
       title: "Analytics",

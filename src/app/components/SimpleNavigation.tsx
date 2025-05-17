@@ -20,19 +20,10 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "../components/ui/sheet";
+import { getInitials } from "@/lib/utils";
 
 export default function SimpleNavigation() {
   const { data: session } = useSession();
-
-  const getInitials = (name: string | null | undefined) => {
-    if (!name) return "U";
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .substring(0, 2);
-  };
 
   return (
     <nav className="border-b bg-background">

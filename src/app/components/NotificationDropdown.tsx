@@ -17,6 +17,7 @@ import { Button } from "@/app/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar";
 import { Badge } from "@/app/components/ui/badge";
 import { Skeleton } from "@/app/components/ui/skeleton";
+import { getInitials } from "@/lib/utils";
 
 interface Notification {
   id: string;
@@ -203,16 +204,6 @@ export function NotificationDropdown() {
       }
     }
   }, [isOpen, unreadCount, notifications, markAsRead]);
-
-  const getInitials = (name: string | null) => {
-    if (!name) return "U";
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .substring(0, 2);
-  };
 
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>

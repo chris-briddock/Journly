@@ -27,8 +27,27 @@ export async function GET(
     const status = searchParams.get('status');
     const isDashboardRequest = searchParams.get('dashboard') === 'true';
     const query = searchParams.get('q');
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
+
+    // Ensure page is a valid number
+    let page = 1;
+    const pageParam = searchParams.get('page');
+    if (pageParam) {
+      const parsedPage = parseInt(pageParam);
+      if (!isNaN(parsedPage) && parsedPage > 0) {
+        page = parsedPage;
+      }
+    }
+
+    // Ensure limit is a valid number
+    let limit = 10;
+    const limitParam = searchParams.get('limit');
+    if (limitParam) {
+      const parsedLimit = parseInt(limitParam);
+      if (!isNaN(parsedLimit) && parsedLimit > 0) {
+        limit = parsedLimit;
+      }
+    }
+
     const skip = (page - 1) * limit;
 
     // Build the where clause

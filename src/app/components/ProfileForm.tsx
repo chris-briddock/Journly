@@ -19,6 +19,7 @@ import {
   FormMessage,
 } from "../components/ui/form";
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
+import { getInitials } from "@/lib/utils";
 
 type ProfileFormProps = {
   initialData: {
@@ -83,15 +84,6 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
     }
   };
 
-  const getInitials = (name: string) => {
-    if (!name) return "U";
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .substring(0, 2);
-  };
 
   return (
     <div className="space-y-6">

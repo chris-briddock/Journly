@@ -8,7 +8,7 @@ import { Menu } from "lucide-react";
 
 import { NotificationDropdown } from "./NotificationDropdown";
 
-import { cn } from "@/lib/utils";
+import { cn, getInitials } from "@/lib/utils";
 import { Button } from "../components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
 import {
@@ -31,6 +31,7 @@ export default function Navigation() {
   const { data: session } = useSession();
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const userInitials = getInitials(session?.user?.name);
 
   const navItems = [
     { href: "/", label: "Home" },
@@ -53,16 +54,6 @@ export default function Navigation() {
   };
 
   const userNavItems = getUserNavItems();
-
-  const getInitials = (name: string | null | undefined) => {
-    if (!name) return "U";
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .substring(0, 2);
-  };
 
   return (
     <nav className="border-b bg-background">
@@ -113,7 +104,7 @@ export default function Navigation() {
                     <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                       <Avatar className="h-9 w-9">
                         <AvatarImage src={session.user?.image || ""} alt={session.user?.name || "User"} />
-                        <AvatarFallback>{getInitials(session.user?.name)}</AvatarFallback>
+                        <AvatarFallback>{userInitials}</AvatarFallback>
                       </Avatar>
                     </Button>
                   </DropdownMenuTrigger>

@@ -31,6 +31,7 @@ import {
   AlertDialogTrigger,
 } from "@/app/components/ui/alert-dialog";
 import { CommentForm } from "@/app/components/CommentForm";
+import { getInitials } from "@/lib/utils";
 
 export type CommentType = {
   id: string;
@@ -214,16 +215,6 @@ export function CommentList({ postId, comments, onCommentAdded }: CommentListPro
     } finally {
       setIsLiking((prev) => ({ ...prev, [commentId]: false }));
     }
-  };
-
-  const getInitials = (name: string | null) => {
-    if (!name) return "U";
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .substring(0, 2);
   };
 
   const renderComment = (comment: CommentType, isReply = false) => {

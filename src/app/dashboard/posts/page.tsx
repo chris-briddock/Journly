@@ -5,7 +5,7 @@ import type { Metadata } from "next/types";
 import { auth } from "@/lib/auth";
 import { DashboardHeader } from "@/app/components/dashboard/DashboardHeader";
 import { DashboardShell } from "@/app/components/dashboard/DashboardShell";
-import { PostsTableClient } from "@/app/components/dashboard/PostsTableClient";
+import { PostsTableClientNew } from "@/app/components/dashboard/PostsTableClientNew";
 import { PostsTableSkeleton } from "@/app/components/dashboard/PostsTableSkeleton";
 import SimpleNavigation from "@/app/components/SimpleNavigation";
 
@@ -81,26 +81,6 @@ async function getPosts(userId: string, page = 1, status?: string, query?: strin
 }
 
 
-
-// Server component wrapper for the client component
-function PostsTable({
-  posts,
-  pagination,
-  searchParams
-}: {
-  posts: Post[];
-  pagination: PostsResponse['pagination'];
-  searchParams: SearchParams;
-}) {
-  return (
-    <PostsTableClient
-      posts={posts}
-      pagination={pagination}
-      searchParams={searchParams}
-    />
-  );
-}
-
 type SearchParams = {
   page?: string;
   status?: string;
@@ -120,7 +100,16 @@ export default async function PostsPage({ searchParams }: Props) {
 
   const userId = session.user.id as string;
   const params = await searchParams;
-  const page = params.page ? parseInt(params.page) : 1;
+
+  // Ensure page is a valid number
+  let page = 1;
+  if (params.page) {
+    const parsedPage = parseInt(params.page);
+    if (!isNaN(parsedPage) && parsedPage > 0) {
+      page = parsedPage;
+    }
+  }
+
   const status = params.status || undefined;
   const query = params.q || undefined;
 
@@ -136,10 +125,9 @@ export default async function PostsPage({ searchParams }: Props) {
         />
 
         <Suspense fallback={<PostsTableSkeleton />}>
-          <PostsTable
+          <PostsTableClientNew
             posts={postsData.posts}
             pagination={postsData.pagination}
-            searchParams={params}
           />
         </Suspense>
       </DashboardShell>

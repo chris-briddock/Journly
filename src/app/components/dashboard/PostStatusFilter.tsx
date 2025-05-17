@@ -21,19 +21,23 @@ export function PostStatusFilter() {
 
   const handleStatusChange = (value: string) => {
     // Create a new URLSearchParams instance
-    const params = new URLSearchParams(searchParams);
+    const params = new URLSearchParams();
 
     // Update the status parameter
-    if (value === "all") {
-      params.delete("status");
-    } else {
+    if (value !== "all") {
       params.set("status", value);
     }
 
     // Reset to page 1 when changing filters
     params.set("page", "1");
 
-    // Navigate to the new URL
+    // Preserve search query if it exists
+    const query = searchParams.get("q");
+    if (query) {
+      params.set("q", query);
+    }
+
+    // Navigate to the new URL with a hard navigation
     router.push(`${pathname}?${params.toString()}`);
   };
 

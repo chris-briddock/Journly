@@ -190,8 +190,10 @@ model Notification {
 model ReadingHistory {
   id          String   @id @default(cuid())
   progress    Float    @default(0) // Reading progress (0-100%)
+  completed   Boolean  @default(false) // Whether the user has completed reading the post
   lastRead    DateTime @default(now())
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   // Relations
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -200,6 +202,9 @@ model ReadingHistory {
   postId      String
 
   @@unique([userId, postId])
+  @@index([userId])
+  @@index([postId])
+  @@index([lastRead])
 }
 
 // UserNotificationPreferences model

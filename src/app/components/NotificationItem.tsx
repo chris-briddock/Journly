@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar";
 import { Button } from "@/app/components/ui/button";
+import { getInitials } from "@/lib/utils";
 
 interface NotificationItemProps {
   notification: {
@@ -37,16 +38,6 @@ export function NotificationItem({ notification }: NotificationItemProps) {
   const router = useRouter();
   const [, setIsLoading] = useState(false);
   const [isRead, setIsRead] = useState(notification.read);
-
-  const getInitials = (name: string | null) => {
-    if (!name) return "U";
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .substring(0, 2);
-  };
 
   const handleMarkAsRead = async () => {
     if (isRead) return;

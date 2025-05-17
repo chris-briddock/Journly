@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar"
 import { Button } from "@/app/components/ui/button";
 import { Textarea } from "@/app/components/ui/textarea";
 import { CommentMentionList } from "./CommentMentionList";
+import { getInitials } from "@/lib/utils";
 
 
 type CommentFormProps = {
@@ -26,6 +27,7 @@ export function CommentForm({ postId, parentId = null, onCommentSubmitted }: Com
   const [mentionResults, setMentionResults] = useState<Array<{id: string; label: string; avatar: string | null}>>([]);
   const [cursorPosition, setCursorPosition] = useState<{top: number; left: number} | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const userInitials = getInitials(session?.user?.name);
 
   // Handle mention search
   useEffect(() => {
@@ -198,15 +200,7 @@ export function CommentForm({ postId, parentId = null, onCommentSubmitted }: Com
     }
   };
 
-  const getInitials = (name: string | null | undefined) => {
-    if (!name) return "U";
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .substring(0, 2);
-  };
+  
 
   if (!session) {
     return null;
@@ -217,7 +211,7 @@ export function CommentForm({ postId, parentId = null, onCommentSubmitted }: Com
       <div className="flex gap-4">
         <Avatar className="h-10 w-10">
           <AvatarImage src={session.user?.image || undefined} alt={session.user?.name || "User"} />
-          <AvatarFallback>{getInitials(session.user?.name)}</AvatarFallback>
+          <AvatarFallback>{userInitials}</AvatarFallback>
         </Avatar>
         <div className="flex-1 relative">
           <Textarea
