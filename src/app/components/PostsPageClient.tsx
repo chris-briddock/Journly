@@ -23,7 +23,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/app/components/ui/select";
-import SimpleNavigation from "./SimpleNavigation";
 
 interface Post {
   id: string;
@@ -87,7 +86,6 @@ export default function PostsPageClient({
 
   return (
     <div className="min-h-screen bg-background">
-      <SimpleNavigation />
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row gap-8">

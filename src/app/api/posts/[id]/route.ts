@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { calculateReadingTime } from '@/lib/readingTime';
+import { createPostUpdateNotification } from '@/lib/notifications';
+import { processPostMentions } from '@/lib/mentions';
 
 // GET /api/posts/[id] - Get a specific post
 export async function GET(
@@ -81,7 +83,21 @@ export async function PUT(
       );
     }
 
-    const { title, content, excerpt, status, featuredImage, categoryIds } = await request.json();
+    const {
+      title,
+      content,
+      excerpt,
+      status,
+      featuredImage,
+      categoryIds,
+      // SEO fields
+      seoTitle,
+      seoDescription,
+      seoKeywords,
+      seoCanonicalUrl,
+      ogImage,
+      noIndex
+    } = await request.json();
 
     // Update the post with transaction to handle category changes
     const updatedPost = await prisma.$transaction(async (tx) => {
@@ -98,6 +114,13 @@ export async function PUT(
           status,
           featuredImage,
           readingTime,
+          // SEO fields
+          seoTitle,
+          seoDescription,
+          seoKeywords,
+          seoCanonicalUrl,
+          ogImage,
+          noIndex,
         },
       });
 
@@ -172,6 +195,23 @@ export async function PUT(
 
       return updated;
     });
+
+    // Process mentions in the post content if it's published
+    if (status === 'published') {
+      // Process mentions and create notifications
+      await processPostMentions(
+        id,
+        content,
+        session.user.id as string,
+        title
+      );
+
+      // Create post update notification
+      await createPostUpdateNotification({
+        postId: id,
+        actionUserId: session.user.id as string,
+      });
+    }
 
     return NextResponse.json(updatedPost);
   } catch (error) {

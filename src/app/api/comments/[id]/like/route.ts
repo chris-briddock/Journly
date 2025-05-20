@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { auth } from '@/lib/auth';
+import { createCommentLikeNotification } from '@/lib/notifications';
 
 // POST /api/comments/[id]/like - Like or unlike a comment
 export async function POST(
@@ -70,6 +71,12 @@ export async function POST(
       await prisma.comment.update({
         where: { id },
         data: { likeCount: { increment: 1 } },
+      });
+
+      // Create notification for the comment author
+      await createCommentLikeNotification({
+        commentId: id,
+        actionUserId: userId,
       });
 
       return NextResponse.json({ liked: true });

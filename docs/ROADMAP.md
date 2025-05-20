@@ -61,24 +61,34 @@ Filter by categories and date
 
 ## Phase 2
 
-Advanced Features:
-User Engagement
+### Advanced Features
+
+#### User Engagement
+
 Notification system for likes, comments, follows
 User activity feed
 Reading history and recommendations
-Content Monetization
+
+#### Content Monetization
+
 Premium content options
 Subscription tiers
 Payment integration (Stripe)
-Advanced Editor
+
+#### Advanced Editor
+
 More formatting options
 SEO optimization tools
 Scheduled publishing
-Analytics
+
+#### Analytics
+
 Post performance metrics
 User engagement statistics
 Reading patterns analysis
-Community Features
+
+#### Community Features
+
 User groups based on interests
 Collaborative writing
 Featured posts and curated collections
@@ -104,4 +114,4 @@ Reporting system
 Enterprise Features
 Team accounts
 Organization profiles
-Advanced analytics and reporting - here is my plan, I now need to finish the implementation of the posts, we need the ability to view and create posts.
+Advanced analytics and reporting.

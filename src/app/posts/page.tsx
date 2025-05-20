@@ -1,4 +1,5 @@
-import { getPosts as getPostsApi, getCategories as getCategoriesApi } from "@/lib/api";
+import { getPosts as getPostsApi, } from "@/lib/services/getPosts";
+import { getCategories as getCategoriesApi } from "@/lib/services/getCategories";
 import PostsPageClient from "../components/PostsPageClient";
 
 type SearchParams = {
@@ -19,7 +20,7 @@ async function getPosts(searchParams: SearchParams) {
 }
 
 async function getCategories() {
-  return await getCategoriesApi();
+  return await getCategoriesApi(false);
 }
 
 export default async function PostsPage({

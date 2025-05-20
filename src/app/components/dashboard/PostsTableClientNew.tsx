@@ -145,6 +145,7 @@ export function PostsTableClientNew({
                 <SelectItem value="all">All Posts</SelectItem>
                 <SelectItem value="published">Published</SelectItem>
                 <SelectItem value="draft">Drafts</SelectItem>
+                <SelectItem value="scheduled">Scheduled</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -231,8 +232,21 @@ export function PostsTableClientNew({
                   </Link>
                 </div>
                 <div className="col-span-1 flex justify-center">
-                  <Badge variant={post.status === "published" ? "success" : "secondary"}>
-                    {post.status === "published" ? "Published" : "Draft"}
+                  <Badge
+                    variant={
+                      post.status === "published"
+                        ? "success"
+                        : post.status === "scheduled"
+                          ? "warning"
+                          : "secondary"
+                    }
+                  >
+                    {post.status === "published"
+                      ? "Published"
+                      : post.status === "scheduled"
+                        ? "Scheduled"
+                        : "Draft"
+                    }
                   </Badge>
                 </div>
                 <div className="col-span-1 text-center">{post.viewCount}</div>

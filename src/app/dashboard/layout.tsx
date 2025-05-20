@@ -1,9 +1,16 @@
-"use client";
+'use client'
 
 import { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FileText, Tag, BarChart2, Settings, Home, BookOpen } from "lucide-react";
+import {
+  FileText,
+  Tag,
+  BarChart2,
+  Settings,
+  Home,
+  BookOpen,
+} from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/app/components/ui/button";
@@ -72,32 +79,33 @@ function DashboardNav() {
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-10 border-b bg-background">
-        <div className="container mx-auto px-4 max-w-7xl flex h-16 items-center justify-between py-4">
-          <div className="flex items-center gap-4">
-            <Link href="/" className="text-xl font-bold font-serif">
-              Journly
-            </Link>
-            <span className="text-muted-foreground">Dashboard</span>
+      <div className="flex min-h-screen flex-col">
+        <header className="sticky top-0 z-10 border-b bg-background">
+          <div className="container mx-auto px-4 max-w-7xl flex h-16 items-center justify-between py-4">
+            <div className="flex items-center gap-4">
+              <Link href="/" className="text-xl font-bold font-serif">
+                Journly
+              </Link>
+              <span className="text-muted-foreground">Dashboard</span>
+            </div>
+            <nav className="flex items-center gap-4">
+              <Button variant="outline" asChild>
+                <Link href="/">Back to Site</Link>
+              </Button>
+            </nav>
           </div>
-          <nav className="flex items-center gap-4">
-            <Button variant="outline" asChild>
-              <Link href="/">Back to Site</Link>
-            </Button>
-          </nav>
+        </header>
+        <div className="container mx-auto px-4 max-w-7xl flex-1 items-start md:grid md:grid-cols-[220px_1fr] md:gap-6 lg:grid-cols-[240px_1fr] lg:gap-10">
+          <aside className="fixed top-20 z-30 hidden h-[calc(100vh-5rem)] w-full shrink-0 overflow-y-auto border-r md:sticky md:block">
+            <div className="py-6 pr-6 pl-4">
+              <DashboardNav />
+            </div>
+          </aside>
+
+          <main className="flex w-full flex-col overflow-hidden py-6">
+            {children}
+          </main>
         </div>
-      </header>
-      <div className="container mx-auto px-4 max-w-7xl flex-1 items-start md:grid md:grid-cols-[220px_1fr] md:gap-6 lg:grid-cols-[240px_1fr] lg:gap-10">
-        <aside className="fixed top-20 z-30 hidden h-[calc(100vh-5rem)] w-full shrink-0 overflow-y-auto border-r md:sticky md:block">
-          <div className="py-6 pr-6 pl-4">
-            <DashboardNav />
-          </div>
-        </aside>
-        <main className="flex w-full flex-col overflow-hidden py-6">
-          {children}
-        </main>
       </div>
-    </div>
   );
 }

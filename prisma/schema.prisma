@@ -53,7 +53,8 @@ model Post {
   title         String
   content       String
   excerpt       String?
-  status        String    @default("draft") // draft, published
+  status        String    @default("draft") // draft, published, scheduled
+  scheduledPublishAt DateTime?
   featuredImage String?
   readingTime   Int       @default(1) // Reading time in minutes
   likeCount     Int       @default(0)
@@ -62,6 +63,14 @@ model Post {
   publishedAt   DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+
+  // SEO fields
+  seoTitle      String?   // Custom SEO title, defaults to post title if not set
+  seoDescription String?  // Custom meta description, defaults to excerpt if not set
+  seoKeywords   String?   // Meta keywords (comma-separated)
+  seoCanonicalUrl String? // Canonical URL to prevent duplicate content issues
+  ogImage       String?   // Custom Open Graph image URL for social sharing
+  noIndex       Boolean   @default(false) // Whether search engines should index this post
 
   // Relations
   author        User      @relation(fields: [authorId], references: [id], onDelete: Cascade)

@@ -18,36 +18,9 @@ import { EmbedRenderer } from "@/app/components/EmbedRenderer";
 import { FeaturedImage } from "@/app/components/FeaturedImage";
 import { RelatedPostImage } from "@/app/components/RelatedPostImage";
 import { RecommendedPosts } from "@/app/components/RecommendedPosts";
-import SimpleNavigation from "@/app/components/SimpleNavigation";
 import { getInitials } from "@/lib/utils";
 import { ReadingProgressTracker } from "@/app/components/ReadingProgressTracker";
-
-interface Post {
-  id: string;
-  title: string;
-  content: string;
-  excerpt: string | null;
-  featuredImage: string | null;
-  status: string;
-  readingTime: number;
-  viewCount: number;
-  likeCount: number;
-  commentCount: number;
-  publishedAt: Date | null;
-  createdAt: Date;
-  author: {
-    id: string;
-    name: string | null;
-    image: string | null;
-    bio: string | null;
-  };
-  categories: {
-    category: {
-      id: string;
-      name: string;
-    };
-  }[];
-}
+import { Post } from "@/types/models/post";
 
 type Props = {
   params: Promise<{
@@ -65,10 +38,39 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
   }
 
-  return {
-    title: `${post.title} - Journly`,
-    description: post.excerpt || undefined,
+  // Use SEO fields if available, otherwise use post fields
+  const title = post.seoTitle || post.title;
+  const description = post.seoDescription || post.excerpt || undefined;
+  const ogImage = post.ogImage || post.featuredImage || undefined;
+
+  const metadata: Metadata = {
+    title: `${title} - Journly`,
+    description,
+    keywords: post.seoKeywords || undefined,
+    openGraph: {
+      title: title,
+      description: description,
+      type: 'article',
+      url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/posts/${post.id}`,
+      images: ogImage ? [{ url: ogImage }] : undefined,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: title,
+      description: description,
+      images: ogImage ? [ogImage] : undefined,
+    },
+    robots: post.noIndex ? { index: false, follow: false } : { index: true, follow: true },
   };
+
+  // Add canonical URL if available
+  if (post.seoCanonicalUrl) {
+    metadata.alternates = {
+      canonical: post.seoCanonicalUrl,
+    };
+  }
+
+  return metadata;
 }
 
 async function getPost(id: string): Promise<Post | null> {
@@ -152,7 +154,6 @@ export default async function PostPage({ params }: Props) {
 
   return (
     <div className="min-h-screen bg-background">
-      <SimpleNavigation />
       {/* Client-side component to track reading progress */}
       <ReadingProgressTracker postId={post.id} />
       <div className="container mx-auto px-4 py-8">

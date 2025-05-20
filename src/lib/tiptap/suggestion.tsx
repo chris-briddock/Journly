@@ -2,7 +2,7 @@ import { ReactRenderer } from "@tiptap/react";
 import tippy, { Instance, Props } from "tippy.js";
 import { MentionList, MentionListRef } from "@/app/components/editor/MentionList";
 import { SuggestionKeyDownProps, SuggestionProps } from "@tiptap/suggestion";
-import { searchUsers } from "@/lib/api";
+import { searchUsers } from "../services/getSearchUsers";
 
 // User type definition for mentions
 export interface MentionUser {

@@ -21,6 +21,7 @@ export async function GET() {
       totalPosts,
       publishedPosts,
       draftPosts,
+      scheduledPosts,
       totalViews,
       totalLikes,
       totalComments,
@@ -33,6 +34,9 @@ export async function GET() {
       }),
       prisma.post.count({
         where: { authorId: userId, status: "draft" },
+      }),
+      prisma.post.count({
+        where: { authorId: userId, status: "scheduled" },
       }),
       prisma.post.aggregate({
         where: { authorId: userId },
@@ -58,6 +62,7 @@ export async function GET() {
       totalPosts,
       publishedPosts,
       draftPosts,
+      scheduledPosts,
       totalViews: totalViews._sum.viewCount || 0,
       totalLikes: totalLikes._sum.likeCount || 0,
       totalComments: totalComments._sum.commentCount || 0,

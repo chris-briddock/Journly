@@ -7,7 +7,6 @@ import { DashboardHeader } from "@/app/components/dashboard/DashboardHeader";
 import { DashboardShell } from "@/app/components/dashboard/DashboardShell";
 import { PostsTableClientNew } from "@/app/components/dashboard/PostsTableClientNew";
 import { PostsTableSkeleton } from "@/app/components/dashboard/PostsTableSkeleton";
-import SimpleNavigation from "@/app/components/SimpleNavigation";
 
 export const metadata: Metadata = {
   title: "Posts - Journly Dashboard",
@@ -118,7 +117,6 @@ export default async function PostsPage({ searchParams }: Props) {
 
   return (
     <div className="min-h-screen bg-background">
-      <SimpleNavigation />
       <DashboardShell>
         <DashboardHeader
           heading="Posts"

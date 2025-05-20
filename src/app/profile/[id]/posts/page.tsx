@@ -1,8 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
-
-import prisma from "@/lib/prisma";
 import { Button } from "@/app/components/ui/button";
 import PostCard from "@/app/components/PostCard";
 import {
@@ -13,79 +11,15 @@ import {
   PaginationNext,
   PaginationPrevious
 } from "@/app/components/ui/pagination";
-import SimpleNavigation from "@/app/components/SimpleNavigation";
+import { getUser } from "@/lib/services/getUser";
+import { getUserPosts } from "@/lib/services/getUserPosts";
+import { Post } from "@/types/models/post";
 
 type SearchParams = {
   page?: string;
 };
 
-async function getUser(id: string) {
-  const user = await prisma.user.findUnique({
-    where: { id },
-    select: {
-      id: true,
-      name: true,
-      image: true,
-    },
-  });
-
-  if (!user) {
-    return null;
-  }
-
-  return user;
-}
-
-async function getUserPosts(userId: string, page: number) {
-  const limit = 12;
-  const skip = (page - 1) * limit;
-
-  const [posts, total] = await Promise.all([
-    prisma.post.findMany({
-      where: {
-        authorId: userId,
-        status: "published",
-      },
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            image: true,
-          },
-        },
-        categories: {
-          include: {
-            category: true,
-          },
-        },
-      },
-      orderBy: {
-        publishedAt: "desc",
-      },
-      skip,
-      take: limit,
-    }),
-    prisma.post.count({
-      where: {
-        authorId: userId,
-        status: "published",
-      },
-    }),
-  ]);
-
-  const totalPages = Math.ceil(total / limit);
-
-  return {
-    posts,
-    pagination: {
-      total,
-      page,
-      limit,
-      totalPages,
-    },
-  };
-}
+// Use the imported service functions instead of direct Prisma calls
 
 export default async function UserPostsPage({
   params,
@@ -99,10 +33,12 @@ export default async function UserPostsPage({
 
   const page = Number(searchParamsValue.page) || 1;
 
-  const [user, { posts, pagination }] = await Promise.all([
+  const [user, postsData] = await Promise.all([
     getUser(id),
-    getUserPosts(id, page),
+    getUserPosts(id, { page, limit: 12 }),
   ]);
+
+  const { posts, pagination } = postsData;
 
   if (!user) {
     notFound();
@@ -110,7 +46,6 @@ export default async function UserPostsPage({
 
   return (
     <div className="min-h-screen bg-background">
-      <SimpleNavigation />
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
           <div className="mb-8">
@@ -132,7 +67,7 @@ export default async function UserPostsPage({
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {posts.map((post) => (
+              {posts.map((post: Post) => (
                 <PostCard key={post.id} post={post} />
               ))}
             </div>

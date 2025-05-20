@@ -115,7 +115,21 @@ export async function POST(request: NextRequest) {
 
     console.log('User verified in database:', userExists);
 
-    const { title, content, excerpt, status, featuredImage, categoryIds } = await request.json();
+    const {
+      title,
+      content,
+      excerpt,
+      status,
+      featuredImage,
+      categoryIds,
+      // SEO fields
+      seoTitle,
+      seoDescription,
+      seoKeywords,
+      seoCanonicalUrl,
+      ogImage,
+      noIndex
+    } = await request.json();
 
     // Create the post
     const post = await prisma.$transaction(async (tx) => {
@@ -132,6 +146,13 @@ export async function POST(request: NextRequest) {
           featuredImage,
           readingTime,
           authorId: userId,
+          // SEO fields
+          seoTitle,
+          seoDescription,
+          seoKeywords,
+          seoCanonicalUrl,
+          ogImage,
+          noIndex: noIndex || false,
         },
       });
 

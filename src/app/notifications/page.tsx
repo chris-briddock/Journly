@@ -2,29 +2,9 @@ import type { Metadata } from "next/types";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { Notification } from "@/types/models/notification";
 
-interface Notification {
-  id: string;
-  type: string;
-  read: boolean;
-  message: string;
-  link: string | null;
-  createdAt: Date;
-  actionUser: {
-    id: string;
-    name: string | null;
-    image: string | null;
-  } | null;
-  post: {
-    id: string;
-    title: string;
-  } | null;
-  comment: {
-    id: string;
-    content: string;
-    postId: string;
-  } | null;
-}
+
 
 import { DashboardShell } from "@/app/components/dashboard/DashboardShell";
 import { Button } from "@/app/components/ui/button";
@@ -32,7 +12,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/ca
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/components/ui/tabs";
 import { MarkAllReadButton } from "../components/MarkAllReadButton";
 import { NotificationItem } from "../components/NotificationItem";
-import SimpleNavigation from "../components/SimpleNavigation";
 
 export const metadata: Metadata = {
   title: "Notifications - Journly",
@@ -124,7 +103,6 @@ export default async function NotificationsPage({ searchParams }: NotificationsP
 
   return (
     <>
-      <SimpleNavigation />
     <DashboardShell>
       <div className="flex items-center justify-between">
         <div>

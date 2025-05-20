@@ -26,7 +26,26 @@ export async function GET(
           },
         },
       },
+      // Include SEO fields
     });
+
+    // Add SEO fields to the post
+    if (post) {
+      const seoData = await prisma.post.findUnique({
+        where: { id },
+        select: {
+          seoTitle: true,
+          seoDescription: true,
+          seoKeywords: true,
+          seoCanonicalUrl: true,
+          ogImage: true,
+          noIndex: true,
+        },
+      });
+
+      // Merge SEO data with post
+      Object.assign(post, seoData);
+    }
 
     if (!post || post.status !== "published") {
       return NextResponse.json(

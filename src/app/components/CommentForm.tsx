@@ -4,13 +4,13 @@ import { useState, useRef, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { Loader2, AtSign } from "lucide-react";
 import { toast } from "sonner";
-import { searchUsers } from "@/lib/api";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar";
 import { Button } from "@/app/components/ui/button";
 import { Textarea } from "@/app/components/ui/textarea";
 import { CommentMentionList } from "./CommentMentionList";
 import { getInitials } from "@/lib/utils";
+import { searchUsers } from "@/lib/services/getSearchUsers";
 
 
 type CommentFormProps = {

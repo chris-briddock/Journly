@@ -1,6 +1,6 @@
 import prisma from '@/lib/prisma';
 
-type NotificationType = 'like' | 'comment' | 'follow' | 'mention' | 'post_update' | 'comment_reply' | 'system' | 'new_post';
+type NotificationType = 'like' | 'comment' | 'follow' | 'mention' | 'post_update' | 'comment_reply' | 'system' | 'new_post' | 'comment_like';
 
 interface CreateNotificationParams {
   type: NotificationType;
@@ -43,6 +43,7 @@ export async function createNotification({
     if (preferences) {
       if (
         (type === 'like' && !preferences.newLikes) ||
+        (type === 'comment_like' && !preferences.newLikes) ||
         (type === 'comment' && !preferences.newComments) ||
         (type === 'follow' && !preferences.newFollowers) ||
         (type === 'post_update' && !preferences.postUpdates) ||
@@ -69,7 +70,7 @@ export async function createNotification({
 
     // Check for similar recent notifications to group them
     let finalGroupId = groupId;
-    if (!finalGroupId && (type === 'like' || type === 'follow')) {
+    if (!finalGroupId && (type === 'like' || type === 'follow' || type === 'comment_like')) {
       // For likes and follows, try to group by post or user
       const timeWindow = new Date();
       timeWindow.setHours(timeWindow.getHours() - 24); // Group within 24 hours
@@ -79,6 +80,7 @@ export async function createNotification({
           userId,
           type,
           postId: postId || undefined,
+          commentId: commentId || undefined,
           createdAt: { gte: timeWindow },
           read: false,
         },
@@ -171,6 +173,66 @@ export async function createLikeNotification({
     });
   } catch (error) {
     console.error('Error creating like notification:', error);
+    return null;
+  }
+}
+
+/**
+ * Create a comment like notification
+ */
+export async function createCommentLikeNotification({
+  commentId,
+  actionUserId,
+}: {
+  commentId: string;
+  actionUserId: string;
+}) {
+  try {
+    // Get comment, post, and author info
+    const comment = await prisma.comment.findUnique({
+      where: { id: commentId },
+      select: {
+        id: true,
+        authorId: true,
+        postId: true,
+        post: {
+          select: {
+            title: true,
+          },
+        },
+      },
+    });
+
+    if (!comment) {
+      throw new Error('Comment not found');
+    }
+
+    // Get action user name
+    const actionUser = await prisma.user.findUnique({
+      where: { id: actionUserId },
+      select: { name: true },
+    });
+
+    if (!actionUser) {
+      throw new Error('Action user not found');
+    }
+
+    const actionUserName = actionUser.name || 'Someone';
+    const postTitle = comment.post.title.length > 50
+      ? `${comment.post.title.substring(0, 50)}...`
+      : comment.post.title;
+
+    return createNotification({
+      type: 'comment_like',
+      userId: comment.authorId,
+      actionUserId,
+      message: `${actionUserName} liked your comment on "${postTitle}"`,
+      link: `/posts/${comment.postId}#comment-${commentId}`,
+      postId: comment.postId,
+      commentId,
+    });
+  } catch (error) {
+    console.error('Error creating comment like notification:', error);
     return null;
   }
 }
@@ -381,16 +443,41 @@ export async function createPostUpdateNotification({
       ? `${post.title.substring(0, 50)}...`
       : post.title;
 
-    // TODO: In a real implementation, we would find all users who follow this post
-    // For now, we'll just notify the post author
-    return createNotification({
-      type: 'post_update',
-      userId: post.authorId,
-      actionUserId,
-      message: `${actionUserName} updated the post "${postTitle}"`,
-      link: `/posts/${postId}`,
-      postId,
+    // Get all followers of the author
+    const followers = await prisma.follow.findMany({
+      where: { followingId: post.authorId },
+      select: { followerId: true },
     });
+
+    // Create notifications for each follower
+    const notificationPromises = [
+      // Always notify the post author if they didn't make the update themselves
+      post.authorId !== actionUserId ?
+        createNotification({
+          type: 'post_update',
+          userId: post.authorId,
+          actionUserId,
+          message: `${actionUserName} updated the post "${postTitle}"`,
+          link: `/posts/${postId}`,
+          postId,
+        }) : null,
+
+      // Notify all followers
+      ...followers.map(follower =>
+        follower.followerId !== actionUserId ?
+          createNotification({
+            type: 'post_update',
+            userId: follower.followerId,
+            actionUserId,
+            message: `${actionUserName} updated the post "${postTitle}"`,
+            link: `/posts/${postId}`,
+            postId,
+          }) : null
+      )
+    ].filter(Boolean); // Filter out null values
+
+    await Promise.all(notificationPromises);
+    return true;
   } catch (error) {
     console.error('Error creating post update notification:', error);
     return null;
@@ -455,9 +542,13 @@ export async function createMentionNotification({
 export async function createNewPostNotification({
   postId,
   authorId,
+  scheduled = false,
+  scheduledDate,
 }: {
   postId: string;
   authorId: string;
+  scheduled?: boolean;
+  scheduledDate?: Date;
 }) {
   try {
     // Get post details
@@ -497,16 +588,29 @@ export async function createNewPostNotification({
       : post.title;
 
     // Create notifications for each follower
-    const notificationPromises = followers.map(follower =>
-      createNotification({
+    const notificationPromises = followers.map(follower => {
+      // Create different message based on whether the post is scheduled
+      let message = `${authorName} published a new post: "${postTitle}"`;
+
+      if (scheduled && scheduledDate) {
+        const formattedDate = scheduledDate.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+        });
+        message = `${authorName} scheduled a post "${postTitle}" for ${formattedDate}`;
+      }
+
+      return createNotification({
         type: 'new_post',
         userId: follower.followerId,
         actionUserId: authorId,
-        message: `${authorName} published a new post: "${postTitle}"`,
+        message,
         link: `/posts/${postId}`,
         postId,
-      })
-    );
+        data: scheduled ? { scheduled: true, scheduledDate: scheduledDate?.toISOString() } : undefined,
+      });
+    });
 
     await Promise.all(notificationPromises);
     return true;

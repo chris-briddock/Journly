@@ -1,72 +1,28 @@
 import Link from "next/link";
 import Image from "next/image";
-import SimpleNavigation from "./components/SimpleNavigation";
-import { getApiUrl } from "@/lib/getApiUrl";
 import { cleanHtml, truncateText } from "@/lib/cleanHtml";
+import { getRecentPosts as getRecentPostsApi } from "@/lib/services/getRecentPosts";
+import { getPopularCategories as getPopularCategoriesApi } from "@/lib/services/getPopularCategories";
+import { Post } from "@/types/models/post";
+import { Category } from "@/types/models/category";
 
-interface Post {
-  id: string;
-  title: string;
-  content: string;
-  excerpt: string | null;
-  featuredImage: string | null;
-  readingTime: number;
-  publishedAt: Date | null;
-  createdAt: Date;
-  author: {
-    id: string;
-    name: string | null;
-    image: string | null;
-  };
-  categories: {
-    category: {
-      id: string;
-      name: string;
-    };
-  }[];
+
+async function getRecentPosts(limit: number): Promise<Post[]> {
+  return await getRecentPostsApi(limit);
 }
 
-interface Category {
-  id: string;
-  name: string;
-  postCount: number;
-}
-
-async function getRecentPosts(): Promise<Post[]> {
-  const response = await fetch(getApiUrl('/api/posts/recent?limit=8'), {
-    next: { revalidate: 0 }
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch recent posts');
-  }
-
-  return response.json();
-}
-
-async function getCategories(): Promise<Category[]> {
-  const response = await fetch(getApiUrl('/api/categories/popular?limit=12'), {
-    next: { revalidate: 0 }
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch categories');
-  }
-
-  return response.json();
+async function getPopularCategories(limit: number): Promise<Category[]> {
+  return await getPopularCategoriesApi(limit);
 }
 
 export default async function Home() {
   const [recentPosts, categories] = await Promise.all([
-    getRecentPosts(),
-    getCategories(),
+    getRecentPosts(10),
+    getPopularCategories(10),
   ]);
 
   return (
     <div className="min-h-screen bg-background">
-      <SimpleNavigation />
-
-      {/* Hero Section - Medium-like with featured post */}
       <section className="border-b border-gray-200 pt-10 pb-16">
         <div className="container mx-auto px-4">
           <div className="max-w-7xl mx-auto">

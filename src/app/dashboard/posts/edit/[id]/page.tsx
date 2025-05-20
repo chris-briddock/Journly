@@ -17,6 +17,14 @@ interface Post {
   status: string;
   authorId: string;
   categoryIds: string[];
+  scheduledPublishAt?: string | null;
+  // SEO fields
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  seoKeywords?: string | null;
+  seoCanonicalUrl?: string | null;
+  ogImage?: string | null;
+  noIndex?: boolean;
 }
 
 interface Category {
@@ -169,6 +177,14 @@ export default async function EditPostPage({ params }: Props) {
                 featuredImage: post.featuredImage || "",
                 status: post.status,
                 categoryIds: post.categoryIds,
+                scheduledPublishAt: post.scheduledPublishAt || undefined,
+                // SEO fields
+                seoTitle: post.seoTitle || "",
+                seoDescription: post.seoDescription || "",
+                seoKeywords: post.seoKeywords || "",
+                seoCanonicalUrl: post.seoCanonicalUrl || "",
+                ogImage: post.ogImage || "",
+                noIndex: post.noIndex || false,
               }}
               categories={categories}
               isEditing
