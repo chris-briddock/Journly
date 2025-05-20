@@ -120,7 +120,7 @@ export default async function PostsPage({ searchParams }: Props) {
       <DashboardShell>
         <DashboardHeader
           heading="Posts"
-          text="Create and manage your blog posts."
+          text="Create and manage your posts."
         />
 
         <Suspense fallback={<PostsTableSkeleton />}>
