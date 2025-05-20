@@ -10,10 +10,12 @@ import {
   Settings,
   Home,
   BookOpen,
+  Clock,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/app/components/ui/button";
+import { ScheduledPostsPoller } from "@/app/components/dashboard/ScheduledPostsPoller";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -32,6 +34,11 @@ function DashboardNav() {
       title: "Posts",
       href: "/dashboard/posts",
       icon: FileText,
+    },
+    {
+      title: "Scheduled Posts",
+      href: "/dashboard/scheduled",
+      icon: Clock,
     },
     {
       title: "Categories",
@@ -80,6 +87,9 @@ function DashboardNav() {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
       <div className="flex min-h-screen flex-col">
+        {/* Add the ScheduledPostsPoller component to automatically check for scheduled posts */}
+        <ScheduledPostsPoller />
+
         <header className="sticky top-0 z-10 border-b bg-background">
           <div className="container mx-auto px-4 max-w-7xl flex h-16 items-center justify-between py-4">
             <div className="flex items-center gap-4">
