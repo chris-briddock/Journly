@@ -211,6 +211,59 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* Subscription CTA Section */}
+      <section className="py-16 bg-primary/5 border-t border-primary/10">
+        <div className="container mx-auto px-4">
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-white dark:bg-background rounded-2xl shadow-xl overflow-hidden">
+              <div className="grid grid-cols-1 md:grid-cols-2">
+                <div className="p-8 md:p-12">
+                  <div className="inline-block px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
+                    Premium Membership
+                  </div>
+                  <h2 className="text-3xl font-bold mb-4 font-serif">Get unlimited access to all content</h2>
+                  <ul className="space-y-3 mb-8">
+                    <li className="flex items-start">
+                      <svg className="h-5 w-5 text-green-500 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span>Unlimited access to all articles</span>
+                    </li>
+                    <li className="flex items-start">
+                      <svg className="h-5 w-5 text-green-500 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span>Ad-free reading experience</span>
+                    </li>
+                    <li className="flex items-start">
+                      <svg className="h-5 w-5 text-green-500 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span>Support quality writing</span>
+                    </li>
+                  </ul>
+                  <Link
+                    href="/subscription"
+                    className="bg-background text-white dark:bg-white dark:text-black px-8 py-3 rounded-full font-medium hover:bg-primary/90 hover:dark:bg-gray-100 transition inline-block"
+                  >
+                    Become a Member
+                  </Link>
+                </div>
+                <div className="bg-black dark:bg-white hidden md:block">
+                  <div className="h-full flex items-center justify-center p-12">
+                    <div className="text-white dark:text-black text-center">
+                      <h3 className="text-2xl font-bold mb-2 dark:text-black">Join today</h3>
+                      <p className="opacity-90 mb-6 dark:text-black">Cancel anytime. No commitment.</p>
+                      <div className="text-3xl font-bold">$5<span className="text-lg font-normal">/month</span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Start Writing Section */}
       <section className="py-16 bg-muted dark:bg-background border-t border-gray-200">
         <div className="container mx-auto px-4">

@@ -27,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../components/ui/select";
+import { Switch } from "@/app/components/ui/switch";
 
 import { MultiSelect } from "./MultiSelect";
 import { Editor } from "./Editor";
@@ -42,6 +43,7 @@ type PostFormProps = {
     status: string;
     categoryIds: string[];
     scheduledPublishAt?: string | Date;
+    isPremium?: boolean;
     // SEO fields
     seoTitle?: string;
     seoDescription?: string;
@@ -65,6 +67,7 @@ type FormValues = {
   status: string;
   categoryIds: string[];
   publishAt: Date | null;
+  isPremium: boolean;
   // SEO fields
   seoTitle: string;
   seoDescription: string;
@@ -99,6 +102,7 @@ export default function PostForm({
       categoryIds: initialData?.categoryIds || [],
 
       publishAt: scheduledDate,
+      isPremium: initialData?.isPremium || false,
       // SEO fields
       seoTitle: initialData?.seoTitle || "",
       seoDescription: initialData?.seoDescription || "",
@@ -436,6 +440,29 @@ export default function PostForm({
               )}
             />
           )}
+
+          <FormField
+            control={form.control}
+            name="isPremium"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                <div className="space-y-0.5">
+                  <FormLabel className="text-base">
+                    Premium Content
+                  </FormLabel>
+                  <FormDescription>
+                    Mark this post as premium content (only available to paid subscribers)
+                  </FormDescription>
+                </div>
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
 
           {/* SEO Section */}
           <div className="pt-4">

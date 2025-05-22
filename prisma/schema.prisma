@@ -1,12 +1,7 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
 
-// This is used to run the seed script
-// npx prisma db seed
 generator seeder {
   provider = "prisma-client-js"
 }
@@ -16,193 +11,260 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// User model
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
-  emailVerified DateTime?
-  password      String?
-  image         String?
-  bio           String?
-  location      String?
-  role          String    @default("user") // user, admin
-  followerCount Int       @default(0)
-  followingCount Int      @default(0)
-  postCount     Int       @default(0)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  // Relations
-  posts         Post[]
-  comments      Comment[]
-  likes         Like[]
-  commentLikes  CommentLike[]
-  followedBy    Follow[]  @relation("Following")
-  following     Follow[]  @relation("Follower")
-  categories    Category[]
-  notifications Notification[] @relation("ReceivedNotifications")
-  actions       Notification[] @relation("ActionUser")
-  readingHistory ReadingHistory[]
+  id                      String                       @id @default(cuid())
+  name                    String?
+  email                   String                       @unique
+  emailVerified           DateTime?
+  password                String?
+  image                   String?
+  bio                     String?
+  location                String?
+  followerCount           Int                          @default(0)
+  followingCount          Int                          @default(0)
+  postCount               Int                          @default(0)
+  monthlyArticleLimit     Int                          @default(5)
+  articlesReadThisMonth   Int                          @default(0)
+  lastArticleResetDate    DateTime?
+  createdAt               DateTime                     @default(now())
+  updatedAt               DateTime                     @updatedAt
+  role                    String                       @default("user")
+  categories              Category[]
+  comments                Comment[]
+  commentLikes            CommentLike[]
+  following               Follow[]                     @relation("Follower")
+  followedBy              Follow[]                     @relation("Following")
+  likes                   Like[]
+  actions                 Notification[]               @relation("ActionUser")
+  notifications           Notification[]               @relation("ReceivedNotifications")
+  posts                   Post[]
+  readingHistory          ReadingHistory[]
   notificationPreferences UserNotificationPreferences?
+  subscription            Subscription?
+  payments                Payment[]
+  articleAccesses         ArticleAccess[]
 }
 
-// Post model
 model Post {
-  id            String    @id @default(cuid())
-  title         String
-  content       String
-  excerpt       String?
-  status        String    @default("draft") // draft, published, scheduled
+  id                 String           @id @default(cuid())
+  title              String
+  content            String
+  excerpt            String?
+  status             String           @default("draft")
+  featuredImage      String?
+  likeCount          Int              @default(0)
+  commentCount       Int              @default(0)
+  viewCount          Int              @default(0)
+  isPremium          Boolean          @default(false)
+  publishedAt        DateTime?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  authorId           String
+  readingTime        Int              @default(1)
   scheduledPublishAt DateTime?
-  featuredImage String?
-  readingTime   Int       @default(1) // Reading time in minutes
-  likeCount     Int       @default(0)
-  commentCount  Int       @default(0)
-  viewCount     Int       @default(0)
-  publishedAt   DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  // SEO fields
-  seoTitle      String?   // Custom SEO title, defaults to post title if not set
-  seoDescription String?  // Custom meta description, defaults to excerpt if not set
-  seoKeywords   String?   // Meta keywords (comma-separated)
-  seoCanonicalUrl String? // Canonical URL to prevent duplicate content issues
-  ogImage       String?   // Custom Open Graph image URL for social sharing
-  noIndex       Boolean   @default(false) // Whether search engines should index this post
-
-  // Relations
-  author        User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  authorId      String
-  comments      Comment[]
-  likes         Like[]
-  categories    PostCategory[]
-  notifications Notification[]
-  readingHistory ReadingHistory[]
+  noIndex            Boolean          @default(false)
+  ogImage            String?
+  seoCanonicalUrl    String?
+  seoDescription     String?
+  seoKeywords        String?
+  seoTitle           String?
+  comments           Comment[]
+  likes              Like[]
+  notifications      Notification[]
+  author             User             @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  categories         PostCategory[]
+  readingHistory     ReadingHistory[]
+  articleAccesses    ArticleAccess[]
 }
 
-// Category model
 model Category {
-  id          String    @id @default(cuid())
-  name        String    @unique
+  id          String         @id @default(cuid())
+  name        String         @unique
   description String?
-  isDefault   Boolean   @default(false)
-  postCount   Int       @default(0)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  // Relations
-  createdBy   User      @relation(fields: [createdById], references: [id])
+  isDefault   Boolean        @default(false)
+  postCount   Int            @default(0)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
   createdById String
+  createdBy   User           @relation(fields: [createdById], references: [id])
   posts       PostCategory[]
 }
 
-// PostCategory model (for many-to-many relationship)
 model PostCategory {
   id         String   @id @default(cuid())
-  post       Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
   postId     String
-  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  post       Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   @@unique([postId, categoryId])
 }
 
-// Comment model
 model Comment {
-  id        String    @id @default(cuid())
-  content   String
-  likeCount Int       @default(0)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-
-  // Relations
-  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
-  postId    String
-  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  authorId  String
-  parent    Comment?  @relation("CommentToComment", fields: [parentId], references: [id], onDelete: SetNull)
-  parentId  String?
-  replies   Comment[] @relation("CommentToComment")
-  likes     CommentLike[]
+  id            String         @id @default(cuid())
+  content       String
+  likeCount     Int            @default(0)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  postId        String
+  authorId      String
+  parentId      String?
+  author        User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent        Comment?       @relation("CommentToComment", fields: [parentId], references: [id])
+  replies       Comment[]      @relation("CommentToComment")
+  post          Post           @relation(fields: [postId], references: [id], onDelete: Cascade)
+  likes         CommentLike[]
   notifications Notification[]
 }
 
-// Like model
 model Like {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
-
-  // Relations
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
   postId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([postId, userId])
 }
 
-// Follow model
 model Follow {
   id          String   @id @default(cuid())
   createdAt   DateTime @default(now())
-
-  // Relations
-  follower    User     @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
   followerId  String
-  following   User     @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
   followingId String
+  follower    User     @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
 
   @@unique([followerId, followingId])
 }
 
-// CommentLike model
 model CommentLike {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
-
-  // Relations
-  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
   commentId String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, commentId])
 }
 
-// Notification model
 model Notification {
-  id          String   @id @default(cuid())
-  type        String   // like, comment, follow, mention, post_update, comment_reply, system
-  read        Boolean  @default(false)
-  message     String
-  link        String?  // URL to redirect when clicked
-  createdAt   DateTime @default(now())
-  groupId     String?  // For grouping similar notifications
-  data        String?  // JSON data for additional context
-
-  // Relations
-  user        User     @relation("ReceivedNotifications", fields: [userId], references: [id], onDelete: Cascade)
-  userId      String   // User receiving the notification
-  actionUser  User?    @relation("ActionUser", fields: [actionUserId], references: [id], onDelete: SetNull)
-  actionUserId String?  // User who triggered the notification
-
-  // Optional relations based on notification type
-  post        Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
-  postId      String?
-  comment     Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
-  commentId   String?
+  id           String   @id @default(cuid())
+  type         String
+  read         Boolean  @default(false)
+  message      String
+  link         String?
+  createdAt    DateTime @default(now())
+  userId       String
+  actionUserId String?
+  postId       String?
+  commentId    String?
+  data         String?
+  groupId      String?
+  actionUser   User?    @relation("ActionUser", fields: [actionUserId], references: [id])
+  comment      Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  post         Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user         User     @relation("ReceivedNotifications", fields: [userId], references: [id], onDelete: Cascade)
 }
 
-// ReadingHistory model
 model ReadingHistory {
+  id        String   @id @default(cuid())
+  progress  Float    @default(0)
+  lastRead  DateTime @default(now())
+  createdAt DateTime @default(now())
+  userId    String
+  postId    String
+  completed Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@index([userId])
+  @@index([postId])
+  @@index([lastRead])
+}
+
+model UserNotificationPreferences {
+  id                    String   @id @default(cuid())
+  emailNotifications    Boolean  @default(true)
+  browserNotifications  Boolean  @default(false)
+  newComments           Boolean  @default(true)
+  newLikes              Boolean  @default(true)
+  newFollowers          Boolean  @default(true)
+  mentions              Boolean  @default(true)
+  newsletter            Boolean  @default(false)
+  marketingEmails       Boolean  @default(false)
+  postUpdates           Boolean  @default(true)
+  commentReplies        Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  userId                String   @unique
+  mentionsInComments    Boolean  @default(true)
+  mentionsInPosts       Boolean  @default(true)
+  newPostsFromFollowing Boolean  @default(true)
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Subscription tiers
+enum SubscriptionTier {
+  FREE
+  MEMBER
+}
+
+// Subscription status
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  INCOMPLETE
+  INCOMPLETE_EXPIRED
+  TRIALING
+  UNPAID
+}
+
+// Subscription model
+model Subscription {
+  id                String            @id @default(cuid())
+  tier              SubscriptionTier  @default(FREE)
+  status            SubscriptionStatus @default(ACTIVE)
+  currentPeriodStart DateTime         @default(now())
+  currentPeriodEnd  DateTime
+  cancelAtPeriodEnd Boolean           @default(false)
+  stripeCustomerId  String?
+  stripeSubscriptionId String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  // Relations
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String            @unique
+  payments          Payment[]
+}
+
+// Payment model
+model Payment {
+  id                  String   @id @default(cuid())
+  amount              Int
+  currency            String   @default("usd")
+  status              String
+  stripePaymentIntentId String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // Relations
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId              String
+  subscription        Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  subscriptionId      String
+}
+
+// ArticleAccess model to track free user article views
+model ArticleAccess {
   id          String   @id @default(cuid())
-  progress    Float    @default(0) // Reading progress (0-100%)
-  completed   Boolean  @default(false) // Whether the user has completed reading the post
-  lastRead    DateTime @default(now())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  accessedAt  DateTime @default(now())
 
   // Relations
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -211,31 +273,4 @@ model ReadingHistory {
   postId      String
 
   @@unique([userId, postId])
-  @@index([userId])
-  @@index([postId])
-  @@index([lastRead])
-}
-
-// UserNotificationPreferences model
-model UserNotificationPreferences {
-  id                  String   @id @default(cuid())
-  emailNotifications  Boolean  @default(true)
-  browserNotifications Boolean  @default(false)
-  newComments         Boolean  @default(true)
-  newLikes            Boolean  @default(true)
-  newFollowers        Boolean  @default(true)
-  mentions            Boolean  @default(true)
-  newsletter          Boolean  @default(false)
-  marketingEmails     Boolean  @default(false)
-  postUpdates         Boolean  @default(true)  // Notification for post updates
-  commentReplies      Boolean  @default(true)  // Notification for comment replies
-  newPostsFromFollowing Boolean @default(true)  // Notification for new posts from followed users
-  mentionsInPosts     Boolean  @default(true)  // Notification for mentions in posts
-  mentionsInComments  Boolean  @default(true)  // Notification for mentions in comments
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
-
-  // Relations
-  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId              String   @unique
 }

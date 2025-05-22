@@ -61,7 +61,7 @@ interface FormValues {
   featuredImage: string;
   status: string;
   categoryIds: string[];
-
+  isPremium: boolean;
   publishAt: Date | null;
 }
 

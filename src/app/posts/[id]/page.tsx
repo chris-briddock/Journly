@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { format } from "date-fns";
-import { MessageSquare, Eye } from "lucide-react";
+import { MessageSquare, Eye, Lock } from "lucide-react";
 import type { Metadata } from "next/types";
 
 import { auth } from "@/lib/auth";
@@ -21,6 +21,7 @@ import { RecommendedPosts } from "@/app/components/RecommendedPosts";
 import { getInitials } from "@/lib/utils";
 import { ReadingProgressTracker } from "@/app/components/ReadingProgressTracker";
 import { Post } from "@/types/models/post";
+import { canAccessArticle, getPremiumArticlesReadThisMonth, getMonthlyArticleLimit } from "@/lib/services/article-access-service";
 
 type Props = {
   params: Promise<{
@@ -145,6 +146,34 @@ export default async function PostPage({ params }: Props) {
   const session = await auth();
   const isAuthor = session?.user?.id === post.author.id;
 
+  // Check if the user can access this article
+  const userId = session?.user?.id || null;
+
+  // If no user is logged in, they should be redirected by middleware
+  if (!userId) {
+    // This is a fallback in case middleware fails
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Login Required</h1>
+          <p className="mb-4">You need to be logged in to view this article.</p>
+          <Button asChild>
+            <Link href={`/login?from=/posts/${id}`}>Sign In</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const canAccess = await canAccessArticle(userId, id);
+
+  // If the user is the author, they can always access their own posts
+  const hasAccess = isAuthor || canAccess;
+
+  // Get the user's article access info
+  const articlesReadThisMonth = await getPremiumArticlesReadThisMonth(userId);
+  const monthlyLimit = await getMonthlyArticleLimit(userId);
+
   const categoryIds = post.categories.map((c: { category: { id: string } }) => c.category.id);
   const relatedPosts = await getRelatedPosts(post.id, categoryIds);
 
@@ -205,7 +234,48 @@ export default async function PostPage({ params }: Props) {
           {/* Post Content */}
           <article className="mb-8 post-content-wrapper">
             <div className="bg-card rounded-lg p-6 shadow-sm">
-              <EmbedRenderer content={post.content} />
+              {hasAccess ? (
+                <EmbedRenderer content={post.content} />
+              ) : (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <Lock className="h-12 w-12 text-primary mb-4" />
+                  <h2 className="text-2xl font-bold mb-2">Premium Content</h2>
+                  <p className="text-muted-foreground mb-4 max-w-md">
+                    You&apos;ve read <span className="font-bold text-primary">{articlesReadThisMonth}</span> of your <span className="font-bold text-primary">{monthlyLimit}</span> free premium articles this month.
+                  </p>
+
+                  <div className="bg-primary/5 p-6 rounded-xl mb-6 max-w-md">
+                    <h3 className="font-semibold text-lg mb-3">Become a member today and get:</h3>
+                    <ul className="text-left space-y-2 mb-4">
+                      <li className="flex items-start">
+                        <svg className="h-5 w-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span>Unlimited access to all premium articles</span>
+                      </li>
+                      <li className="flex items-start">
+                        <svg className="h-5 w-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span>Ad-free reading experience</span>
+                      </li>
+                      <li className="flex items-start">
+                        <svg className="h-5 w-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span>Support quality writing</span>
+                      </li>
+                    </ul>
+                    <p className="text-sm text-muted-foreground">Only $5/month. Cancel anytime.</p>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <Button asChild size="lg" className="font-medium">
+                      <Link href="/subscription">Become a Member</Link>
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </article>
 
