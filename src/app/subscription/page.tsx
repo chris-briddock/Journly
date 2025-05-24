@@ -12,7 +12,7 @@ import { SubscriptionButton } from "@/app/components/subscription/SubscriptionBu
 
 export const metadata: Metadata = {
   title: "Subscription Plans - Journly",
-  description: "Choose a subscription plan to access premium content on Journly.",
+  description: "Choose a subscription plan to access unlimited articles on Journly.",
 };
 
 export default async function SubscriptionPage({
@@ -39,25 +39,25 @@ export default async function SubscriptionPage({
 
   // Features for each plan
   const freePlanFeatures = [
-    { name: "Limited access to articles (5 premium articles per month)", included: true },
-    { name: "Core reading experience", included: true },
-    { name: "Limited engagement features", included: true },
-    { name: "Ad-supported experience", included: true },
-    { name: "Full article search", included: false },
-    { name: "Unlimited premium content", included: false },
+    { name: "Limited access to posts (5 articles per month)", included: true },
+    { name: "Limited to creating 1 post only", included: true },
+    { name: "Ad-supported experience (Coming soon)", included: true },
+    { name: "Post Scheduling", included: true},
+    { name: "Unlimited article access", included: false },
+    { name: "Unlimited post creation", included: false },
     { name: "Ad-free experience", included: false },
     { name: "Priority support", included: false },
   ];
 
   const memberPlanFeatures = [
     { name: "Unlimited access to all articles", included: true },
-    { name: "Core reading experience", included: true },
-    { name: "Full engagement features", included: true },
+    { name: "Unlimited post creation", included: true },
+    { name: "Post Scheduling", included: true},
     { name: "Ad-free experience", included: true },
-    { name: "Full article search", included: true },
-    { name: "Unlimited premium content", included: true },
+    { name: "Advanced analytics (Coming soon)", included: true },
     { name: "Priority support", included: true },
     { name: "Early access to new features", included: true },
+    { name: "Personalized reading recommendations", included: true },
   ];
 
   return (
@@ -67,7 +67,7 @@ export default async function SubscriptionPage({
           <div className="text-center mb-12">
             <h1 className="text-4xl font-bold mb-4">Choose Your Subscription Plan</h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Get unlimited access to all premium content and features with a Journly membership.
+              Get unlimited access to all articles and features with a Journly membership.
             </p>
           </div>
 
@@ -82,7 +82,7 @@ export default async function SubscriptionPage({
                   <Link href="/dashboard">Go to Dashboard</Link>
                 </Button>
                 <Button asChild>
-                  <Link href="/dashboard/settings">Manage Subscription</Link>
+                  <Link href="/dashboard/subscription">Manage Subscription</Link>
                 </Button>
               </div>
             </div>
@@ -177,9 +177,15 @@ export default async function SubscriptionPage({
                 </p>
               </div>
               <div>
-                <h3 className="text-lg font-semibold mb-2">How many premium articles can I read with the free plan?</h3>
+                <h3 className="text-lg font-semibold mb-2">How many articles can I read with the free plan?</h3>
                 <p className="text-muted-foreground">
-                  Free users can read up to 5 premium articles per month. This counter resets at the beginning of each month.
+                  Free users can read up to 5 articles per month. This counter resets at the beginning of each month.
+                </p>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold mb-2">How many posts can I create with the free plan?</h3>
+                <p className="text-muted-foreground">
+                  Free users can create only 1 post. To create more posts, you need to upgrade to the Member plan.
                 </p>
               </div>
             </div>

@@ -60,10 +60,12 @@ interface PostsResponse {
 
 export function PostsTableClientNew({
   posts,
-  pagination
+  pagination,
+  disableNewPost = false
 }: {
   posts: Post[];
   pagination: PostsResponse['pagination'];
+  disableNewPost?: boolean;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -169,12 +171,21 @@ export function PostsTableClientNew({
             onActionComplete={clearSelection}
             disabled={selectedPosts.length === 0}
           />
-          <Button asChild>
-            <Link href="/dashboard/posts/new">
-              <Plus className="h-4 w-4 mr-2" />
-              New Post
-            </Link>
-          </Button>
+          {disableNewPost ? (
+            <Button asChild variant="outline" disabled>
+              <span>
+                <Plus className="h-4 w-4 mr-2" />
+                New Post
+              </span>
+            </Button>
+          ) : (
+            <Button asChild>
+              <Link href="/dashboard/posts/new">
+                <Plus className="h-4 w-4 mr-2" />
+                New Post
+              </Link>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -182,9 +193,15 @@ export function PostsTableClientNew({
         <Card className="p-6">
           <div className="flex flex-col items-center justify-center py-10">
             <p className="text-muted-foreground mb-4">No posts found</p>
-            <Button asChild>
-              <Link href="/dashboard/posts/new">Create your first post</Link>
-            </Button>
+            {disableNewPost ? (
+              <Button variant="outline" disabled>
+                Create your first post
+              </Button>
+            ) : (
+              <Button asChild>
+                <Link href="/dashboard/posts/new">Create your first post</Link>
+              </Button>
+            )}
           </div>
         </Card>
       ) : (
@@ -253,8 +270,14 @@ export function PostsTableClientNew({
                 <div className="col-span-1 text-center">{post.likeCount}</div>
                 <div className="col-span-1 text-center">{post.commentCount}</div>
                 <div className="col-span-2 flex justify-end gap-2">
-                  <Button variant="ghost" size="icon" asChild className="h-8 w-8">
-                    <Link href={`/posts/${post.id}`}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    asChild
+                    className="h-8 w-8"
+                    title={post.status === 'published' ? 'View published post' : 'Preview draft post'}
+                  >
+                    <Link href={post.status === 'published' ? `/posts/${post.id}` : `/posts/${post.id}/preview`}>
                       <Eye className="h-4 w-4" />
                     </Link>
                   </Button>

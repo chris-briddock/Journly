@@ -200,23 +200,38 @@ export async function cancelUserSubscription(userId: string) {
 
 // Check if a user has an active subscription
 export async function hasActiveSubscription(userId: string): Promise<boolean> {
+  console.log(`[Subscription] Checking if user ${userId} has an active subscription`);
+
   const subscriptions = await prisma.$queryRaw<Array<{ status: string, tier: string, currentPeriodEnd: Date }>>`
     SELECT status, tier, "currentPeriodEnd" FROM "Subscription"
     WHERE "userId" = ${userId}
   `;
 
+  console.log(`[Subscription] Found ${subscriptions?.length || 0} subscriptions for user ${userId}`);
+
   if (!subscriptions || subscriptions.length === 0) {
+    console.log(`[Subscription] No subscriptions found for user ${userId}`);
     return false;
   }
 
   const subscription = subscriptions[0];
+  console.log(`[Subscription] User ${userId} has subscription: status=${subscription.status}, tier=${subscription.tier}, currentPeriodEnd=${subscription.currentPeriodEnd}`);
 
-  // Check if the subscription is active
-  return (
-    subscription.status === SubscriptionStatus.ACTIVE &&
-    subscription.tier === SubscriptionTier.MEMBER &&
-    new Date(subscription.currentPeriodEnd) > new Date()
+  // Check if the subscription is a paid tier and still valid
+  const isPaidTier = subscription.tier === SubscriptionTier.MEMBER;
+  const isStillValid = new Date(subscription.currentPeriodEnd) > new Date();
+
+  // A subscription is considered active if:
+  // 1. It's a paid tier (MEMBER)
+  // 2. It's either ACTIVE or CANCELED but still within the billing period
+  const isActive = isPaidTier && (
+    subscription.status === SubscriptionStatus.ACTIVE ||
+    (subscription.status === SubscriptionStatus.CANCELED && isStillValid)
   );
+
+  console.log(`[Subscription] User ${userId} subscription analysis: isPaidTier=${isPaidTier}, isStillValid=${isStillValid}, status=${subscription.status}`);
+  console.log(`[Subscription] User ${userId} has ${isActive ? 'an active' : 'an inactive'} subscription`);
+  return isActive;
 }
 
 // Get a user's subscription
@@ -320,7 +335,55 @@ export async function syncSubscriptionWithStripe(userId: string) {
 export async function resetUserArticleLimit(userId: string) {
   await prisma.$executeRaw`
     UPDATE "User"
-    SET "monthlyArticleLimit" = 5
+    SET
+      "monthlyArticleLimit" = 5,
+      "articlesReadThisMonth" = 0,
+      "lastArticleResetDate" = NOW()
     WHERE id = ${userId}
   `;
+}
+
+// Check if a user can create a post (free users are limited to 1 post)
+export async function canCreatePost(userId: string): Promise<boolean> {
+  console.log(`[PostLimit] Checking if user ${userId} can create a post`);
+
+  // Get the user's subscription directly
+  const subscriptions = await prisma.$queryRaw<Array<{ tier: string, status: string, currentPeriodEnd: Date }>>`
+    SELECT tier, status, "currentPeriodEnd" FROM "Subscription"
+    WHERE "userId" = ${userId}
+  `;
+
+  console.log(`[PostLimit] Found ${subscriptions?.length || 0} subscriptions for user ${userId}`);
+
+  // Check if the user has an active paid subscription (including cancelled but still valid)
+  if (subscriptions && subscriptions.length > 0) {
+    const subscription = subscriptions[0];
+    const isPaidTier = subscription.tier === SubscriptionTier.MEMBER;
+    const isStillValid = new Date(subscription.currentPeriodEnd) > new Date();
+
+    const hasActivePaidSubscription = isPaidTier && (
+      subscription.status === SubscriptionStatus.ACTIVE ||
+      (subscription.status === SubscriptionStatus.CANCELED && isStillValid)
+    );
+
+    console.log(`[PostLimit] User ${userId} subscription: tier=${subscription.tier}, status=${subscription.status}, isStillValid=${isStillValid}, hasActivePaidSubscription=${hasActivePaidSubscription}`);
+
+    if (hasActivePaidSubscription) {
+      console.log(`[PostLimit] User ${userId} has an active paid subscription, allowing unlimited posts`);
+      return true;
+    }
+  }
+
+  // For free users, check if they already have a post
+  const postCount = await prisma.$queryRaw<Array<{ count: number }>>`
+    SELECT COUNT(*) as count FROM "Post"
+    WHERE "authorId" = ${userId}
+  `;
+
+  console.log(`[PostLimit] User ${userId} has ${postCount[0].count} posts`);
+
+  // Free users can only create 1 post
+  const canCreate = postCount[0].count < 1;
+  console.log(`[PostLimit] User ${userId} can create a post: ${canCreate}`);
+  return canCreate;
 }

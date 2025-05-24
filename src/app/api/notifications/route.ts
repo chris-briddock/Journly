@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { getNotifications, markAllNotificationsAsRead } from '@/lib/services/notification-service';
 import prisma from '@/lib/prisma';
 
 // GET /api/notifications - Get notifications for the current user

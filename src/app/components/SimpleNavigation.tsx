@@ -89,7 +89,7 @@ export default function SimpleNavigation() {
                       <Link href="/dashboard/posts/new">Write Post</Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/subscription">Manage Subscription</Link>
+                      <Link href="/dashboard/subscription">Manage Subscription</Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem

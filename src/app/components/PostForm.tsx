@@ -27,7 +27,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../components/ui/select";
-import { Switch } from "@/app/components/ui/switch";
 
 import { MultiSelect } from "./MultiSelect";
 import { Editor } from "./Editor";
@@ -102,7 +101,7 @@ export default function PostForm({
       categoryIds: initialData?.categoryIds || [],
 
       publishAt: scheduledDate,
-      isPremium: initialData?.isPremium || false,
+      isPremium: false, // Always set to false as we've removed the premium option
       // SEO fields
       seoTitle: initialData?.seoTitle || "",
       seoDescription: initialData?.seoDescription || "",
@@ -158,6 +157,15 @@ export default function PostForm({
 
         if (!response.ok) {
           const data = await response.json();
+
+          // Check if this is a subscription required error
+          if (data.subscriptionRequired) {
+            // Redirect to subscription page
+            toast.error("Free users can only create 1 post. Please upgrade to create more posts.");
+            router.push("/subscription");
+            return;
+          }
+
           throw new Error(data.error || "Failed to save post");
         }
 
@@ -211,6 +219,13 @@ export default function PostForm({
       const data = await response.json();
 
       if (!response.ok) {
+        // Check if this is a subscription required error
+        if (data.subscriptionRequired) {
+          // Redirect to subscription page
+          toast.error("Free users can only create 1 post. Please upgrade to create more posts.");
+          router.push("/subscription");
+          return;
+        }
         throw new Error(data.error || "Something went wrong");
       }
 
@@ -441,28 +456,7 @@ export default function PostForm({
             />
           )}
 
-          <FormField
-            control={form.control}
-            name="isPremium"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                <div className="space-y-0.5">
-                  <FormLabel className="text-base">
-                    Premium Content
-                  </FormLabel>
-                  <FormDescription>
-                    Mark this post as premium content (only available to paid subscribers)
-                  </FormDescription>
-                </div>
-                <FormControl>
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
+          {/* Premium content option removed */}
 
           {/* SEO Section */}
           <div className="pt-4">

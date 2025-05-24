@@ -180,8 +180,13 @@ export function PostsTableClient({
                     <TableCell>{post.commentCount}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button variant="outline" size="icon" asChild>
-                          <Link href={`/posts/${post.id}`}>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          asChild
+                          title={post.status === 'published' ? 'View published post' : 'Preview draft post'}
+                        >
+                          <Link href={post.status === 'published' ? `/posts/${post.id}` : `/posts/${post.id}/preview`}>
                             <Eye className="h-4 w-4" />
                           </Link>
                         </Button>

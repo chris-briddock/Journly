@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import prisma from '@/lib/prisma';
-import { SubscriptionTier } from '@/lib/types';
 
 // POST /api/subscriptions/update-status - Update a user's subscription status
 export async function POST(req: NextRequest) {
@@ -25,7 +24,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Update the user's monthly article limit if provided
+    // Update the user's monthly post limit if provided
     if (monthlyArticleLimit !== undefined) {
       await prisma.$executeRaw`
         UPDATE "User"

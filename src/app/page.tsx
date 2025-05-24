@@ -254,7 +254,7 @@ export default async function Home() {
                     <div className="text-white dark:text-black text-center">
                       <h3 className="text-2xl font-bold mb-2 dark:text-black">Join today</h3>
                       <p className="opacity-90 mb-6 dark:text-black">Cancel anytime. No commitment.</p>
-                      <div className="text-3xl font-bold">$5<span className="text-lg font-normal">/month</span></div>
+                      <div className="text-3xl font-bold">$4.99<span className="text-lg font-normal">/month</span></div>
                     </div>
                   </div>
                 </div>

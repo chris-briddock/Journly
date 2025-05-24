@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { format } from 'date-fns';
-import { CreditCard, Loader2, AlertCircle } from 'lucide-react';
+import { CreditCard, Loader2, AlertCircle, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/app/components/ui/button';
@@ -32,6 +32,8 @@ interface Subscription {
 export default function SubscriptionSettingsPage() {
   const { data: session } = useSession();
   const [subscription, setSubscription] = useState<Subscription | null>(null);
+  const [articlesRead, setArticlesRead] = useState<number>(0);
+  const [monthlyLimit, setMonthlyLimit] = useState<number>(5);
   const [loading, setLoading] = useState(true);
   const [cancelLoading, setCancelLoading] = useState(false);
   const [manageBillingLoading, setManageBillingLoading] = useState(false);
@@ -56,6 +58,20 @@ export default function SubscriptionSettingsPage() {
 
         const data = await response.json();
         setSubscription(data.subscription);
+
+        // Fetch article count
+        const articleResponse = await fetch('/api/users/article-count', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (articleResponse.ok) {
+          const articleData = await articleResponse.json();
+          setArticlesRead(articleData.articlesReadThisMonth || 0);
+          setMonthlyLimit(articleData.monthlyArticleLimit || 5);
+        }
       } catch (err) {
         console.error('Error fetching subscription:', err);
         setError('Failed to load subscription information. Please try again later.');
@@ -108,6 +124,7 @@ export default function SubscriptionSettingsPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          credentials: 'include',
         },
         body: JSON.stringify({
           returnUrl: window.location.href,
@@ -239,8 +256,17 @@ export default function SubscriptionSettingsPage() {
                 )}
                 {subscription.tier === 'FREE' && (
                   <div className="py-2">
+                    <div className="flex items-center gap-2 mb-4 p-3 bg-muted/50 rounded-md">
+                      <BookOpen className="h-5 w-5 text-primary" />
+                      <div>
+                        <p className="font-medium">Post Limit</p>
+                        <p className="text-sm text-muted-foreground">
+                          You&apos;ve read <span className="font-semibold">{articlesRead}</span> of your <span className="font-semibold">{monthlyLimit}</span> free posts this month
+                        </p>
+                      </div>
+                    </div>
                     <p className="mb-4">
-                      You&apos;re currently on the free plan. Upgrade to get unlimited access to all premium content and features.
+                      You&apos;re currently on the free plan. Upgrade to get unlimited access to all content and features.
                     </p>
                     <Button asChild>
                       <Link href="/subscription">Upgrade to Premium</Link>

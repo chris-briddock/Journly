@@ -21,7 +21,7 @@ import { RecommendedPosts } from "@/app/components/RecommendedPosts";
 import { getInitials } from "@/lib/utils";
 import { ReadingProgressTracker } from "@/app/components/ReadingProgressTracker";
 import { Post } from "@/types/models/post";
-import { canAccessArticle, getPremiumArticlesReadThisMonth, getMonthlyArticleLimit } from "@/lib/services/article-access-service";
+import { canAccessArticle, getArticlesReadThisMonth, getMonthlyArticleLimit, recordArticleAccess } from "@/lib/services/article-access-service";
 
 type Props = {
   params: Promise<{
@@ -165,13 +165,26 @@ export default async function PostPage({ params }: Props) {
     );
   }
 
-  const canAccess = await canAccessArticle(userId, id);
-
+  // The middleware should handle access control and recording article access
   // If the user is the author, they can always access their own posts
-  const hasAccess = isAuthor || canAccess;
+  // For debugging purposes, let's log the access check
+  console.log(`[Page] Checking access for user: ${userId}, post: ${id}, isAuthor: ${isAuthor}`);
+
+  // Check if the user can access the article
+  const canAccess = isAuthor || await canAccessArticle(userId, id);
+  console.log(`[Page] Access result: ${canAccess}`);
+
+  // If the user can access the article and is not the author, record the access
+  // This is a fallback in case the middleware fails to record the access
+  if (canAccess && !isAuthor) {
+    console.log(`[Page] Recording article access as fallback`);
+    await recordArticleAccess(userId, id);
+  }
+
+  const hasAccess = canAccess;
 
   // Get the user's article access info
-  const articlesReadThisMonth = await getPremiumArticlesReadThisMonth(userId);
+  const articlesReadThisMonth = await getArticlesReadThisMonth(userId);
   const monthlyLimit = await getMonthlyArticleLimit(userId);
 
   const categoryIds = post.categories.map((c: { category: { id: string } }) => c.category.id);
@@ -239,9 +252,9 @@ export default async function PostPage({ params }: Props) {
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <Lock className="h-12 w-12 text-primary mb-4" />
-                  <h2 className="text-2xl font-bold mb-2">Premium Content</h2>
+                  <h2 className="text-2xl font-bold mb-2">Post Limit Reached</h2>
                   <p className="text-muted-foreground mb-4 max-w-md">
-                    You&apos;ve read <span className="font-bold text-primary">{articlesReadThisMonth}</span> of your <span className="font-bold text-primary">{monthlyLimit}</span> free premium articles this month.
+                    You&apos;ve read <span className="font-bold text-primary">{articlesReadThisMonth}</span> of your <span className="font-bold text-primary">{monthlyLimit}</span> free posts this month.
                   </p>
 
                   <div className="bg-primary/5 p-6 rounded-xl mb-6 max-w-md">
@@ -251,7 +264,7 @@ export default async function PostPage({ params }: Props) {
                         <svg className="h-5 w-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
-                        <span>Unlimited access to all premium articles</span>
+                        <span>Unlimited access to all content</span>
                       </li>
                       <li className="flex items-start">
                         <svg className="h-5 w-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -259,14 +272,8 @@ export default async function PostPage({ params }: Props) {
                         </svg>
                         <span>Ad-free reading experience</span>
                       </li>
-                      <li className="flex items-start">
-                        <svg className="h-5 w-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                        <span>Support quality writing</span>
-                      </li>
                     </ul>
-                    <p className="text-sm text-muted-foreground">Only $5/month. Cancel anytime.</p>
+                    <p className="text-sm text-muted-foreground">Only $4.99/month. Cancel anytime.</p>
                   </div>
 
                   <div className="flex flex-col sm:flex-row gap-4">

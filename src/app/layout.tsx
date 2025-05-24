@@ -9,6 +9,7 @@ import { auth } from "@/lib/auth";
 import { Analytics } from "@vercel/analytics/next"
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import SimpleNavigation from "./components/SimpleNavigation";
+import { ArticleResetCheck } from "./components/ArticleResetCheck";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -39,6 +40,7 @@ export default async function RootLayout({
           disableTransitionOnChange
         >
           <SessionProvider session={session}>
+            <ArticleResetCheck />
             <SimpleNavigation />
             {children}
             <Toaster position="top-right" />

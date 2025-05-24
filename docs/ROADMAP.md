@@ -39,7 +39,6 @@ Follow other users functionality
 
 Content Enhancement
 
-Image upload and management
 Embed support (videos, tweets, etc.)
 Draft saving and preview functionality
 Reading time estimation
@@ -69,10 +68,9 @@ Notification system for likes, comments, follows
 User activity feed
 Reading history and recommendations
 
-#### Content Monetization
+#### Subscriptions & Payments
 
-Premium content options
-Subscription tiers
+Subscription tiers (Free, Member)
 Payment integration (Stripe)
 
 #### Advanced Editor
@@ -96,22 +94,32 @@ Featured posts and curated collections
 ## Phase 3
 
 Platform Expansion:
+
+Content Management
+Advanced image upload and management
+Media library and asset organization
+Image optimization and CDN integration
+
 API Development
 Public API for third-party integrations
 Developer documentation
+
 Advanced Personalization
 AI-powered content recommendations
 Personalized reading experience
 Custom themes for users
+
 Multi-platform Support
 Mobile app integration
 Email newsletter integration
 Offline reading capabilities
+
 Advanced Moderation
 Content moderation tools
 Community guidelines enforcement
 Reporting system
+
 Enterprise Features
 Team accounts
 Organization profiles
-Advanced analytics and reporting.
+Advanced analytics and reporting

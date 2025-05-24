@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Share2, Twitter, Facebook, Linkedin, Check, Copy } from "lucide-react";
+import { Share2, X, Facebook, Linkedin, Check, Copy } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "../components/ui/button";
@@ -63,7 +63,7 @@ export function ShareButton({ title, url, variant = "outline", size = "default" 
         <DropdownMenuLabel>Share this post</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => handleShare("twitter")}>
-          <Twitter className="h-4 w-4 mr-2" />
+          <X className="h-4 w-4 mr-2" />
           Twitter
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => handleShare("facebook")}>
