@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth';
 import { calculateReadingTime } from '@/lib/readingTime';
 import { processPostMentions } from '@/lib/mentions';
 import { createNewPostNotification } from '@/lib/notifications';
+import { SubscriptionTier, SubscriptionStatus } from '@/lib/types';
 
 // GET /api/posts - Get all posts
 export async function GET(request: NextRequest) {
@@ -115,7 +116,73 @@ export async function POST(request: NextRequest) {
 
     console.log('User verified in database:', userExists);
 
-    const { title, content, excerpt, status, featuredImage, categoryIds } = await request.json();
+    // Check if the user can create a post (free users are limited to 1 post)
+    console.log(`[API] Checking if user ${userId} can create a post`);
+
+    // Get the user's subscription directly
+    const subscriptions = await prisma.$queryRaw<Array<{ tier: string, status: string, currentPeriodEnd: Date }>>`
+      SELECT tier, status, "currentPeriodEnd" FROM "Subscription"
+      WHERE "userId" = ${userId}
+    `;
+
+    console.log(`[API] Found ${subscriptions?.length || 0} subscriptions for user ${userId}`);
+
+    // Check if the user has an active paid subscription (including cancelled but still valid)
+    let hasPaidSubscription = false;
+    if (subscriptions && subscriptions.length > 0) {
+      const subscription = subscriptions[0];
+      const isPaidTier = subscription.tier === SubscriptionTier.MEMBER;
+      const isStillValid = new Date(subscription.currentPeriodEnd) > new Date();
+
+      hasPaidSubscription = isPaidTier && (
+        subscription.status === SubscriptionStatus.ACTIVE ||
+        (subscription.status === SubscriptionStatus.CANCELED && isStillValid)
+      );
+
+      console.log(`[API] User ${userId} subscription: tier=${subscription.tier}, status=${subscription.status}, isStillValid=${isStillValid}, hasPaidSubscription=${hasPaidSubscription}`);
+    } else {
+      console.log(`[API] User ${userId} has no subscription`);
+    }
+
+    if (!hasPaidSubscription) {
+      // For free users, check if they already have a post
+      const postCount = await prisma.$queryRaw<Array<{ count: number }>>`
+        SELECT COUNT(*) as count FROM "Post"
+        WHERE "authorId" = ${userId}
+      `;
+
+      console.log(`[API] User ${userId} has ${postCount[0].count} posts`);
+
+      // Free users can only create 1 post
+      const canCreate = postCount[0].count < 1;
+      console.log(`[API] User ${userId} can create a post: ${canCreate}`);
+
+      if (!canCreate) {
+        return NextResponse.json(
+          {
+            error: 'Free users can only create 1 post. Please upgrade to a paid subscription to create more posts.',
+            subscriptionRequired: true
+          },
+          { status: 403 }
+        );
+      }
+    }
+
+    const {
+      title,
+      content,
+      excerpt,
+      status,
+      featuredImage,
+      categoryIds,
+      // SEO fields
+      seoTitle,
+      seoDescription,
+      seoKeywords,
+      seoCanonicalUrl,
+      ogImage,
+      noIndex
+    } = await request.json();
 
     // Create the post
     const post = await prisma.$transaction(async (tx) => {
@@ -132,6 +199,13 @@ export async function POST(request: NextRequest) {
           featuredImage,
           readingTime,
           authorId: userId,
+          // SEO fields
+          seoTitle,
+          seoDescription,
+          seoKeywords,
+          seoCanonicalUrl,
+          ogImage,
+          noIndex: noIndex || false,
         },
       });
 

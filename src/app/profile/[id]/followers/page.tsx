@@ -3,85 +3,23 @@ import Link from "next/link";
 import type { Metadata } from "next/types";
 import { ChevronLeft } from "lucide-react";
 
-import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { Button } from "@/app/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { FollowButton } from "@/app/components/FollowButton";
-import SimpleNavigation from "@/app/components/SimpleNavigation";
 import { getInitials } from "@/lib/utils";
+import { getUser } from "@/lib/services/getUser";
+import { getUserFollowers } from "@/lib/services/getUserFollowers";
+import { getIsFollowing } from "@/lib/services/getIsFollowing";
+import { Follower } from "@/types/models/follower";
 
 interface FollowersPageProps {
   params: Promise<{ id: string }>;
   searchParams: Promise<{ page?: string; limit?: string }>;
 }
 
-async function getUser(id: string) {
-  const user = await prisma.user.findUnique({
-    where: { id },
-    select: {
-      id: true,
-      name: true,
-    },
-  });
-
-  return user;
-}
-
-async function getFollowers(userId: string, page: number = 1, limit: number = 20) {
-  const skip = (page - 1) * limit;
-
-  const [followers, total] = await Promise.all([
-    prisma.follow.findMany({
-      where: { followingId: userId },
-      include: {
-        follower: {
-          select: {
-            id: true,
-            name: true,
-            image: true,
-            bio: true,
-            followerCount: true,
-          },
-        },
-      },
-      skip,
-      take: limit,
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.follow.count({
-      where: { followingId: userId },
-    }),
-  ]);
-
-  const formattedFollowers = followers.map((follow) => follow.follower);
-
-  return {
-    followers: formattedFollowers,
-    pagination: {
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    },
-  };
-}
-
-async function isFollowing(followerId: string, followingId: string) {
-  if (!followerId || !followingId) return false;
-
-  const follow = await prisma.follow.findUnique({
-    where: {
-      followerId_followingId: {
-        followerId,
-        followingId,
-      },
-    },
-  });
-
-  return !!follow;
-}
+// Use the imported service functions instead of direct Prisma calls
 
 export async function generateMetadata({ params }: FollowersPageProps): Promise<Metadata> {
   const { id } = await params;
@@ -108,10 +46,12 @@ export default async function FollowersPage({ params, searchParams }: FollowersP
   const session = await auth();
   const currentUserId = session?.user?.id;
 
-  const [user, { followers, pagination }] = await Promise.all([
+  const [user, followersData] = await Promise.all([
     getUser(id),
-    getFollowers(id, page, limit),
+    getUserFollowers(id, { page, limit }),
   ]);
+
+  const { followers, pagination } = followersData;
 
   if (!user) {
     notFound();
@@ -119,7 +59,6 @@ export default async function FollowersPage({ params, searchParams }: FollowersP
 
   return (
     <div className="min-h-screen bg-background">
-      <SimpleNavigation />
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center gap-2 mb-6">
@@ -147,9 +86,9 @@ export default async function FollowersPage({ params, searchParams }: FollowersP
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {followers.map(async (follower) => {
+                  {followers.map(async (follower: Follower) => {
                     const isCurrentUserFollowing = currentUserId
-                      ? await isFollowing(currentUserId, follower.id)
+                      ? await getIsFollowing(follower.id)
                       : false;
 
                     return (

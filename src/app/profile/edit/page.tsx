@@ -2,12 +2,11 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 
-import { getUser } from "@/lib/api";
+import { getUser } from "@/lib/services/getUser";
 import { auth } from "@/lib/auth";
 import { Button } from "@/app/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card";
 import ProfileForm from "@/app/components/ProfileForm";
-import SimpleNavigation from "@/app/components/SimpleNavigation";
 
 async function getUserProfile(userId: string) {
   return await getUser(userId);
@@ -29,7 +28,6 @@ export default async function EditProfilePage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <SimpleNavigation />
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           <div className="mb-6">

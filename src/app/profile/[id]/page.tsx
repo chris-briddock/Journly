@@ -3,7 +3,6 @@ import Link from "next/link";
 import { format } from "date-fns";
 import { CalendarDays, Mail, MapPin, Edit, ArrowRight } from "lucide-react";
 
-import { getUser as getUserApi, getUserPosts as getUserPostsApi, isFollowing as isFollowingApi } from "@/lib/api";
 import { auth } from "@/lib/auth";
 import { Button } from "@/app/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar";
@@ -12,32 +11,13 @@ import { Separator } from "@/app/components/ui/separator";
 import PostCard from "@/app/components/PostCard";
 import { FollowButton } from "@/app/components/FollowButton";
 import { UserActivityFeed } from "@/app/components/UserActivityFeed";
-import SimpleNavigation from "@/app/components/SimpleNavigation";
 import { getInitials } from "@/lib/utils";
+import { Post } from "@/types/models/post";
+import { getUser as getUserApi } from "@/lib/services/getUser";
+import { getIsFollowing as isFollowingApi } from "@/lib/services/getIsFollowing";
+import { getUserPosts as getUserPostsApi } from "@/lib/services/getUserPosts";
 
-interface Post {
-  id: string;
-  title: string;
-  excerpt: string | null;
-  featuredImage: string | null;
-  readingTime: number;
-  publishedAt: Date | null;
-  createdAt: Date;
-  author: {
-    id: string;
-    name: string | null;
-    image: string | null;
-  };
-  categories: Array<{
-    category: {
-      id: string;
-      name: string;
-    }
-  }>;
-  viewCount: number;
-  likeCount: number;
-  commentCount: number;
-}
+
 
 async function getUser(id: string) {
   return await getUserApi(id);
@@ -82,7 +62,6 @@ export default async function ProfilePage({
 
   return (
     <div className="min-h-screen bg-background">
-      <SimpleNavigation />
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
           {/* Profile Header */}

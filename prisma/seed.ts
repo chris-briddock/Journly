@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import { addMonths } from 'date-fns';
 
 const prisma = new PrismaClient();
 
@@ -21,22 +22,48 @@ async function main() {
 
   console.log('Created system user for categories');
 
-  // Create an admin user with password
-  const hashedPassword = await bcrypt.hash('admin123', 10);
-  await prisma.user.upsert({
+  // Create an admin user with password and unlimited subscription
+  const hashedPassword = await bcrypt.hash(`${process.env.ADMIN_PASSWORD}`, 10);
+  const adminUser = await prisma.user.upsert({
     where: { email: 'admin@journly.com' },
     update: {
-      role: 'admin'
+      role: 'admin',
+      monthlyArticleLimit: 999999 // Effectively unlimited articles
     },
     create: {
       email: 'admin@journly.com',
       name: 'Admin',
       password: hashedPassword,
-      role: 'admin'
+      role: 'admin',
+      monthlyArticleLimit: 999999 // Effectively unlimited articles
     },
   });
 
   console.log('Created admin user for management');
+
+  // Create or update admin subscription (MEMBER tier with unlimited access)
+  const tenYearsFromNow = addMonths(new Date(), (12 * 10));
+
+  await prisma.subscription.upsert({
+    where: { userId: adminUser.id },
+    update: {
+      tier: 'MEMBER',
+      status: 'ACTIVE',
+      currentPeriodStart: new Date(),
+      currentPeriodEnd: tenYearsFromNow,
+      cancelAtPeriodEnd: false
+    },
+    create: {
+      userId: adminUser.id,
+      tier: 'MEMBER',
+      status: 'ACTIVE',
+      currentPeriodStart: new Date(),
+      currentPeriodEnd: tenYearsFromNow,
+      cancelAtPeriodEnd: false
+    }
+  });
+
+  console.log('Created unlimited subscription for admin user');
 
   // Create default categories
   const defaultCategories = [

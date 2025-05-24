@@ -14,7 +14,8 @@ export function EmbedRenderer({ content }: EmbedRendererProps) {
     // Function to load Twitter widgets if they exist in the content
     const loadTwitterWidgets = () => {
       if (
-        containerRef.current?.querySelector('.twitter-tweet') &&
+        (containerRef.current?.querySelector('.twitter-tweet') ||
+         containerRef.current?.querySelector('[data-embed-type="twitter"]')) &&
         typeof window !== 'undefined' &&
         !window.document.getElementById('twitter-widget-script')
       ) {
@@ -29,16 +30,205 @@ export function EmbedRenderer({ content }: EmbedRendererProps) {
     // Function to load Instagram embeds if they exist in the content
     const loadInstagramEmbeds = () => {
       if (
-        containerRef.current?.querySelector('.instagram-media') &&
+        (containerRef.current?.querySelector('.instagram-media') ||
+         containerRef.current?.querySelector('[data-embed-type="instagram"]')) &&
         typeof window !== 'undefined' &&
         !window.document.getElementById('instagram-embed-script')
       ) {
         const script = document.createElement('script');
         script.id = 'instagram-embed-script';
-        script.src = '//www.instagram.com/embed.js';
+        script.src = 'https://www.instagram.com/embed.js';
         script.async = true;
         document.body.appendChild(script);
       }
+    };
+
+    // Function to load TikTok embeds if they exist in the content
+    const loadTikTokEmbeds = () => {
+      if (
+        (containerRef.current?.querySelector('.tiktok-embed') ||
+         containerRef.current?.querySelector('[data-embed-type="tiktok"]')) &&
+        typeof window !== 'undefined' &&
+        !window.document.getElementById('tiktok-embed-script')
+      ) {
+        const script = document.createElement('script');
+        script.id = 'tiktok-embed-script';
+        script.src = 'https://www.tiktok.com/embed.js';
+        script.async = true;
+        document.body.appendChild(script);
+      }
+    };
+
+    // Function to load SoundCloud embeds if they exist in the content
+    const loadSoundCloudEmbeds = () => {
+      if (
+        (containerRef.current?.querySelector('iframe[src*="soundcloud.com/player"]') ||
+         containerRef.current?.querySelector('[data-embed-type="soundcloud"]')) &&
+        typeof window !== 'undefined' &&
+        !window.document.getElementById('soundcloud-embed-script')
+      ) {
+        const script = document.createElement('script');
+        script.id = 'soundcloud-embed-script';
+        script.src = 'https://w.soundcloud.com/player/api.js';
+        script.async = true;
+        document.body.appendChild(script);
+      }
+    };
+
+    // Function to load CodePen embeds if they exist in the content
+    const loadCodePenEmbeds = () => {
+      if (
+        (containerRef.current?.querySelector('iframe[src*="codepen.io/embed"]') ||
+         containerRef.current?.querySelector('[data-embed-type="codepen"]')) &&
+        typeof window !== 'undefined' &&
+        !window.document.getElementById('codepen-embed-script')
+      ) {
+        const script = document.createElement('script');
+        script.id = 'codepen-embed-script';
+        script.src = 'https://cpwebassets.codepen.io/assets/embed/ei.js';
+        script.async = true;
+        document.body.appendChild(script);
+      }
+    };
+
+    // Function to process embeds in the content
+    const processEmbeds = () => {
+      if (!containerRef.current) return;
+
+      // Process Twitter embeds
+      const twitterEmbeds = containerRef.current.querySelectorAll('[data-embed-type="twitter"]');
+      twitterEmbeds.forEach(embed => {
+        const src = embed.getAttribute('data-src');
+        if (src) {
+          // Ensure we're using the original URL format for Twitter embeds
+          let twitterUrl = src;
+          if (twitterUrl.includes('x.com')) {
+            // Convert x.com URLs to twitter.com for better compatibility
+            twitterUrl = twitterUrl.replace('x.com', 'twitter.com');
+          }
+
+          const blockquote = document.createElement('blockquote');
+          blockquote.className = 'twitter-tweet';
+          blockquote.setAttribute('data-dnt', 'true');
+
+          const link = document.createElement('a');
+          link.href = twitterUrl;
+          link.textContent = 'Loading tweet...';
+
+          blockquote.appendChild(link);
+          embed.innerHTML = '';
+          embed.appendChild(blockquote);
+        }
+      });
+
+      // Process Instagram embeds
+      const instagramEmbeds = containerRef.current.querySelectorAll('[data-embed-type="instagram"]');
+      instagramEmbeds.forEach(embed => {
+        const src = embed.getAttribute('data-src');
+        if (src) {
+          const blockquote = document.createElement('blockquote');
+          blockquote.className = 'instagram-media';
+          blockquote.setAttribute('data-instgrm-permalink', src);
+          blockquote.setAttribute('data-instgrm-version', '14');
+          blockquote.style.maxWidth = '540px';
+          blockquote.style.width = '100%';
+          blockquote.style.margin = '0 auto';
+          blockquote.style.background = '#FFF';
+          blockquote.style.borderRadius = '3px';
+          blockquote.style.border = '1px solid #dbdbdb';
+          blockquote.style.boxShadow = 'none';
+          blockquote.style.display = 'block';
+          blockquote.style.minWidth = '326px';
+          blockquote.style.padding = '0';
+
+          const link = document.createElement('a');
+          link.href = src;
+          link.textContent = 'Loading Instagram post...';
+
+          blockquote.appendChild(link);
+          embed.innerHTML = '';
+          embed.appendChild(blockquote);
+        }
+      });
+
+      // Process TikTok embeds
+      const tiktokEmbeds = containerRef.current.querySelectorAll('[data-embed-type="tiktok"]');
+      tiktokEmbeds.forEach(embed => {
+        const src = embed.getAttribute('data-src');
+        if (src) {
+          const videoId = src.split('/').pop();
+          const blockquote = document.createElement('blockquote');
+          blockquote.className = 'tiktok-embed';
+          blockquote.setAttribute('cite', src);
+          if (videoId) {
+            blockquote.setAttribute('data-video-id', videoId);
+          }
+
+          const link = document.createElement('a');
+          link.href = src;
+          link.textContent = 'Loading TikTok...';
+
+          blockquote.appendChild(link);
+          embed.innerHTML = '';
+          embed.appendChild(blockquote);
+        }
+      });
+
+      // Process Vimeo embeds
+      const vimeoEmbeds = containerRef.current.querySelectorAll('[data-embed-type="vimeo"]');
+      vimeoEmbeds.forEach(embed => {
+        const src = embed.getAttribute('data-src');
+        if (src) {
+          const iframe = document.createElement('iframe');
+          iframe.src = src;
+          iframe.title = 'Vimeo video';
+          iframe.style.width = '100%';
+          iframe.style.height = '315px';
+          iframe.style.border = 'none';
+          iframe.setAttribute('allow', 'autoplay; fullscreen; picture-in-picture');
+          iframe.setAttribute('allowfullscreen', 'true');
+
+          embed.innerHTML = '';
+          embed.appendChild(iframe);
+        }
+      });
+
+      // Process SoundCloud embeds
+      const soundcloudEmbeds = containerRef.current.querySelectorAll('[data-embed-type="soundcloud"]');
+      soundcloudEmbeds.forEach(embed => {
+        const src = embed.getAttribute('data-src');
+        if (src) {
+          const iframe = document.createElement('iframe');
+          iframe.src = `https://w.soundcloud.com/player/?url=${encodeURIComponent(src)}&color=%23ff5500&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true`;
+          iframe.title = 'SoundCloud track';
+          iframe.style.width = '100%';
+          iframe.style.height = '166px';
+          iframe.style.border = 'none';
+          iframe.setAttribute('allow', 'autoplay');
+
+          embed.innerHTML = '';
+          embed.appendChild(iframe);
+        }
+      });
+
+      // Process CodePen embeds
+      const codepenEmbeds = containerRef.current.querySelectorAll('[data-embed-type="codepen"]');
+      codepenEmbeds.forEach(embed => {
+        const src = embed.getAttribute('data-src');
+        if (src) {
+          const iframe = document.createElement('iframe');
+          iframe.src = `${src.replace('/pen/', '/embed/')}?default-tab=result&theme-id=dark`;
+          iframe.title = 'CodePen embed';
+          iframe.style.width = '100%';
+          iframe.style.height = '400px';
+          iframe.style.border = 'none';
+          iframe.setAttribute('allow', 'accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture');
+          iframe.setAttribute('allowfullscreen', 'true');
+
+          embed.innerHTML = '';
+          embed.appendChild(iframe);
+        }
+      });
     };
 
     // Function to ensure YouTube iframes have proper attributes
@@ -62,6 +252,68 @@ export function EmbedRenderer({ content }: EmbedRendererProps) {
           }
           if (!iframeElement.style.height && !iframeElement.getAttribute('height')) {
             iframeElement.style.height = '315px';
+          }
+        });
+      }
+    };
+
+    // Function to enhance Vimeo embeds
+    const enhanceVimeoEmbeds = () => {
+      if (containerRef.current) {
+        const vimeoIframes = containerRef.current.querySelectorAll('iframe[src*="player.vimeo.com/video"]');
+        vimeoIframes.forEach(iframe => {
+          const iframeElement = iframe as HTMLIFrameElement;
+
+          // Add missing attributes for better UX
+          if (!iframeElement.getAttribute('allowfullscreen')) {
+            iframeElement.setAttribute('allowfullscreen', 'true');
+          }
+          if (!iframeElement.getAttribute('allow')) {
+            iframeElement.setAttribute('allow', 'autoplay; fullscreen; picture-in-picture');
+          }
+
+          // Ensure responsive sizing
+          if (!iframeElement.style.width) {
+            iframeElement.style.width = '100%';
+          }
+          if (!iframeElement.style.height && !iframeElement.getAttribute('height')) {
+            iframeElement.style.height = '315px';
+          }
+        });
+      }
+    };
+
+    // Function to enhance SoundCloud embeds
+    const enhanceSoundCloudEmbeds = () => {
+      if (containerRef.current) {
+        const soundcloudIframes = containerRef.current.querySelectorAll('iframe[src*="soundcloud.com/player"]');
+        soundcloudIframes.forEach(iframe => {
+          const iframeElement = iframe as HTMLIFrameElement;
+
+          // Ensure responsive sizing
+          if (!iframeElement.style.width) {
+            iframeElement.style.width = '100%';
+          }
+          if (!iframeElement.style.height && !iframeElement.getAttribute('height')) {
+            iframeElement.style.height = '166px';
+          }
+        });
+      }
+    };
+
+    // Function to enhance CodePen embeds
+    const enhanceCodePenEmbeds = () => {
+      if (containerRef.current) {
+        const codepenIframes = containerRef.current.querySelectorAll('iframe[src*="codepen.io/embed"]');
+        codepenIframes.forEach(iframe => {
+          const iframeElement = iframe as HTMLIFrameElement;
+
+          // Ensure responsive sizing
+          if (!iframeElement.style.width) {
+            iframeElement.style.width = '100%';
+          }
+          if (!iframeElement.style.height && !iframeElement.getAttribute('height')) {
+            iframeElement.style.height = '400px';
           }
         });
       }
@@ -153,16 +405,56 @@ export function EmbedRenderer({ content }: EmbedRendererProps) {
       }
     };
 
+    // Process embeds in the content
+    processEmbeds();
+
     // Load widgets and enhance content
     loadTwitterWidgets();
     loadInstagramEmbeds();
+    loadTikTokEmbeds();
+    loadSoundCloudEmbeds();
+    loadCodePenEmbeds();
     enhanceYouTubeEmbeds();
+    enhanceVimeoEmbeds();
+    enhanceSoundCloudEmbeds();
+    enhanceCodePenEmbeds();
     enhanceTypography();
+
+    // Add responsive styling to prevent overflow
+    const addResponsiveStyling = () => {
+      if (containerRef.current) {
+        // Add responsive container for embeds
+        const embedContainers = containerRef.current.querySelectorAll('[data-embed], .twitter-embed, .instagram-embed, .vimeo-embed, .tiktok-embed, .soundcloud-embed, .codepen-embed');
+        embedContainers.forEach(container => {
+          container.classList.add('w-full', 'overflow-hidden', 'break-words');
+        });
+
+        // Add responsive styling to all iframes
+        const iframes = containerRef.current.querySelectorAll('iframe');
+        iframes.forEach(iframe => {
+          const element = iframe as HTMLIFrameElement;
+          element.style.maxWidth = '100%';
+        });
+
+        // Add responsive styling to blockquotes
+        const blockquotes = containerRef.current.querySelectorAll('blockquote.twitter-tweet, blockquote.instagram-media, blockquote.tiktok-embed');
+        blockquotes.forEach(blockquote => {
+          const element = blockquote as HTMLElement;
+          element.style.maxWidth = '100%';
+          element.style.width = '100%';
+        });
+      }
+    };
+
+    addResponsiveStyling();
 
     // Cleanup function
     return () => {
       const twitterScript = document.getElementById('twitter-widget-script');
       const instagramScript = document.getElementById('instagram-embed-script');
+      const tiktokScript = document.getElementById('tiktok-embed-script');
+      const soundcloudScript = document.getElementById('soundcloud-embed-script');
+      const codepenScript = document.getElementById('codepen-embed-script');
 
       if (twitterScript) {
         twitterScript.remove();
@@ -170,6 +462,18 @@ export function EmbedRenderer({ content }: EmbedRendererProps) {
 
       if (instagramScript) {
         instagramScript.remove();
+      }
+
+      if (tiktokScript) {
+        tiktokScript.remove();
+      }
+
+      if (soundcloudScript) {
+        soundcloudScript.remove();
+      }
+
+      if (codepenScript) {
+        codepenScript.remove();
       }
     };
   }, [content]);

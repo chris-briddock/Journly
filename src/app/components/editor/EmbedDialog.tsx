@@ -22,6 +22,17 @@ import {
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { EmbedType } from '@/lib/tiptap/EmbedExtension';
+import {
+  extractYoutubeId,
+  extractVimeoId,
+  isValidTwitterUrl,
+  isValidInstagramUrl,
+  isValidTikTokUrl,
+  isValidCodePenUrl,
+  isValidSoundCloudUrl,
+  getEmbedErrorMessage,
+  getEmbedUrlPlaceholder
+} from '@/lib/embedUtils';
 
 interface EmbedDialogProps {
   editor: Editor | null;
@@ -53,7 +64,7 @@ export function EmbedDialog({ editor, open, onOpenChange }: EmbedDialogProps) {
         // Extract YouTube ID and create embed URL
         const youtubeId = extractYoutubeId(url);
         if (!youtubeId) {
-          throw new Error('Invalid YouTube URL');
+          throw new Error(getEmbedErrorMessage('youtube'));
         }
 
         const embedUrl = `https://www.youtube.com/embed/${youtubeId}`;
@@ -63,22 +74,45 @@ export function EmbedDialog({ editor, open, onOpenChange }: EmbedDialogProps) {
           width: 640,
           height: 480,
         });
+      } else if (type === 'vimeo') {
+        // Extract Vimeo ID and create embed URL
+        const vimeoId = extractVimeoId(url);
+        if (!vimeoId) {
+          throw new Error(getEmbedErrorMessage('vimeo'));
+        }
+
+        const embedUrl = `https://player.vimeo.com/video/${vimeoId}`;
+        // For Vimeo embeds, use the Embed extension
+        editor.commands.setEmbed({
+          src: embedUrl,
+          type: 'vimeo',
+          title: title || 'Vimeo video',
+          width: '100%',
+          height: 'auto',
+        });
       } else if (type === 'twitter') {
         // Validate Twitter URL
         if (!isValidTwitterUrl(url)) {
-          throw new Error('Invalid Twitter URL. Please use a URL like https://twitter.com/username/status/123456789');
+          throw new Error(getEmbedErrorMessage('twitter'));
         }
 
         // For Twitter embeds, use the Embed extension
+        // Ensure we're using the original URL format for Twitter embeds
+        let twitterUrl = url;
+        if (twitterUrl.includes('x.com')) {
+          // Convert x.com URLs to twitter.com for better compatibility
+          twitterUrl = twitterUrl.replace('x.com', 'twitter.com');
+        }
+
         editor.commands.setEmbed({
-          src: url,
+          src: twitterUrl,
           type: 'twitter',
           title: title || 'Twitter post',
         });
       } else if (type === 'instagram') {
         // Validate Instagram URL
         if (!isValidInstagramUrl(url)) {
-          throw new Error('Invalid Instagram URL. Please use a URL like https://www.instagram.com/p/abcdef123/');
+          throw new Error(getEmbedErrorMessage('instagram'));
         }
 
         // For Instagram embeds, use the Embed extension
@@ -86,6 +120,42 @@ export function EmbedDialog({ editor, open, onOpenChange }: EmbedDialogProps) {
           src: url,
           type: 'instagram',
           title: title || 'Instagram post',
+        });
+      } else if (type === 'tiktok') {
+        // Validate TikTok URL
+        if (!isValidTikTokUrl(url)) {
+          throw new Error(getEmbedErrorMessage('tiktok'));
+        }
+
+        // For TikTok embeds, use the Embed extension
+        editor.commands.setEmbed({
+          src: url,
+          type: 'tiktok',
+          title: title || 'TikTok video',
+        });
+      } else if (type === 'codepen') {
+        // Validate CodePen URL
+        if (!isValidCodePenUrl(url)) {
+          throw new Error(getEmbedErrorMessage('codepen'));
+        }
+
+        // For CodePen embeds, use the Embed extension
+        editor.commands.setEmbed({
+          src: url,
+          type: 'codepen',
+          title: title || 'CodePen',
+        });
+      } else if (type === 'soundcloud') {
+        // Validate SoundCloud URL
+        if (!isValidSoundCloudUrl(url)) {
+          throw new Error(getEmbedErrorMessage('soundcloud'));
+        }
+
+        // For SoundCloud embeds, use the Embed extension
+        editor.commands.setEmbed({
+          src: url,
+          type: 'soundcloud',
+          title: title || 'SoundCloud track',
         });
       } else {
         // For other embed types
@@ -108,26 +178,7 @@ export function EmbedDialog({ editor, open, onOpenChange }: EmbedDialogProps) {
     }
   };
 
-  // Helper function to extract YouTube video ID from various YouTube URL formats
-  const extractYoutubeId = (url: string): string | null => {
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-    const match = url.match(regExp);
-    return (match && match[2].length === 11) ? match[2] : null;
-  };
-
-  // Helper function to validate Twitter URL
-  const isValidTwitterUrl = (url: string): boolean => {
-    // Twitter/X URL patterns
-    const twitterRegExp = /^https?:\/\/(www\.)?(twitter\.com|x\.com)\/[a-zA-Z0-9_]+\/status\/[0-9]+/;
-    return twitterRegExp.test(url);
-  };
-
-  // Helper function to validate Instagram URL
-  const isValidInstagramUrl = (url: string): boolean => {
-    // Instagram URL patterns
-    const instagramRegExp = /^https?:\/\/(www\.)?instagram\.com\/(p|reel)\/[a-zA-Z0-9_-]+/;
-    return instagramRegExp.test(url);
-  };
+  // Helper functions are now imported from embedUtils.ts
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -158,8 +209,12 @@ export function EmbedDialog({ editor, open, onOpenChange }: EmbedDialogProps) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="youtube" data-testid="youtube-option">YouTube</SelectItem>
+                <SelectItem value="vimeo" data-testid="vimeo-option">Vimeo</SelectItem>
                 <SelectItem value="twitter" data-testid="twitter-option">Twitter</SelectItem>
                 <SelectItem value="instagram" data-testid="instagram-option">Instagram</SelectItem>
+                <SelectItem value="tiktok" data-testid="tiktok-option">TikTok</SelectItem>
+                <SelectItem value="soundcloud" data-testid="soundcloud-option">SoundCloud</SelectItem>
+                <SelectItem value="codepen" data-testid="codepen-option">CodePen</SelectItem>
                 <SelectItem value="generic" data-testid="generic-option">Generic Iframe</SelectItem>
               </SelectContent>
             </Select>
@@ -167,33 +222,48 @@ export function EmbedDialog({ editor, open, onOpenChange }: EmbedDialogProps) {
 
           <div className="grid gap-2">
             <Label htmlFor="embed-url">URL</Label>
-            <Input
-              id="embed-url"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder={
-                type === 'youtube'
-                  ? 'https://www.youtube.com/watch?v=...'
-                  : type === 'twitter'
-                  ? 'https://twitter.com/user/status/...'
-                  : type === 'instagram'
-                  ? 'https://www.instagram.com/p/...'
-                  : 'https://...'
-              }
-            />
-          </div>
-
-          {(type === 'twitter' || type === 'instagram' || type === 'generic') && (
-            <div className="grid gap-2">
-              <Label htmlFor="embed-title">Title (Optional)</Label>
+            <div className="relative">
               <Input
-                id="embed-title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Title for the embedded content"
+                id="embed-url"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder={getEmbedUrlPlaceholder(type)}
+                className="pr-2 text-ellipsis"
               />
             </div>
+          </div>
+
+          {(type === 'twitter' || type === 'instagram' || type === 'vimeo' ||
+            type === 'tiktok' || type === 'soundcloud' || type === 'codepen' || type === 'generic') && (
+            <div className="grid gap-2">
+              <Label htmlFor="embed-title">Title (Optional)</Label>
+              <div className="relative">
+                <Input
+                  id="embed-title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Title for the embedded content"
+                  className="pr-2 text-ellipsis"
+                />
+              </div>
+            </div>
           )}
+
+
+          <div className="mt-2 text-xs text-muted-foreground">
+            {type === 'youtube' && (
+              <p>Tip: You can use regular YouTube URLs, Shorts, or embed links.</p>
+            )}
+            {type === 'twitter' && (
+              <p>Tip: Copy the URL of a specific tweet from Twitter or X.com.</p>
+            )}
+            {type === 'instagram' && (
+              <p>Tip: Use the URL of an Instagram post, reel, or story.</p>
+            )}
+            {type === 'vimeo' && (
+              <p>Tip: Use the URL of a Vimeo video page or embed link.</p>
+            )}
+          </div>
         </div>
 
         <DialogFooter>

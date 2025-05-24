@@ -56,6 +56,15 @@ export default function SimpleNavigation() {
 
           {/* Auth Buttons / User Menu */}
           <div className="hidden md:flex md:items-center md:space-x-2">
+            {/* Subscription Button - Always visible */}
+            <Button
+              asChild
+              variant="outline"
+              className="bg-primary/10 hover:bg-primary/20 border-primary/20 text-primary font-medium"
+            >
+              <Link href="/subscription">Become a Member</Link>
+            </Button>
+
             {session ? (
               <>
                 <NotificationDropdown />
@@ -78,6 +87,9 @@ export default function SimpleNavigation() {
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link href="/dashboard/posts/new">Write Post</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/dashboard/subscription">Manage Subscription</Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
@@ -128,6 +140,16 @@ export default function SimpleNavigation() {
                   <Button asChild variant="ghost" className="justify-start">
                     <Link href="/categories">Categories</Link>
                   </Button>
+
+                  {/* Subscription Button - Always visible */}
+                  <Button
+                    asChild
+                    variant="outline"
+                    className="justify-start bg-primary/10 hover:bg-primary/20 border-primary/20 text-primary font-medium"
+                  >
+                    <Link href="/subscription">Become a Member</Link>
+                  </Button>
+
                   {session && (
                     <Button asChild variant="ghost" className="justify-start">
                       <Link href="/dashboard">Dashboard</Link>

@@ -1,11 +1,8 @@
-import { searchUsers } from "./api";
+import { MentionUser } from "@/types/models/mentionUser";
+import { searchUsers } from "./services/getSearchUsers";
 
 // User type definition for mentions
-export interface MentionUser {
-  id: string;
-  label: string;
-  avatar: string | null;
-}
+
 
 // Fallback users in case the API fails
 const fallbackUsers: MentionUser[] = [

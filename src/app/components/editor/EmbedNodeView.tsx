@@ -41,7 +41,7 @@ export function EmbedNodeView({
               <p>Twitter/X embed will appear in the published post</p>
             </div>
             {/* Load Twitter widget script in the editor view for preview */}
-            <script async src="https://platform.twitter.com/widgets.js" charSet="utf-8"></script>
+            <script async src="https://platform.twitter.com/widgets.js"></script>
           </div>
         );
       case 'instagram':
@@ -51,7 +51,18 @@ export function EmbedNodeView({
               className="instagram-media"
               data-instgrm-permalink={src}
               data-instgrm-version="14"
-              style={{ maxWidth: '540px', width: '100%', margin: '0 auto' }}
+              style={{
+                maxWidth: '540px',
+                width: '100%',
+                margin: '0 auto',
+                background: '#FFF',
+                borderRadius: '3px',
+                border: '1px solid #dbdbdb',
+                boxShadow: 'none',
+                display: 'block',
+                minWidth: '326px',
+                padding: '0'
+              }}
             >
               <a href={src} target="_blank" rel="noopener noreferrer">
                 {title || 'Loading Instagram post...'}
@@ -61,7 +72,63 @@ export function EmbedNodeView({
               <p>Instagram embed will appear in the published post</p>
             </div>
             {/* Load Instagram embed script in the editor view for preview */}
-            <script async src="//www.instagram.com/embed.js" charSet="utf-8"></script>
+            <script async src="https://www.instagram.com/embed.js"></script>
+          </div>
+        );
+      case 'vimeo':
+        return (
+          <div className="vimeo-embed">
+            <iframe
+              src={src}
+              title={title || 'Vimeo video'}
+              width={width}
+              height={height}
+              style={{ border: 'none' }}
+              allow="autoplay; fullscreen; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+        );
+      case 'tiktok':
+        return (
+          <div className="tiktok-embed">
+            <blockquote className="tiktok-embed" cite={src} data-video-id={src.split('/').pop()}>
+              <a href={src} target="_blank" rel="noopener noreferrer">
+                {title || 'Loading TikTok...'}
+              </a>
+            </blockquote>
+            <div className="mt-2 text-sm text-muted-foreground">
+              <p>TikTok embed will appear in the published post</p>
+            </div>
+            {/* Load TikTok widget script in the editor view for preview */}
+            <script async src="https://www.tiktok.com/embed.js"></script>
+          </div>
+        );
+      case 'soundcloud':
+        return (
+          <div className="soundcloud-embed">
+            <iframe
+              src={`https://w.soundcloud.com/player/?url=${encodeURIComponent(src)}&color=%23ff5500&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true`}
+              title={title || 'SoundCloud track'}
+              width={width}
+              height="166"
+              style={{ border: 'none' }}
+              allow="autoplay"
+            />
+          </div>
+        );
+      case 'codepen':
+        return (
+          <div className="codepen-embed">
+            <iframe
+              src={`${src.replace('/pen/', '/embed/')}?default-tab=result&theme-id=dark`}
+              title={title || 'CodePen embed'}
+              width={width}
+              height="400"
+              style={{ border: 'none' }}
+              allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
           </div>
         );
       case 'generic':
@@ -73,7 +140,7 @@ export function EmbedNodeView({
               title={title || 'Embedded content'}
               width={width}
               height={height}
-              frameBorder="0"
+              style={{ border: 'none' }}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
             />

@@ -4,7 +4,6 @@ import { DashboardHeader } from "@/app/components/dashboard/DashboardHeader";
 import { DashboardShell } from "@/app/components/dashboard/DashboardShell";
 import { ReadingHistoryList } from "@/app/components/dashboard/ReadingHistoryList";
 import { ReadingHistorySkeleton } from "@/app/components/dashboard/ReadingHistorySkeleton";
-import SimpleNavigation from "@/app/components/SimpleNavigation";
 
 export const metadata: Metadata = {
   title: "Reading History - Journly Dashboard",
@@ -14,7 +13,6 @@ export const metadata: Metadata = {
 export default function ReadingHistoryPage() {
   return (
     <>
-      <SimpleNavigation />
       <DashboardShell>
         <DashboardHeader
           heading="Reading History"

@@ -6,14 +6,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/components/ui/ta
 import { DashboardHeader } from "@/app/components/dashboard/DashboardHeader";
 import { DashboardShell } from "@/app/components/dashboard/DashboardShell";
 import { BarChart, LineChart, PieChart, TrendingUp, Users, Eye, MessageSquare, ThumbsUp } from "lucide-react";
+import { Post } from "@/types/models/post";
 
-interface Post {
-  id: string;
-  title: string;
-  viewCount: number;
-  likeCount: number;
-  commentCount: number;
-}
 
 export const metadata: Metadata = {
   title: "Analytics - Journly",

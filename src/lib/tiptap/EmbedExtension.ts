@@ -5,7 +5,7 @@ import { EmbedNodeView } from '../../app/components/editor/EmbedNodeView';
 /**
  * Supported embed types
  */
-export type EmbedType = 'youtube' | 'twitter' | 'instagram' | 'generic';
+export type EmbedType = 'youtube' | 'twitter' | 'instagram' | 'vimeo' | 'soundcloud' | 'tiktok' | 'codepen' | 'generic';
 
 /**
  * Attributes for the embed node
@@ -115,15 +115,27 @@ export const Embed = Node.create<EmbedOptions>({
     return [
       {
         tag: 'div[data-embed]',
+        getAttrs: (node) => {
+          if (typeof node === 'string') return {};
+          const element = node as HTMLElement;
+          return {
+            src: element.getAttribute('data-src') || '',
+            type: element.getAttribute('data-embed-type') || 'generic',
+          };
+        },
       },
     ];
   },
 
   renderHTML({ HTMLAttributes }) {
+    const { src, type } = HTMLAttributes;
     return [
       'div',
       mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
         'data-embed': '',
+        'data-embed-type': type,
+        'data-src': src,
+        'class': `embed-${type}`,
       }),
       '',
     ];

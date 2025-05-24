@@ -5,14 +5,7 @@ import { Layers3, ArrowRight, FileText } from "lucide-react";
 import { getApiUrl } from "@/lib/getApiUrl";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { Button } from "@/app/components/ui/button";
-import SimpleNavigation from "@/app/components/SimpleNavigation";
-
-interface Category {
-  id: string;
-  name: string;
-  description: string | null;
-  postCount: number;
-}
+import { Category } from "@/types/models/category";
 
 export const metadata: Metadata = {
   title: "Categories - Journly",
@@ -22,7 +15,11 @@ export const metadata: Metadata = {
 async function getCategories(): Promise<Category[]> {
   try {
     const response = await fetch(getApiUrl('/api/categories'), {
-      next: { revalidate: 0 }
+      next: { revalidate: 0 },
+      credentials: 'include', // Include credentials (cookies) for authentication
+      headers: {
+        'Content-Type': 'application/json',
+      }
     });
 
     if (!response.ok) {
@@ -43,7 +40,6 @@ export default async function CategoriesPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <SimpleNavigation />
       <div className="container mx-auto px-4 py-10 max-w-7xl">
         <div className="flex flex-col gap-6">
           <div className="flex flex-col gap-2">

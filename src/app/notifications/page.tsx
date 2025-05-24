@@ -1,30 +1,8 @@
 import type { Metadata } from "next/types";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import prisma from "@/lib/prisma";
+import { Notification } from "@/types/models/notification";
 
-interface Notification {
-  id: string;
-  type: string;
-  read: boolean;
-  message: string;
-  link: string | null;
-  createdAt: Date;
-  actionUser: {
-    id: string;
-    name: string | null;
-    image: string | null;
-  } | null;
-  post: {
-    id: string;
-    title: string;
-  } | null;
-  comment: {
-    id: string;
-    content: string;
-    postId: string;
-  } | null;
-}
 
 import { DashboardShell } from "@/app/components/dashboard/DashboardShell";
 import { Button } from "@/app/components/ui/button";
@@ -32,7 +10,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/ca
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/components/ui/tabs";
 import { MarkAllReadButton } from "../components/MarkAllReadButton";
 import { NotificationItem } from "../components/NotificationItem";
-import SimpleNavigation from "../components/SimpleNavigation";
 
 export const metadata: Metadata = {
   title: "Notifications - Journly",
@@ -47,58 +24,33 @@ interface NotificationsPageProps {
   }>;
 }
 
-async function getNotifications(userId: string, unreadOnly = false, page = 1, limit = 20) {
-  const skip = (page - 1) * limit;
+async function getNotificationsFromApi(unreadOnly = false, page = 1, limit = 20) {
+  // Use absolute URL with the correct origin for server components
+  const baseUrl = process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : process.env.NODE_ENV === 'development'
+      ? 'http://localhost:3000'
+      : '';
 
-  // Build the where clause
-  const where: { userId: string; read?: boolean } = { userId };
-  if (unreadOnly) {
-    where.read = false;
+  const url = new URL('/api/notifications', baseUrl);
+
+  // Add query parameters
+  url.searchParams.append('unread', unreadOnly.toString());
+  url.searchParams.append('page', page.toString());
+  url.searchParams.append('limit', limit.toString());
+
+  const response = await fetch(url, {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    cache: 'no-store',
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch notifications: ${response.statusText}`);
   }
 
-  const [notifications, total] = await Promise.all([
-    prisma.notification.findMany({
-      where,
-      include: {
-        actionUser: {
-          select: {
-            id: true,
-            name: true,
-            image: true,
-          },
-        },
-        post: {
-          select: {
-            id: true,
-            title: true,
-          },
-        },
-        comment: {
-          select: {
-            id: true,
-            content: true,
-            postId: true,
-          },
-        },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-      skip,
-      take: limit,
-    }),
-    prisma.notification.count({ where }),
-  ]);
-
-  return {
-    notifications,
-    pagination: {
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    },
-  };
+  return response.json();
 }
 
 export default async function NotificationsPage({ searchParams }: NotificationsPageProps) {
@@ -109,14 +61,12 @@ export default async function NotificationsPage({ searchParams }: NotificationsP
     redirect("/login");
   }
 
-  const userId = session.user.id as string;
   const params = await searchParams;
   const page = parseInt(params.page || "1");
   const limit = parseInt(params.limit || "20");
   const tab = params.tab || "all";
 
-  const { notifications, pagination } = await getNotifications(
-    userId,
+  const { notifications, pagination } = await getNotificationsFromApi(
     tab === "unread",
     page,
     limit
@@ -124,7 +74,6 @@ export default async function NotificationsPage({ searchParams }: NotificationsP
 
   return (
     <>
-      <SimpleNavigation />
     <DashboardShell>
       <div className="flex items-center justify-between">
         <div>
@@ -240,6 +189,5 @@ export default async function NotificationsPage({ searchParams }: NotificationsP
       </Tabs>
     </DashboardShell>
     </>
-    
   );
 }

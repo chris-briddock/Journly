@@ -4,8 +4,9 @@ import Image from "next/image";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { AlertCircle, Loader2, Upload } from "lucide-react";
+import { AlertCircle, Loader2, Upload, CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
+import { format } from "date-fns";
 
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -26,8 +27,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../components/ui/select";
+
 import { MultiSelect } from "./MultiSelect";
 import { Editor } from "./Editor";
+import { SeoSection } from "./SeoSection";
 
 type PostFormProps = {
   initialData?: {
@@ -38,6 +41,15 @@ type PostFormProps = {
     featuredImage?: string;
     status: string;
     categoryIds: string[];
+    scheduledPublishAt?: string | Date;
+    isPremium?: boolean;
+    // SEO fields
+    seoTitle?: string;
+    seoDescription?: string;
+    seoKeywords?: string;
+    seoCanonicalUrl?: string;
+    ogImage?: string;
+    noIndex?: boolean;
   };
   categories: {
     id: string;
@@ -53,6 +65,15 @@ type FormValues = {
   featuredImage: string;
   status: string;
   categoryIds: string[];
+  publishAt: Date | null;
+  isPremium: boolean;
+  // SEO fields
+  seoTitle: string;
+  seoDescription: string;
+  seoKeywords: string;
+  seoCanonicalUrl: string;
+  ogImage: string;
+  noIndex: boolean;
 };
 
 export default function PostForm({
@@ -65,6 +86,11 @@ export default function PostForm({
   const [error, setError] = useState("");
   const [content, setContent] = useState(initialData?.content || "");
 
+
+
+  // Get the scheduled date if it exists
+  const scheduledDate = initialData?.scheduledPublishAt ? new Date(initialData.scheduledPublishAt) : null;
+
   const form = useForm<FormValues>({
     defaultValues: {
       title: initialData?.title || "",
@@ -73,6 +99,16 @@ export default function PostForm({
       featuredImage: initialData?.featuredImage || "",
       status: initialData?.status || "draft",
       categoryIds: initialData?.categoryIds || [],
+
+      publishAt: scheduledDate,
+      isPremium: false, // Always set to false as we've removed the premium option
+      // SEO fields
+      seoTitle: initialData?.seoTitle || "",
+      seoDescription: initialData?.seoDescription || "",
+      seoKeywords: initialData?.seoKeywords || "",
+      seoCanonicalUrl: initialData?.seoCanonicalUrl || "",
+      ogImage: initialData?.ogImage || "",
+      noIndex: initialData?.noIndex || false,
     },
   });
 
@@ -80,17 +116,94 @@ export default function PostForm({
     setIsSubmitting(true);
     setError("");
 
-    // Include the content from the editor
+    // Include the content from the editor and prepare SEO data
     const postData = {
       ...values,
       content,
+      // Ensure SEO fields are properly formatted
+      seoTitle: values.seoTitle || values.title,
+      seoDescription: values.seoDescription || values.excerpt,
+      seoKeywords: values.seoKeywords,
+      seoCanonicalUrl: values.seoCanonicalUrl,
+      ogImage: values.ogImage || values.featuredImage,
+      noIndex: values.noIndex,
     };
 
     try {
+      // If status is scheduled, use the schedule API
+      if (values.status === "scheduled" && values.publishAt) {
+        // First create/update the post
+        const url = isEditing
+          ? `/api/posts/${initialData?.id}`
+          : "/api/posts";
+
+        const method = isEditing ? "PUT" : "POST";
+
+        // If the status is already "scheduled", keep it that way
+        const statusToSave = values.status === "scheduled" ? "scheduled" : "draft";
+
+        const response = await fetch(url, {
+          method,
+          headers: {
+            "Content-Type": "application/json",
+          },
+          next: { revalidate: 0 },
+          credentials: 'include',
+          body: JSON.stringify({
+            ...postData,
+            status: statusToSave,
+          }),
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+
+          // Check if this is a subscription required error
+          if (data.subscriptionRequired) {
+            // Redirect to subscription page
+            toast.error("Free users can only create 1 post. Please upgrade to create more posts.");
+            router.push("/subscription");
+            return;
+          }
+
+          throw new Error(data.error || "Failed to save post");
+        }
+
+        const savedPost = await response.json();
+
+        // Then schedule the post
+        const scheduleResponse = await fetch("/api/posts/schedule", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          next: { revalidate: 0 },
+          credentials: 'include',
+          body: JSON.stringify({
+            postId: savedPost.id,
+            publishAt: values.publishAt,
+          }),
+        });
+
+        if (!scheduleResponse.ok) {
+          const data = await scheduleResponse.json();
+          throw new Error(data.error || "Failed to schedule post");
+        }
+
+        toast.success(
+          isEditing ? "Post updated and scheduled" : "Post created and scheduled"
+        );
+
+        router.push("/dashboard/posts");
+        router.refresh();
+        return;
+      }
+
+      // Regular post creation/update
       const url = isEditing
         ? `/api/posts/${initialData?.id}`
         : "/api/posts";
-      
+
       const method = isEditing ? "PUT" : "POST";
 
       const response = await fetch(url, {
@@ -99,19 +212,27 @@ export default function PostForm({
           "Content-Type": "application/json",
         },
         next: { revalidate: 0 },
+        credentials: 'include',
         body: JSON.stringify(postData),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
+        // Check if this is a subscription required error
+        if (data.subscriptionRequired) {
+          // Redirect to subscription page
+          toast.error("Free users can only create 1 post. Please upgrade to create more posts.");
+          router.push("/subscription");
+          return;
+        }
         throw new Error(data.error || "Something went wrong");
       }
 
       toast.success(
         isEditing ? "Post updated successfully" : "Post created successfully"
       );
-      
+
       router.push("/dashboard/posts");
       router.refresh();
     } catch (error: unknown) {
@@ -263,7 +384,23 @@ export default function PostForm({
               <FormItem>
                 <FormLabel>Status</FormLabel>
                 <Select
-                  onValueChange={field.onChange}
+                  onValueChange={(value) => {
+                    field.onChange(value);
+
+                    // Handle status changes
+                    if (value === "scheduled") {
+                      // If changing to scheduled, ensure a date is set
+                      if (!form.getValues("publishAt")) {
+                        const tomorrow = new Date();
+                        tomorrow.setDate(tomorrow.getDate() + 1);
+                        tomorrow.setHours(9, 0, 0, 0);
+                        form.setValue("publishAt", tomorrow);
+                      }
+                    } else {
+                      // If not scheduled, clear the publish date
+                      form.setValue("publishAt", null);
+                    }
+                  }}
                   defaultValue={field.value}
                 >
                   <FormControl>
@@ -274,15 +411,62 @@ export default function PostForm({
                   <SelectContent>
                     <SelectItem value="draft">Draft</SelectItem>
                     <SelectItem value="published">Published</SelectItem>
+                    <SelectItem value="scheduled">Scheduled</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormDescription>
                   Draft posts are only visible to you. Published posts are visible to everyone.
+                  Scheduled posts will be automatically published at the scheduled time.
                 </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
+
+          {/* Schedule checkbox removed - now handled entirely by the status dropdown */}
+
+          {form.watch("status") === "scheduled" && (
+            <FormField
+              control={form.control}
+              name="publishAt"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel>Publish Date and Time</FormLabel>
+                  <FormControl>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="datetime-local"
+                        value={field.value ? format(new Date(field.value), "yyyy-MM-dd'T'HH:mm") : ""}
+                        onChange={(e) => {
+                          const date = e.target.value ? new Date(e.target.value) : null;
+                          field.onChange(date);
+                        }}
+                        className="w-full"
+                        disabled={form.watch("status") === "published"}
+                      />
+                      <CalendarIcon className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                  </FormControl>
+                  <FormDescription>
+                    Choose when to publish this post. Must be a future date and time.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
+
+          {/* Premium content option removed */}
+
+          {/* SEO Section */}
+          <div className="pt-4">
+            <SeoSection
+              form={form}
+              title={form.watch("title")}
+              description={form.watch("excerpt")}
+              featuredImage={form.watch("featuredImage")}
+            />
+          </div>
 
           <div className="flex justify-end gap-4">
             <Button

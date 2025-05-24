@@ -4,13 +4,15 @@ import { useState, useRef, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { Loader2, AtSign } from "lucide-react";
 import { toast } from "sonner";
-import { searchUsers } from "@/lib/api";
+import Link from "next/link";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar";
 import { Button } from "@/app/components/ui/button";
 import { Textarea } from "@/app/components/ui/textarea";
+import { Alert, AlertDescription } from "@/app/components/ui/alert";
 import { CommentMentionList } from "./CommentMentionList";
 import { getInitials } from "@/lib/utils";
+import { searchUsers } from "@/lib/services/getSearchUsers";
 
 
 type CommentFormProps = {
@@ -23,6 +25,7 @@ export function CommentForm({ postId, parentId = null, onCommentSubmitted }: Com
   const { data: session } = useSession();
   const [content, setContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [subscriptionError, setSubscriptionError] = useState<string | null>(null);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mentionResults, setMentionResults] = useState<Array<{id: string; label: string; avatar: string | null}>>([]);
   const [cursorPosition, setCursorPosition] = useState<{top: number; left: number} | null>(null);
@@ -184,10 +187,16 @@ export function CommentForm({ postId, parentId = null, onCommentSubmitted }: Com
       const data = await response.json();
 
       if (!response.ok) {
+        // Check if this is a subscription-related error
+        if (response.status === 403 && data.subscriptionRequired) {
+          setSubscriptionError(data.error);
+          return;
+        }
         throw new Error(data.error || "Failed to add comment");
       }
 
       setContent("");
+      setSubscriptionError(null); // Clear any previous subscription errors
       toast.success(parentId ? "Reply added successfully" : "Comment added successfully");
 
       if (onCommentSubmitted) {
@@ -201,15 +210,27 @@ export function CommentForm({ postId, parentId = null, onCommentSubmitted }: Com
     }
   };
 
-  
+
 
   if (!session) {
     return null;
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="flex gap-4">
+    <div className="space-y-4">
+      {subscriptionError && (
+        <Alert className="border-orange-200 bg-orange-50">
+          <AlertDescription className="text-orange-800">
+            {subscriptionError}{" "}
+            <Link href="/subscription" className="font-medium underline hover:no-underline">
+              Upgrade your subscription
+            </Link>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="flex gap-4">
         <Avatar className="h-10 w-10">
           <AvatarImage src={session.user?.image || undefined} alt={session.user?.name || "User"} />
           <AvatarFallback>{userInitials}</AvatarFallback>
@@ -217,11 +238,17 @@ export function CommentForm({ postId, parentId = null, onCommentSubmitted }: Com
         <div className="flex-1 relative">
           <Textarea
             ref={textareaRef}
-            placeholder={parentId ? "Write a reply... Use @ to mention users" : "Write a comment... Use @ to mention users"}
+            placeholder={
+              subscriptionError
+                ? "Upgrade your subscription to comment"
+                : parentId
+                  ? "Write a reply... Use @ to mention users"
+                  : "Write a comment... Use @ to mention users"
+            }
             value={content}
             onChange={handleTextareaChange}
             className="min-h-[100px] resize-none"
-            disabled={isSubmitting}
+            disabled={isSubmitting || !!subscriptionError}
           />
 
           {/* Mention dropdown */}
@@ -248,17 +275,20 @@ export function CommentForm({ postId, parentId = null, onCommentSubmitted }: Com
         </div>
       </div>
       <div className="flex justify-end">
-        <Button type="submit" disabled={isSubmitting || !content.trim()}>
+        <Button type="submit" disabled={isSubmitting || !content.trim() || !!subscriptionError}>
           {isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               {parentId ? "Posting Reply..." : "Posting Comment..."}
             </>
+          ) : subscriptionError ? (
+            "Subscription Required"
           ) : (
             parentId ? "Post Reply" : "Post Comment"
           )}
         </Button>
       </div>
-    </form>
+      </form>
+    </div>
   );
 }

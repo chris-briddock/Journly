@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { auth } from '@/lib/auth';
+import { canAccessArticle } from '@/lib/services/article-access-service';
 import { createCommentNotification, createCommentReplyNotification } from '@/lib/notifications';
 import { processCommentMentions } from '@/lib/mentions';
 
@@ -71,6 +72,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Post not found' },
         { status: 404 }
+      );
+    }
+
+    // Check if the user can access this article (required for commenting)
+    const canAccess = await canAccessArticle(session.user.id as string, postId);
+    if (!canAccess) {
+      return NextResponse.json(
+        {
+          error: 'You have reached your monthly article limit. Please upgrade your subscription to continue commenting.',
+          subscriptionRequired: true
+        },
+        { status: 403 }
       );
     }
 

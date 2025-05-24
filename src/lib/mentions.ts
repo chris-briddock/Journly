@@ -8,9 +8,9 @@ export function extractMentions(text: string): string[] {
   // Match @username pattern (alphanumeric and underscores, min 3 chars)
   const mentionRegex = /@([a-zA-Z0-9_]{3,})/g;
   const matches = text.match(mentionRegex);
-  
+
   if (!matches) return [];
-  
+
   // Remove @ symbol and return unique usernames
   return [...new Set(matches.map(match => match.substring(1)))];
 }
@@ -19,15 +19,16 @@ export function extractMentions(text: string): string[] {
  * Process mentions in a post and create notifications
  */
 export async function processPostMentions(
-  postId: string, 
-  postContent: string, 
+  postId: string,
+  postContent: string,
   authorId: string,
-  postTitle: string
+  postTitle: string,
+  isScheduled: boolean = false
 ): Promise<void> {
   const mentions = extractMentions(postContent);
-  
+
   if (mentions.length === 0) return;
-  
+
   // Find users by their usernames
   // Note: In a real system, you'd have a username field in the User model
   // For this implementation, we'll use the name field as a substitute
@@ -42,12 +43,19 @@ export async function processPostMentions(
       name: true
     }
   });
-  
+
   // Create notifications for each mentioned user
   for (const user of mentionedUsers) {
     // Don't notify the author if they mention themselves
     if (user.id === authorId) continue;
-    
+
+    // Skip sending notifications if this is a scheduled post
+    // The notifications will be sent when the post is published
+    if (isScheduled) {
+      console.log(`Mention for user ${user.id} in post ${postId} will be processed when the post is published`);
+      continue;
+    }
+
     await createMentionNotification({
       userId: user.id,
       actionUserId: authorId,
@@ -69,9 +77,9 @@ export async function processCommentMentions(
   postTitle: string
 ): Promise<void> {
   const mentions = extractMentions(commentContent);
-  
+
   if (mentions.length === 0) return;
-  
+
   // Find users by their usernames
   const mentionedUsers = await prisma.user.findMany({
     where: {
@@ -84,12 +92,12 @@ export async function processCommentMentions(
       name: true
     }
   });
-  
+
   // Create notifications for each mentioned user
   for (const user of mentionedUsers) {
     // Don't notify the author if they mention themselves
     if (user.id === authorId) continue;
-    
+
     await createMentionNotification({
       userId: user.id,
       actionUserId: authorId,

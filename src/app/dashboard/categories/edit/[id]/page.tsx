@@ -3,11 +3,11 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import type { Metadata } from "next/types";
 
-import { getCategory as getCategoryApi } from "@/lib/api";
 import { auth } from "@/lib/auth";
 import { Button } from "@/app/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card";
 import CategoryForm from "@/app/components/CategoryForm";
+import { getCategory as getCategoryApi } from "@/lib/services/getCategory";
 
 type Props = {
   params: Promise<{

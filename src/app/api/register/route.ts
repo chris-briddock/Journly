@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
+import { createFreeSubscription } from '@/lib/services/subscription-service';
 
 export async function POST(request: NextRequest) {
   try {
@@ -43,6 +44,9 @@ export async function POST(request: NextRequest) {
         createdAt: true,
       },
     });
+
+    // Create a free subscription for the new user
+    await createFreeSubscription(user.id);
 
     return NextResponse.json(user, { status: 201 });
   } catch (error) {

@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { format } from "date-fns";
-import { MessageSquare, Eye } from "lucide-react";
+import { MessageSquare, Eye, Lock } from "lucide-react";
 import type { Metadata } from "next/types";
 
 import { auth } from "@/lib/auth";
@@ -18,36 +18,10 @@ import { EmbedRenderer } from "@/app/components/EmbedRenderer";
 import { FeaturedImage } from "@/app/components/FeaturedImage";
 import { RelatedPostImage } from "@/app/components/RelatedPostImage";
 import { RecommendedPosts } from "@/app/components/RecommendedPosts";
-import SimpleNavigation from "@/app/components/SimpleNavigation";
 import { getInitials } from "@/lib/utils";
 import { ReadingProgressTracker } from "@/app/components/ReadingProgressTracker";
-
-interface Post {
-  id: string;
-  title: string;
-  content: string;
-  excerpt: string | null;
-  featuredImage: string | null;
-  status: string;
-  readingTime: number;
-  viewCount: number;
-  likeCount: number;
-  commentCount: number;
-  publishedAt: Date | null;
-  createdAt: Date;
-  author: {
-    id: string;
-    name: string | null;
-    image: string | null;
-    bio: string | null;
-  };
-  categories: {
-    category: {
-      id: string;
-      name: string;
-    };
-  }[];
-}
+import { Post } from "@/types/models/post";
+import { canAccessArticle, getArticlesReadThisMonth, getMonthlyArticleLimit, recordArticleAccess } from "@/lib/services/article-access-service";
 
 type Props = {
   params: Promise<{
@@ -65,10 +39,39 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
   }
 
-  return {
-    title: `${post.title} - Journly`,
-    description: post.excerpt || undefined,
+  // Use SEO fields if available, otherwise use post fields
+  const title = post.seoTitle || post.title;
+  const description = post.seoDescription || post.excerpt || undefined;
+  const ogImage = post.ogImage || post.featuredImage || undefined;
+
+  const metadata: Metadata = {
+    title: `${title} - Journly`,
+    description,
+    keywords: post.seoKeywords || undefined,
+    openGraph: {
+      title: title,
+      description: description,
+      type: 'article',
+      url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/posts/${post.id}`,
+      images: ogImage ? [{ url: ogImage }] : undefined,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: title,
+      description: description,
+      images: ogImage ? [ogImage] : undefined,
+    },
+    robots: post.noIndex ? { index: false, follow: false } : { index: true, follow: true },
   };
+
+  // Add canonical URL if available
+  if (post.seoCanonicalUrl) {
+    metadata.alternates = {
+      canonical: post.seoCanonicalUrl,
+    };
+  }
+
+  return metadata;
 }
 
 async function getPost(id: string): Promise<Post | null> {
@@ -143,6 +146,47 @@ export default async function PostPage({ params }: Props) {
   const session = await auth();
   const isAuthor = session?.user?.id === post.author.id;
 
+  // Check if the user can access this article
+  const userId = session?.user?.id || null;
+
+  // If no user is logged in, they should be redirected by middleware
+  if (!userId) {
+    // This is a fallback in case middleware fails
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Login Required</h1>
+          <p className="mb-4">You need to be logged in to view this article.</p>
+          <Button asChild>
+            <Link href={`/login?from=/posts/${id}`}>Sign In</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // The middleware should handle access control and recording article access
+  // If the user is the author, they can always access their own posts
+  // For debugging purposes, let's log the access check
+  console.log(`[Page] Checking access for user: ${userId}, post: ${id}, isAuthor: ${isAuthor}`);
+
+  // Check if the user can access the article
+  const canAccess = isAuthor || await canAccessArticle(userId, id);
+  console.log(`[Page] Access result: ${canAccess}`);
+
+  // If the user can access the article and is not the author, record the access
+  // This is a fallback in case the middleware fails to record the access
+  if (canAccess && !isAuthor) {
+    console.log(`[Page] Recording article access as fallback`);
+    await recordArticleAccess(userId, id);
+  }
+
+  const hasAccess = canAccess;
+
+  // Get the user's article access info
+  const articlesReadThisMonth = await getArticlesReadThisMonth(userId);
+  const monthlyLimit = await getMonthlyArticleLimit(userId);
+
   const categoryIds = post.categories.map((c: { category: { id: string } }) => c.category.id);
   const relatedPosts = await getRelatedPosts(post.id, categoryIds);
 
@@ -152,7 +196,6 @@ export default async function PostPage({ params }: Props) {
 
   return (
     <div className="min-h-screen bg-background">
-      <SimpleNavigation />
       {/* Client-side component to track reading progress */}
       <ReadingProgressTracker postId={post.id} />
       <div className="container mx-auto px-4 py-8">
@@ -204,7 +247,42 @@ export default async function PostPage({ params }: Props) {
           {/* Post Content */}
           <article className="mb-8 post-content-wrapper">
             <div className="bg-card rounded-lg p-6 shadow-sm">
-              <EmbedRenderer content={post.content} />
+              {hasAccess ? (
+                <EmbedRenderer content={post.content} />
+              ) : (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <Lock className="h-12 w-12 text-primary mb-4" />
+                  <h2 className="text-2xl font-bold mb-2">Post Limit Reached</h2>
+                  <p className="text-muted-foreground mb-4 max-w-md">
+                    You&apos;ve read <span className="font-bold text-primary">{articlesReadThisMonth}</span> of your <span className="font-bold text-primary">{monthlyLimit}</span> free posts this month.
+                  </p>
+
+                  <div className="bg-primary/5 p-6 rounded-xl mb-6 max-w-md">
+                    <h3 className="font-semibold text-lg mb-3">Become a member today and get:</h3>
+                    <ul className="text-left space-y-2 mb-4">
+                      <li className="flex items-start">
+                        <svg className="h-5 w-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span>Unlimited access to all content</span>
+                      </li>
+                      <li className="flex items-start">
+                        <svg className="h-5 w-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span>Ad-free reading experience</span>
+                      </li>
+                    </ul>
+                    <p className="text-sm text-muted-foreground">Only $4.99/month. Cancel anytime.</p>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <Button asChild size="lg" className="font-medium">
+                      <Link href="/subscription">Become a Member</Link>
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </article>
 
