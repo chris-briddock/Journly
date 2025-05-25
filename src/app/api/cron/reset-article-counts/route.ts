@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { resetAllUserArticleLimits } from '@/lib/services/article-access-service';
 
 // Force Node.js runtime for article access service compatibility
