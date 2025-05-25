@@ -1,6 +1,7 @@
 import { getPosts as getPostsApi, } from "@/lib/services/getPosts";
 import { getCategories as getCategoriesApi } from "@/lib/services/getCategories";
 import PostsPageClient from "../components/PostsPageClient";
+import { auth } from "@/lib/auth";
 
 type SearchParams = {
   categoryId?: string;
@@ -29,7 +30,7 @@ export default async function PostsPage({
   searchParams: Promise<SearchParams>;
 }) {
   const params = await searchParams;
-  const session = await import('@/lib/auth').then(mod => mod.auth());
+  const session = await auth();
 
   // If no user is logged in, they should be redirected by middleware
   // This is a fallback in case middleware fails
