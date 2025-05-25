@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { format } from 'date-fns';
-import { Edit, FileText, BarChart2, Tag, Settings, BookOpen, Clock } from 'lucide-react';
+import { Edit, FileText, BarChart2, Tag, Settings, BookOpen, Clock, CreditCard, Bookmark } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/app/components/ui/card';
 import { Skeleton } from '@/app/components/ui/skeleton';
@@ -85,6 +85,12 @@ export default function DashboardContent() {
       href: '/dashboard/posts',
     },
     {
+      title: 'Scheduled Posts',
+      icon: Clock,
+      description: 'Manage your scheduled posts',
+      href: '/dashboard/scheduled',
+    },
+    {
       title: 'Categories',
       icon: Tag,
       description: 'Organize your content with categories',
@@ -97,10 +103,22 @@ export default function DashboardContent() {
       href: '/dashboard/reading-history',
     },
     {
+      title: 'Bookmarks',
+      icon: Bookmark,
+      description: 'View your bookmarked posts',
+      href: '/dashboard/bookmarks',
+    },
+    {
       title: 'Analytics',
       icon: BarChart2,
       description: 'View your content performance',
       href: '/dashboard/analytics',
+    },
+    {
+      title: 'Subscription',
+      icon: CreditCard,
+      description: 'Manage your subscription',
+      href: '/dashboard/subscription',
     },
     {
       title: 'Settings',
