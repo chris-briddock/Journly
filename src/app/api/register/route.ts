@@ -3,6 +3,9 @@ import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { createFreeSubscription } from '@/lib/services/subscription-service';
 
+// Force Node.js runtime for subscription service compatibility
+export const runtime = 'nodejs';
+
 export async function POST(request: NextRequest) {
   try {
     const { name, email, password } = await request.json();

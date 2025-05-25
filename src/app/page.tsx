@@ -3,6 +3,7 @@ import Image from "next/image";
 import { cleanHtml, truncateText } from "@/lib/cleanHtml";
 import { getRecentPosts as getRecentPostsApi } from "@/lib/services/getRecentPosts";
 import { getPopularCategories as getPopularCategoriesApi } from "@/lib/services/getPopularCategories";
+import { TrendingCategories } from "@/app/components/TrendingCategories";
 import { Post } from "@/types/models/post";
 import { Category } from "@/types/models/category";
 
@@ -124,9 +125,12 @@ export default async function Home() {
       {/* Recent Posts Section - Medium-like grid */}
       <section className="py-10">
         <div className="container mx-auto px-4">
-          <div className="max-w-5xl mx-auto">
-            <div className="grid grid-cols-1 gap-10">
-              {recentPosts.slice(1).map((post) => (
+          <div className="max-w-7xl mx-auto">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+              {/* Main content */}
+              <div className="lg:col-span-3">
+                <div className="grid grid-cols-1 gap-10">
+                  {recentPosts.slice(1).map((post) => (
                 <article key={post.id} className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
                   <div className="md:col-span-2 space-y-3">
                     <div className="flex items-center space-x-2">
@@ -196,16 +200,25 @@ export default async function Home() {
                     </div>
                   )}
                 </article>
-              ))}
-            </div>
+                  ))}
+                </div>
 
-            <div className="text-center mt-12">
-              <Link
-                href="/posts"
-                className="bg-green-600 text-white dark:bg-white dark:text-black px-6 py-3 rounded-full font-medium hover:bg-green-700 dark:hover:bg-gray-200 transition inline-block"
-              >
-                See more stories
-              </Link>
+                <div className="text-center mt-12">
+                  <Link
+                    href="/posts"
+                    className="bg-green-600 text-white dark:bg-white dark:text-black px-6 py-3 rounded-full font-medium hover:bg-green-700 dark:hover:bg-gray-200 transition inline-block"
+                  >
+                    See more stories
+                  </Link>
+                </div>
+              </div>
+
+              {/* Sidebar */}
+              <div className="lg:col-span-1">
+                <div className="sticky top-24 space-y-6">
+                  <TrendingCategories limit={5} />
+                </div>
+              </div>
             </div>
           </div>
         </div>

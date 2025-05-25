@@ -14,6 +14,7 @@ import { CommentType } from "@/app/components/CommentList";
 import { CommentsSection } from "@/app/components/CommentsSection";
 import { ShareButton } from "@/app/components/ShareButton";
 import { LikeButton } from "@/app/components/LikeButton";
+import { BookmarkButton } from "@/app/components/BookmarkButton";
 import { EmbedRenderer } from "@/app/components/EmbedRenderer";
 import { FeaturedImage } from "@/app/components/FeaturedImage";
 import { RelatedPostImage } from "@/app/components/RelatedPostImage";
@@ -292,6 +293,11 @@ export default async function PostPage({ params }: Props) {
               <LikeButton
                 postId={post.id}
                 initialLikeCount={post.likeCount}
+                variant="ghost"
+                size="sm"
+              />
+              <BookmarkButton
+                postId={post.id}
                 variant="ghost"
                 size="sm"
               />

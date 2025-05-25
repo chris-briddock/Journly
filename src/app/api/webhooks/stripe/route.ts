@@ -5,6 +5,9 @@ import prisma from '@/lib/prisma';
 import { headers } from 'next/headers';
 import { SubscriptionStatus, SubscriptionTier } from '@/lib/types';
 
+// Force Node.js runtime for Stripe compatibility
+export const runtime = 'nodejs';
+
 // Disable body parsing for this route
 export const config = {
   api: {

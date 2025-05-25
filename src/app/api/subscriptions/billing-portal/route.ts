@@ -3,6 +3,9 @@ import { auth } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import { createBillingPortalSession } from '@/lib/stripe';
 
+// Force Node.js runtime for Stripe compatibility
+export const runtime = 'nodejs';
+
 // POST /api/subscriptions/billing-portal - Create a billing portal session
 export async function POST(req: NextRequest) {
   try {

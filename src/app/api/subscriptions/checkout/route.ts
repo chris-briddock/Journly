@@ -4,6 +4,9 @@ import prisma from '@/lib/prisma';
 import { createCheckoutSession, stripe, ensurePriceExists } from '@/lib/stripe';
 import { UserWithSubscription } from '@/lib/types';
 
+// Force Node.js runtime for Stripe compatibility
+export const runtime = 'nodejs';
+
 // POST /api/subscriptions/checkout - Create a checkout session for a subscription
 export async function POST(req: NextRequest) {
   try {
