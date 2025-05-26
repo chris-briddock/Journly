@@ -22,13 +22,20 @@ export async function getPosts(options: {
   if (status) params.append('status', status);
   if (q) params.append('q', q);
 
-  const response = await fetch(getApiUrl(`/api/posts?${params.toString()}`), {
-    next: { revalidate: 0 }
-  });
+  try {
+    const response = await fetch(getApiUrl(`/api/posts?${params.toString()}`), {
+      // Cache for 2 minutes to reduce API calls
+      next: { revalidate: 120 }
+    });
 
-  if (!response.ok) {
-    throw new Error('Failed to fetch posts');
+    if (!response.ok) {
+      console.error('Failed to fetch posts:', response.status, response.statusText);
+      return { posts: [], pagination: { total: 0, page: 1, limit: 10, totalPages: 0 } };
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error('Error fetching posts:', error);
+    return { posts: [], pagination: { total: 0, page: 1, limit: 10, totalPages: 0 } };
   }
-
-  return response.json();
 }

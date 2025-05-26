@@ -2,9 +2,53 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 
+// Simple in-memory cache for rate limiting
+const adminCategoriesRequestCache = new Map<string, { count: number; resetTime: number }>();
+
+// Rate limiting function for admin categories
+function checkAdminCategoriesRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const windowMs = 60 * 1000; // 1 minute window
+  const maxRequests = 30; // Max 30 requests per minute per IP
+
+  const key = `admin-categories:${ip}`;
+  const current = adminCategoriesRequestCache.get(key);
+
+  if (!current || now > current.resetTime) {
+    // Reset or initialize
+    adminCategoriesRequestCache.set(key, { count: 1, resetTime: now + windowMs });
+    return true;
+  }
+
+  if (current.count >= maxRequests) {
+    return false;
+  }
+
+  current.count++;
+  return true;
+}
+
 // GET /api/categories/admin - Get all categories with post counts for admin
 export async function GET(request: Request) {
   try {
+    // Get client IP for rate limiting
+    const ip = request.headers.get('x-forwarded-for') ||
+               request.headers.get('x-real-ip') ||
+               'unknown';
+
+    // Check rate limit
+    if (!checkAdminCategoriesRateLimit(ip)) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.' },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': '60'
+          }
+        }
+      );
+    }
+
     const session = await auth();
 
     // Check if this is a dashboard request

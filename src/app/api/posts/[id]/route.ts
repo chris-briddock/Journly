@@ -5,6 +5,9 @@ import { calculateReadingTime } from '@/lib/readingTime';
 import { createPostUpdateNotification } from '@/lib/notifications';
 import { processPostMentions } from '@/lib/mentions';
 
+// Force Node.js runtime for notification service compatibility
+export const runtime = 'nodejs';
+
 // GET /api/posts/[id] - Get a specific post
 export async function GET(
   request: NextRequest,

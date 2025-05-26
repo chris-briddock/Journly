@@ -11,13 +11,20 @@ export async function getUserPosts(userId: string, options: { limit?: number; pa
   params.append('limit', limit.toString());
   params.append('status', 'published');
 
-  const response = await fetch(getApiUrl(`/api/users/${userId}/posts?${params.toString()}`), {
-    next: { revalidate: 0 }
-  });
+  try {
+    const response = await fetch(getApiUrl(`/api/users/${userId}/posts?${params.toString()}`), {
+      // Cache for 2 minutes to reduce API calls
+      next: { revalidate: 120 }
+    });
 
-  if (!response.ok) {
-    throw new Error('Failed to fetch user posts');
+    if (!response.ok) {
+      console.error('Failed to fetch user posts:', response.status, response.statusText);
+      return { posts: [], pagination: { total: 0, page: 1, limit: 9, totalPages: 0 } };
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error('Error fetching user posts:', error);
+    return { posts: [], pagination: { total: 0, page: 1, limit: 9, totalPages: 0 } };
   }
-
-  return response.json();
 }

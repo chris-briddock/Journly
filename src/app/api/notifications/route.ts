@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 
+// Force Node.js runtime for consistency with other notification routes
+export const runtime = 'nodejs';
+
 // GET /api/notifications - Get notifications for the current user
 export async function GET(request: NextRequest) {
   try {
