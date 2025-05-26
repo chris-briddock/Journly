@@ -312,7 +312,7 @@ export default async function Home() {
               </div>
             </div>
             <div className="border-t border-gray-200 mt-8 pt-8 text-center text-muted-foreground">
-              <p>© {new Date().getFullYear()} Journly. All rights reserved.</p>
+              <p>© Journly. All rights reserved.</p>
             </div>
           </div>
         </div>
