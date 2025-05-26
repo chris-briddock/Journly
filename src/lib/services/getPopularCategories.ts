@@ -1,12 +1,13 @@
 import { getApiUrl } from "../getApiUrl";
 
 /**
- * Get popular categories
+ * Get popular categories with caching
  */
 export async function getPopularCategories(limit = 10) {
   try {
     const response = await fetch(getApiUrl(`/api/categories/popular?limit=${limit}`), {
-      next: { revalidate: 0 }
+      // Cache for 5 minutes to reduce API calls
+      next: { revalidate: 300 }
     });
 
     if (!response.ok) {
