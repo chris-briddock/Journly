@@ -13,7 +13,23 @@ export async function getUserFollowers(userId: string, options: { page?: number;
   params.append('page', page.toString());
   params.append('limit', limit.toString());
 
-  const response = await fetch(getApiUrl(`/api/users/${userId}/followers?${params.toString()}`), {
+  const url = getApiUrl(`/api/users/${userId}/followers?${params.toString()}`);
+
+  // During build time, return empty result to prevent API calls
+  if (!url) {
+    console.log('[Build] Returning empty followers result during static generation');
+    return {
+      followers: [],
+      pagination: {
+        page: 1,
+        limit: 10,
+        total: 0,
+        totalPages: 0
+      }
+    };
+  }
+
+  const response = await fetch(url, {
     next: { revalidate: 0 },
     credentials: 'include', // Include credentials (cookies) for authentication
     headers: {

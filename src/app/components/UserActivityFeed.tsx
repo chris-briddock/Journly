@@ -56,7 +56,16 @@ export function UserActivityFeed({ userId, userName }: UserActivityFeedProps) {
   const fetchActivities = useCallback(async (page = 1) => {
     setIsLoading(true);
     try {
-      const response = await fetch(getApiUrl(`/api/users/${userId}/activity?page=${page}&limit=${pagination.limit}`), {
+      const url = getApiUrl(`/api/users/${userId}/activity?page=${page}&limit=${pagination.limit}`);
+
+      // During build time, skip API call
+      if (!url) {
+        console.log('[Build] Skipping activity feed API call during static generation');
+        setIsLoading(false);
+        return;
+      }
+
+      const response = await fetch(url, {
         next: { revalidate: 0 }
       });
 

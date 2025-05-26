@@ -5,7 +5,15 @@ import { getApiUrl } from "../getApiUrl";
  * Get user profile by ID
  */
 export async function getUser(id: string): Promise<User | null> {
-  const response = await fetch(getApiUrl(`/api/users/${id}`), {
+  const url = getApiUrl(`/api/users/${id}`);
+
+  // During build time, return null to prevent API calls
+  if (!url) {
+    console.log('[Build] Skipping user fetch during static generation');
+    return null;
+  }
+
+  const response = await fetch(url, {
     next: { revalidate: 0 }
   });
 

@@ -11,7 +11,15 @@ export async function searchUsers(query: string = '', limit: number = 10) {
   if (query) params.append('q', query);
   params.append('limit', limit.toString());
 
-  const response = await fetch(getApiUrl(`/api/users/search?${params.toString()}`), {
+  const url = getApiUrl(`/api/users/search?${params.toString()}`);
+
+  // During build time, return empty array to prevent API calls
+  if (!url) {
+    console.log('[Build] Returning empty users array during static generation');
+    return [];
+  }
+
+  const response = await fetch(url, {
     next: { revalidate: 0 } // Don't cache user search results
   });
 

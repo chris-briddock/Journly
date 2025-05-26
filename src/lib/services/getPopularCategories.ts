@@ -5,7 +5,15 @@ import { getApiUrl } from "../getApiUrl";
  */
 export async function getPopularCategories(limit = 10) {
   try {
-    const response = await fetch(getApiUrl(`/api/categories/popular?limit=${limit}`), {
+    const url = getApiUrl(`/api/categories/popular?limit=${limit}`);
+
+    // During build time, return empty array to prevent API calls
+    if (!url) {
+      console.log('[Build] Returning empty categories array during static generation');
+      return [];
+    }
+
+    const response = await fetch(url, {
       // Cache for 5 minutes to reduce API calls
       next: { revalidate: 300 },
       credentials: 'include'

@@ -17,7 +17,15 @@ export const metadata: Metadata = {
 
 async function getUserPosts(userId: string): Promise<Post[]> {
   try {
-    const response = await fetch(getApiUrl(`/api/users/${userId}/posts?status=published`), {
+    const url = getApiUrl(`/api/users/${userId}/posts?status=published`);
+
+    // During build time, return empty array to prevent API calls
+    if (!url) {
+      console.log('[Build] Returning empty posts array during static generation');
+      return [];
+    }
+
+    const response = await fetch(url, {
       cache: 'no-store',
       credentials: 'include',
       next: { revalidate: 0 }

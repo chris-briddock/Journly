@@ -59,7 +59,16 @@ export function NotificationDropdown() {
   const fetchNotifications = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(getApiUrl("/api/notifications?limit=10&grouped=true"), {
+      const url = getApiUrl("/api/notifications?limit=10&grouped=true");
+
+      // During build time, skip API call
+      if (!url) {
+        console.log('[Build] Skipping notifications API call during static generation');
+        setIsLoading(false);
+        return;
+      }
+
+      const response = await fetch(url, {
         next: { revalidate: 0 }
       });
 
@@ -106,7 +115,15 @@ export function NotificationDropdown() {
   // Mark notifications as read
   const markAsRead = useCallback(async (ids?: string[]) => {
     try {
-      const response = await fetch(getApiUrl("/api/notifications"), {
+      const url = getApiUrl("/api/notifications");
+
+      // During build time, skip API call
+      if (!url) {
+        console.log('[Build] Skipping mark as read API call during static generation');
+        return;
+      }
+
+      const response = await fetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -54,6 +54,12 @@ async function getPost(id: string): Promise<Post | null> {
     const url = getApiUrl(`/api/posts/${id}/edit?dashboard=true`);
     console.log('Fetching post with URL:', url);
 
+    // During build time, return not found to prevent API calls
+    if (!url) {
+      console.log('[Build] Skipping post fetch during static generation');
+      notFound();
+    }
+
     const response = await fetch(url, {
       // Use next.js cache instead of no-store to allow static rendering
       next: { revalidate: 0 }, // Revalidate every 60 seconds

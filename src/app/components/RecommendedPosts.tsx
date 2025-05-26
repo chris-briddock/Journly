@@ -52,7 +52,16 @@ export function RecommendedPosts({
     const fetchRecommendations = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch(getApiUrl(`/api/recommendations?limit=${limit}`), {
+        const url = getApiUrl(`/api/recommendations?limit=${limit}`);
+
+        // During build time, skip API call
+        if (!url) {
+          console.log('[Build] Skipping recommendations API call during static generation');
+          setIsLoading(false);
+          return;
+        }
+
+        const response = await fetch(url, {
           next: { revalidate: 0 }
         });
 

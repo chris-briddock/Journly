@@ -13,7 +13,15 @@ export async function getScheduledPosts(options: { page?: number; limit?: number
   params.append('limit', limit.toString());
 
   try {
-    const response = await fetch(getApiUrl(`/api/posts/schedule?${params.toString()}`), {
+    const url = getApiUrl(`/api/posts/schedule?${params.toString()}`);
+
+    // During build time, return empty result to prevent API calls
+    if (!url) {
+      console.log('[Build] Returning empty scheduled posts result during static generation');
+      return { posts: [], pagination: { total: 0, page: 1, limit: 10, totalPages: 0 } };
+    }
+
+    const response = await fetch(url, {
       // Cache for 1 minute to reduce API calls
       next: { revalidate: 60 },
       credentials: 'include', // Include credentials (cookies) for authentication

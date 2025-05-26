@@ -46,7 +46,15 @@ export function FollowButton({
     setIsLoading(true);
 
     try {
-      const response = await fetch(getApiUrl(`/api/users/${userId}/follow`), {
+      const url = getApiUrl(`/api/users/${userId}/follow`);
+
+      // During build time, skip API call
+      if (!url) {
+        console.log('[Build] Skipping follow API call during static generation');
+        return;
+      }
+
+      const response = await fetch(url, {
         method: "POST",
         cache: 'no-store',
         next: { revalidate: 0 }

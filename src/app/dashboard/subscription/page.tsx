@@ -46,7 +46,16 @@ export default function SubscriptionSettingsPage() {
         setLoading(true);
         setError(null);
 
-        const response = await fetch(getApiUrl('/api/subscriptions'), {
+        const url = getApiUrl('/api/subscriptions');
+
+        // During build time, skip API call
+        if (!url) {
+          console.log('[Build] Skipping subscription API call during static generation');
+          setLoading(false);
+          return;
+        }
+
+        const response = await fetch(url, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -61,17 +70,21 @@ export default function SubscriptionSettingsPage() {
         setSubscription(data.subscription);
 
         // Fetch article count
-        const articleResponse = await fetch(getApiUrl('/api/users/article-count'), {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
+        const articleUrl = getApiUrl('/api/users/article-count');
 
-        if (articleResponse.ok) {
-          const articleData = await articleResponse.json();
-          setArticlesRead(articleData.articlesReadThisMonth || 0);
-          setMonthlyLimit(articleData.monthlyArticleLimit || 5);
+        if (articleUrl) {
+          const articleResponse = await fetch(articleUrl, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (articleResponse.ok) {
+            const articleData = await articleResponse.json();
+            setArticlesRead(articleData.articlesReadThisMonth || 0);
+            setMonthlyLimit(articleData.monthlyArticleLimit || 5);
+          }
         }
       } catch (err) {
         console.error('Error fetching subscription:', err);
@@ -94,7 +107,16 @@ export default function SubscriptionSettingsPage() {
     try {
       setCancelLoading(true);
 
-      const response = await fetch(getApiUrl('/api/subscriptions'), {
+      const url = getApiUrl('/api/subscriptions');
+
+      // During build time, skip API call
+      if (!url) {
+        console.log('[Build] Skipping cancel subscription API call during static generation');
+        setCancelLoading(false);
+        return;
+      }
+
+      const response = await fetch(url, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -121,7 +143,16 @@ export default function SubscriptionSettingsPage() {
     try {
       setManageBillingLoading(true);
 
-      const response = await fetch(getApiUrl('/api/subscriptions/billing-portal'), {
+      const apiUrl = getApiUrl('/api/subscriptions/billing-portal');
+
+      // During build time, skip API call
+      if (!apiUrl) {
+        console.log('[Build] Skipping billing portal API call during static generation');
+        setManageBillingLoading(false);
+        return;
+      }
+
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

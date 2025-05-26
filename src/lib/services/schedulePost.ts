@@ -7,7 +7,15 @@ import { getApiUrl } from "../getApiUrl";
  * @returns The scheduled post
  */
 export async function schedulePost(postId: string, publishAt: Date) {
-  const response = await fetch(getApiUrl('/api/posts/schedule'), {
+  const url = getApiUrl('/api/posts/schedule');
+
+  // During build time, return success to prevent API calls
+  if (!url) {
+    console.log('[Build] Skipping schedule post API call during static generation');
+    return { success: true };
+  }
+
+  const response = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

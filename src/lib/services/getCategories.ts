@@ -5,15 +5,17 @@ import { getApiUrl } from "../getApiUrl";
  */
 export async function getCategories(isDashboard: boolean) {
   try {
-    const response = isDashboard ?
-    await fetch(getApiUrl('/api/categories?dashboard=true'), {
-      // Cache for 5 minutes to reduce API calls
-      next: { revalidate: 300 },
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    }) : await fetch(getApiUrl('/api/categories'), {
+    const url = isDashboard ?
+      getApiUrl('/api/categories?dashboard=true') :
+      getApiUrl('/api/categories');
+
+    // During build time, return empty array to prevent API calls
+    if (!url) {
+      console.log('[Build] Returning empty categories array during static generation');
+      return [];
+    }
+
+    const response = await fetch(url, {
       // Cache for 5 minutes to reduce API calls
       next: { revalidate: 300 },
       credentials: 'include',

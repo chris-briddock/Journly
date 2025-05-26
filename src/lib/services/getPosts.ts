@@ -23,7 +23,23 @@ export async function getPosts(options: {
   if (q) params.append('q', q);
 
   try {
-    const response = await fetch(getApiUrl(`/api/posts?${params.toString()}`), {
+    const url = getApiUrl(`/api/posts?${params.toString()}`);
+
+    // During build time, return empty result to prevent API calls
+    if (!url) {
+      console.log('[Build] Returning empty posts result during static generation');
+      return {
+        posts: [],
+        pagination: {
+          page: 1,
+          limit: 10,
+          total: 0,
+          totalPages: 0
+        }
+      };
+    }
+
+    const response = await fetch(url, {
       // Cache for 2 minutes to reduce API calls
       next: { revalidate: 120 }
     });

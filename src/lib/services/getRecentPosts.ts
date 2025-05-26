@@ -6,7 +6,15 @@ import { Post } from "@/types/models/post";
  */
 export async function getRecentPosts(limit = 5): Promise<Post[]> {
   try {
-    const response = await fetch(getApiUrl(`/api/posts/recent?limit=${limit}`), {
+    const url = getApiUrl(`/api/posts/recent?limit=${limit}`);
+
+    // During build time, return empty array to prevent API calls
+    if (!url) {
+      console.log('[Build] Returning empty posts array during static generation');
+      return [];
+    }
+
+    const response = await fetch(url, {
       // Cache for 2 minutes to reduce API calls
       next: { revalidate: 120 }
     });

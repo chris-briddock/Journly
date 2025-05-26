@@ -12,7 +12,15 @@ export async function getUserPosts(userId: string, options: { limit?: number; pa
   params.append('status', 'published');
 
   try {
-    const response = await fetch(getApiUrl(`/api/users/${userId}/posts?${params.toString()}`), {
+    const url = getApiUrl(`/api/users/${userId}/posts?${params.toString()}`);
+
+    // During build time, return empty array to prevent API calls
+    if (!url) {
+      console.log('[Build] Returning empty user posts array during static generation');
+      return [];
+    }
+
+    const response = await fetch(url, {
       // Cache for 2 minutes to reduce API calls
       next: { revalidate: 120 }
     });

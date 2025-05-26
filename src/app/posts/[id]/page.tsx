@@ -77,7 +77,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 async function getPost(id: string): Promise<Post | null> {
   try {
-    const response = await fetch(getApiUrl(`/api/posts/${id}/view`), {
+    const url = getApiUrl(`/api/posts/${id}/view`);
+
+    // During build time, return null to prevent API calls
+    if (!url) {
+      console.log('[Build] Skipping post fetch during static generation');
+      return null;
+    }
+
+    const response = await fetch(url, {
       next: { revalidate: 0 }
     });
 
@@ -98,7 +106,15 @@ async function getPost(id: string): Promise<Post | null> {
 
 async function getPostComments(postId: string): Promise<CommentType[]> {
   try {
-    const response = await fetch(getApiUrl(`/api/posts/${postId}/comments`), {
+    const url = getApiUrl(`/api/posts/${postId}/comments`);
+
+    // During build time, return empty array to prevent API calls
+    if (!url) {
+      console.log('[Build] Skipping comments fetch during static generation');
+      return [];
+    }
+
+    const response = await fetch(url, {
       next: { revalidate: 0 }
     });
 
@@ -117,10 +133,15 @@ async function getRelatedPosts(postId: string, categoryIds: string[]): Promise<P
   if (categoryIds.length === 0) return [];
 
   try {
-    const response = await fetch(
-      getApiUrl(`/api/posts/${postId}/related?categoryIds=${categoryIds.join(',')}&limit=3`),
-      { next: { revalidate: 0 } }
-    );
+    const url = getApiUrl(`/api/posts/${postId}/related?categoryIds=${categoryIds.join(',')}&limit=3`);
+
+    // During build time, return empty array to prevent API calls
+    if (!url) {
+      console.log('[Build] Skipping related posts fetch during static generation');
+      return [];
+    }
+
+    const response = await fetch(url, { next: { revalidate: 0 } });
 
     if (!response.ok) {
       throw new Error('Failed to fetch related posts');

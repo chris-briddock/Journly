@@ -5,7 +5,15 @@ import { getApiUrl } from "../getApiUrl";
  */
 export async function getCategory(id: string) {
   try {
-    const response = await fetch(getApiUrl(`/api/categories/${id}`), {
+    const url = getApiUrl(`/api/categories/${id}`);
+
+    // During build time, return null to prevent API calls
+    if (!url) {
+      console.log('[Build] Skipping category fetch during static generation');
+      return null;
+    }
+
+    const response = await fetch(url, {
       // Cache for 5 minutes to reduce API calls
       next: { revalidate: 300 },
       credentials: 'include', // Include credentials (cookies) for authentication

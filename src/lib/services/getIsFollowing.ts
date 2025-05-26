@@ -4,7 +4,15 @@ import { getApiUrl } from "../getApiUrl";
  * Check if a user is following another user
  */
 export async function getIsFollowing(userId: string) {
-  const response = await fetch(getApiUrl(`/api/users/${userId}/is-following`), {
+  const url = getApiUrl(`/api/users/${userId}/is-following`);
+
+  // During build time, return false to prevent API calls
+  if (!url) {
+    console.log('[Build] Returning false for following status during static generation');
+    return false;
+  }
+
+  const response = await fetch(url, {
     next: { revalidate: 0 },
     credentials: 'include', // Include credentials (cookies) for authentication
     headers: {
