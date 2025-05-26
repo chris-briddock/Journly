@@ -8,6 +8,7 @@ import { ThumbsUp, MessageSquare, FileText } from "lucide-react";
 import { toast } from "sonner";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card";
+import { getApiUrl } from "@/lib/getApiUrl";
 
 import { Skeleton } from "@/app/components/ui/skeleton";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/app/components/ui/pagination";
@@ -55,7 +56,7 @@ export function UserActivityFeed({ userId, userName }: UserActivityFeedProps) {
   const fetchActivities = useCallback(async (page = 1) => {
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/users/${userId}/activity?page=${page}&limit=${pagination.limit}`, {
+      const response = await fetch(getApiUrl(`/api/users/${userId}/activity?page=${page}&limit=${pagination.limit}`), {
         next: { revalidate: 0 }
       });
 

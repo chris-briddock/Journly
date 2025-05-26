@@ -7,6 +7,7 @@ import { DashboardHeader } from "@/app/components/dashboard/DashboardHeader";
 import { DashboardShell } from "@/app/components/dashboard/DashboardShell";
 import { BarChart, LineChart, PieChart, TrendingUp, Users, Eye, MessageSquare, ThumbsUp } from "lucide-react";
 import { Post } from "@/types/models/post";
+import { getApiUrl } from "@/lib/getApiUrl";
 
 
 export const metadata: Metadata = {
@@ -16,9 +17,7 @@ export const metadata: Metadata = {
 
 async function getUserPosts(userId: string): Promise<Post[]> {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||
-      (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
-    const response = await fetch(`${baseUrl}/api/users/${userId}/posts?status=published`, {
+    const response = await fetch(getApiUrl(`/api/users/${userId}/posts?status=published`), {
       cache: 'no-store',
       credentials: 'include',
       next: { revalidate: 0 }

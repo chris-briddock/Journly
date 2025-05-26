@@ -1,4 +1,3 @@
-import { getApiUrl } from "../getApiUrl";
 import { Post } from "@/types/models/post";
 
 /**
@@ -8,7 +7,7 @@ import { Post } from "@/types/models/post";
  */
 export async function getDashboardRecentPosts(limit = 5): Promise<Post[]> {
   try {
-    const response = await fetch(getApiUrl(`/api/dashboard/recent-posts?limit=${limit}`), {
+    const response = await fetch(`/api/dashboard/recent-posts?limit=${limit}`, {
       next: { revalidate: 0 },
       credentials: 'include', // Include credentials (cookies) for authentication
       cache: 'no-store', // Disable caching to ensure fresh data

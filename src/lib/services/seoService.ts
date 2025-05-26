@@ -2,6 +2,8 @@
  * Service for managing SEO metadata
  */
 
+import { getApiUrl } from "../getApiUrl";
+
 export interface SeoMetadata {
   seoTitle?: string;
   seoDescription?: string;
@@ -22,7 +24,7 @@ export async function generateSeoMetadata(postData: {
   excerpt?: string;
 }): Promise<SeoMetadata> {
   try {
-    const response = await fetch('/api/posts/seo', {
+    const response = await fetch(getApiUrl('/api/posts/seo'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -48,7 +50,7 @@ export async function generateSeoMetadata(postData: {
  */
 export async function getSeoMetadata(postId: string): Promise<SeoMetadata> {
   try {
-    const response = await fetch(`/api/posts/seo/${postId}`, {
+    const response = await fetch(getApiUrl(`/api/posts/seo/${postId}`), {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -77,7 +79,7 @@ export async function updateSeoMetadata(
   metadata: SeoMetadata
 ): Promise<SeoMetadata> {
   try {
-    const response = await fetch(`/api/posts/seo/${postId}`, {
+    const response = await fetch(getApiUrl(`/api/posts/seo/${postId}`), {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -106,7 +108,7 @@ export async function analyzeSeoMetadata(metadata: SeoMetadata): Promise<{
   recommendations: string[];
 }> {
   try {
-    const response = await fetch('/api/posts/seo/analyze', {
+    const response = await fetch(getApiUrl('/api/posts/seo/analyze'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

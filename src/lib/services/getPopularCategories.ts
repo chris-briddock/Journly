@@ -7,7 +7,8 @@ export async function getPopularCategories(limit = 10) {
   try {
     const response = await fetch(getApiUrl(`/api/categories/popular?limit=${limit}`), {
       // Cache for 5 minutes to reduce API calls
-      next: { revalidate: 300 }
+      next: { revalidate: 300 },
+      credentials: 'include'
     });
 
     if (!response.ok) {

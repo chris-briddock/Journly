@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Loader2, UserPlus, UserMinus } from "lucide-react";
 
 import { Button } from "@/app/components/ui/button";
+import { getApiUrl } from "@/lib/getApiUrl";
 
 interface FollowButtonProps {
   userId: string;
@@ -45,7 +46,7 @@ export function FollowButton({
     setIsLoading(true);
 
     try {
-      const response = await fetch(`/api/users/${userId}/follow`, {
+      const response = await fetch(getApiUrl(`/api/users/${userId}/follow`), {
         method: "POST",
         cache: 'no-store',
         next: { revalidate: 0 }

@@ -7,6 +7,7 @@ import { auth } from "@/lib/auth";
 import { Button } from "@/app/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card";
 import PostForm from "@/app/components/PostForm";
+import { getApiUrl } from "@/lib/getApiUrl";
 
 interface Post {
   id: string;
@@ -50,7 +51,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 async function getPost(id: string): Promise<Post | null> {
   try {
     // Add a dashboard parameter to indicate this is a dashboard request
-    const url = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/posts/${id}/edit?dashboard=true`;
+    const url = getApiUrl(`/api/posts/${id}/edit?dashboard=true`);
     console.log('Fetching post with URL:', url);
 
     const response = await fetch(url, {
@@ -84,7 +85,7 @@ async function getPost(id: string): Promise<Post | null> {
 async function getCategories(): Promise<Category[]> {
   try {
     // Add a dashboard parameter to indicate this is a dashboard request
-    const url = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/categories/editor?dashboard=true`;
+    const url = '/api/categories/editor?dashboard=true';
     console.log('Fetching categories with URL:', url);
 
     const response = await fetch(url, {

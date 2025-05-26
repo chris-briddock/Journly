@@ -21,7 +21,7 @@ interface Category {
 async function getCategories(): Promise<Category[]> {
   try {
     // Add a dashboard parameter to indicate this is a dashboard request
-    const url = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/categories/admin?dashboard=true`;
+    const url = '/api/categories/admin?dashboard=true';
     console.log('Fetching categories with URL:', url);
 
     const response = await fetch(url, {

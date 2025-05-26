@@ -15,6 +15,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/app/components/ui/alert';
 import { DashboardHeader } from '@/app/components/dashboard/DashboardHeader';
 import { DashboardShell } from '@/app/components/dashboard/DashboardShell';
 import { formatPrice } from '@/lib/stripe';
+import { getApiUrl } from '@/lib/getApiUrl';
 
 interface Subscription {
   id: string;
@@ -45,7 +46,7 @@ export default function SubscriptionSettingsPage() {
         setLoading(true);
         setError(null);
 
-        const response = await fetch('/api/subscriptions', {
+        const response = await fetch(getApiUrl('/api/subscriptions'), {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -60,7 +61,7 @@ export default function SubscriptionSettingsPage() {
         setSubscription(data.subscription);
 
         // Fetch article count
-        const articleResponse = await fetch('/api/users/article-count', {
+        const articleResponse = await fetch(getApiUrl('/api/users/article-count'), {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -93,7 +94,7 @@ export default function SubscriptionSettingsPage() {
     try {
       setCancelLoading(true);
 
-      const response = await fetch('/api/subscriptions', {
+      const response = await fetch(getApiUrl('/api/subscriptions'), {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -120,7 +121,7 @@ export default function SubscriptionSettingsPage() {
     try {
       setManageBillingLoading(true);
 
-      const response = await fetch('/api/subscriptions/billing-portal', {
+      const response = await fetch(getApiUrl('/api/subscriptions/billing-portal'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

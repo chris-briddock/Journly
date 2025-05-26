@@ -18,6 +18,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar"
 import { Badge } from "@/app/components/ui/badge";
 import { Skeleton } from "@/app/components/ui/skeleton";
 import { getInitials } from "@/lib/utils";
+import { getApiUrl } from "@/lib/getApiUrl";
 
 interface Notification {
   id: string;
@@ -58,7 +59,7 @@ export function NotificationDropdown() {
   const fetchNotifications = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch("/api/notifications?limit=10&grouped=true", {
+      const response = await fetch(getApiUrl("/api/notifications?limit=10&grouped=true"), {
         next: { revalidate: 0 }
       });
 
@@ -105,7 +106,7 @@ export function NotificationDropdown() {
   // Mark notifications as read
   const markAsRead = useCallback(async (ids?: string[]) => {
     try {
-      const response = await fetch("/api/notifications", {
+      const response = await fetch(getApiUrl("/api/notifications"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

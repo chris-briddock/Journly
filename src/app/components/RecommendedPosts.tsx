@@ -8,6 +8,7 @@ import { ThumbsUp, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/app/components/ui/card";
+import { getApiUrl } from "@/lib/getApiUrl";
 import { Badge } from "@/app/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar";
 import { Skeleton } from "@/app/components/ui/skeleton";
@@ -51,7 +52,7 @@ export function RecommendedPosts({
     const fetchRecommendations = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch(`/api/recommendations?limit=${limit}`, {
+        const response = await fetch(getApiUrl(`/api/recommendations?limit=${limit}`), {
           next: { revalidate: 0 }
         });
 

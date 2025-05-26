@@ -2,41 +2,18 @@ import Link from "next/link";
 import type { Metadata } from "next/types";
 import { Layers3, ArrowRight, FileText } from "lucide-react";
 
-import { getApiUrl } from "@/lib/getApiUrl";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { Button } from "@/app/components/ui/button";
 import { Category } from "@/types/models/category";
+import { getCategories as getCategoriesService } from "@/lib/services/getCategories";
 
 export const metadata: Metadata = {
   title: "Categories - Journly",
   description: "Browse all categories on Journly",
 };
 
-async function getCategories(): Promise<Category[]> {
-  try {
-    const response = await fetch(getApiUrl('/api/categories'), {
-      next: { revalidate: 0 },
-      credentials: 'include', // Include credentials (cookies) for authentication
-      headers: {
-        'Content-Type': 'application/json',
-      }
-    });
-
-    if (!response.ok) {
-      console.error('Failed to fetch categories:', response.status, response.statusText);
-      return [];
-    }
-
-    // The API returns the categories directly, not wrapped in a data object
-    return await response.json();
-  } catch (error) {
-    console.error('Error fetching categories:', error);
-    return [];
-  }
-}
-
 export default async function CategoriesPage() {
-  const categories = await getCategories();
+  const categories = await getCategoriesService(false);
 
   return (
     <div className="min-h-screen bg-background">
