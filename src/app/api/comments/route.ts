@@ -5,6 +5,9 @@ import { canAccessArticle } from '@/lib/services/article-access-service';
 import { createCommentNotification, createCommentReplyNotification } from '@/lib/notifications';
 import { processCommentMentions } from '@/lib/mentions';
 
+// Force Node.js runtime for article access service compatibility
+export const runtime = 'nodejs';
+
 // GET /api/comments - Get comments for a post
 export async function GET(request: NextRequest) {
   try {

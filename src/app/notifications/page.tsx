@@ -2,6 +2,7 @@ import type { Metadata } from "next/types";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { Notification } from "@/types/models/notification";
+import { cookies } from "next/headers";
 
 
 import { DashboardShell } from "@/app/components/dashboard/DashboardShell";
@@ -39,9 +40,14 @@ async function getNotificationsFromApi(unreadOnly = false, page = 1, limit = 20)
   url.searchParams.append('page', page.toString());
   url.searchParams.append('limit', limit.toString());
 
+  const cookieStore = cookies();
+  const cookieHeader = cookieStore.toString();
+
   const response = await fetch(url, {
-    headers: {
+    credentials: 'include',
+    headers: {      
       'Content-Type': 'application/json',
+      'cookie': cookieHeader,
     },
     cache: 'no-store',
   });

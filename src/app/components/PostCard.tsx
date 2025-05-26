@@ -8,6 +8,7 @@ import { MessageSquare, Heart, Eye } from "lucide-react";
 import { Card, CardContent, CardFooter, CardHeader } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
+import { BookmarkButton } from "@/app/components/BookmarkButton";
 import { cleanHtml } from "@/lib/cleanHtml";
 import { getInitials } from "@/lib/utils";
 
@@ -120,6 +121,11 @@ export default function PostCard({ post }: PostCardProps) {
             <span>{post.viewCount}</span>
           </div>
         </div>
+        <BookmarkButton
+          postId={post.id}
+          variant="ghost"
+          size="sm"
+        />
       </CardFooter>
     </Card>
   );

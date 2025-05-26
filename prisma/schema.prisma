@@ -35,6 +35,7 @@ model User {
   following               Follow[]                     @relation("Follower")
   followedBy              Follow[]                     @relation("Following")
   likes                   Like[]
+  bookmarks               Bookmark[]
   actions                 Notification[]               @relation("ActionUser")
   notifications           Notification[]               @relation("ReceivedNotifications")
   posts                   Post[]
@@ -70,6 +71,7 @@ model Post {
   seoTitle           String?
   comments           Comment[]
   likes              Like[]
+  bookmarks          Bookmark[]
   notifications      Notification[]
   author             User             @relation(fields: [authorId], references: [id], onDelete: Cascade)
   categories         PostCategory[]
@@ -118,6 +120,17 @@ model Comment {
 }
 
 model Like {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  postId    String
+  userId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+}
+
+model Bookmark {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
   postId    String

@@ -12,6 +12,7 @@ import {
   BookOpen,
   Clock,
   CreditCard,
+  Bookmark,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -51,6 +52,11 @@ function DashboardNav() {
       title: "Reading History",
       href: "/dashboard/reading-history",
       icon: BookOpen,
+    },
+    {
+      title: "Bookmarks",
+      href: "/dashboard/bookmarks",
+      icon: Bookmark,
     },
     {
       title: "Analytics",

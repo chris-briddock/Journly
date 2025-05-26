@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { resetUserArticleLimit } from '@/lib/services/article-access-service';
 
+// Force Node.js runtime for article access service compatibility
+export const runtime = 'nodejs';
+
 /**
  * API route to reset a user's article count
  * This is called by the client when the user's last reset date is before the start of the current month

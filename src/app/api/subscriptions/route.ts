@@ -8,6 +8,9 @@ import {
 } from '@/lib/services/subscription-service';
 import prisma from '@/lib/prisma';
 
+// Force Node.js runtime for Stripe compatibility
+export const runtime = 'nodejs';
+
 // GET /api/subscriptions - Get the current user's subscription
 export async function GET() {
   try {

@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 
+// Force Node.js runtime for consistency with other subscription routes
+export const runtime = 'nodejs';
+
 // POST /api/subscriptions/update-status - Update a user's subscription status
 export async function POST(req: NextRequest) {
   try {
@@ -46,16 +49,16 @@ export async function POST(req: NextRequest) {
     // If the user has a subscription and tier is provided, update it
     if (subscriptions && subscriptions.length > 0 && tier) {
       const subscription = subscriptions[0];
-      
+
       await prisma.$executeRaw`
         UPDATE "Subscription"
         SET tier = ${tier}::"SubscriptionTier"
         WHERE id = ${subscription.id}
       `;
 
-      return NextResponse.json({ 
-        success: true, 
-        message: 'Subscription updated successfully' 
+      return NextResponse.json({
+        success: true,
+        message: 'Subscription updated successfully'
       });
     } else if (tier) {
       // If the user doesn't have a subscription but tier is provided, create one
@@ -87,15 +90,15 @@ export async function POST(req: NextRequest) {
         )
       `;
 
-      return NextResponse.json({ 
-        success: true, 
-        message: 'Subscription created successfully' 
+      return NextResponse.json({
+        success: true,
+        message: 'Subscription created successfully'
       });
     } else if (monthlyArticleLimit !== undefined) {
       // If only the monthly article limit was updated
-      return NextResponse.json({ 
-        success: true, 
-        message: 'Monthly article limit updated successfully' 
+      return NextResponse.json({
+        success: true,
+        message: 'Monthly article limit updated successfully'
       });
     } else {
       return NextResponse.json(
