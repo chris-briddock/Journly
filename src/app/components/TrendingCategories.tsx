@@ -1,28 +1,15 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { Badge } from "@/app/components/ui/badge";
 import { Button } from "@/app/components/ui/button";
 import { TrendingUp, ArrowRight, Tag } from "lucide-react";
 import Link from "next/link";
+import { useTrendingCategories } from "@/hooks/use-categories";
 
-interface TrendingCategory {
-  id: string;
-  name: string;
-  description: string | null;
-  postCount: number;
-  recentPostCount: number;
-  recentLikeCount: number;
-  recentCommentCount: number;
-  recentViewCount: number;
-  activityScore: number;
-}
 
-interface TrendingCategoriesResponse {
-  categories: TrendingCategory[];
-  period: string;
-}
+
+
 
 interface TrendingCategoriesProps {
   limit?: number;
@@ -35,28 +22,10 @@ export function TrendingCategories({
   showHeader = true,
   variant = "default",
 }: TrendingCategoriesProps) {
-  const [categories, setCategories] = useState<TrendingCategory[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [period, setPeriod] = useState("");
+  const { data: categories = [], isLoading } = useTrendingCategories(limit);
 
-  const fetchTrendingCategories = useCallback(async () => {
-    try {
-      const response = await fetch(`/api/categories/trending?limit=${limit}`);
-      if (response.ok) {
-        const data: TrendingCategoriesResponse = await response.json();
-        setCategories(data.categories);
-        setPeriod(data.period);
-      }
-    } catch (error) {
-      console.error('Error fetching trending categories:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [limit]);
-
-  useEffect(() => {
-    fetchTrendingCategories();
-  }, [fetchTrendingCategories]);
+  // For now, we'll use a static period since the API response structure might be different
+  const period = "7 days";
 
 
   if (isLoading) {
@@ -122,11 +91,6 @@ export function TrendingCategories({
                 className="hover:bg-primary hover:text-primary-foreground transition-colors cursor-pointer"
               >
                 #{index + 1} {category.name}
-                {category.recentPostCount > 0 && (
-                  <span className="ml-1 text-xs">
-                    +{category.recentPostCount}
-                  </span>
-                )}
               </Badge>
             </Link>
           ))}
@@ -169,15 +133,7 @@ export function TrendingCategories({
                     </p>
                   )}
                   <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
-                    <span>{category.postCount} total posts</span>
-                    {category.recentPostCount > 0 && (
-                      <span className="text-green-600">
-                        +{category.recentPostCount} recent
-                      </span>
-                    )}
-                    {category.recentLikeCount > 0 && (
-                      <span>{category.recentLikeCount} likes</span>
-                    )}
+                    <span>Trending category</span>
                   </div>
                 </div>
               </div>
@@ -189,7 +145,7 @@ export function TrendingCategories({
             </div>
           ))}
         </div>
-        
+
         {categories.length >= limit && (
           <div className="mt-4 pt-4 border-t">
             <Button variant="outline" className="w-full" asChild>

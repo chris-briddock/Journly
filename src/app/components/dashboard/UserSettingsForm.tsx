@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { useUpdateUserProfile } from "@/hooks/use-users";
 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { Label } from "@/app/components/ui/label";
@@ -19,7 +19,7 @@ interface User {
   email: string | null;
   image: string | null;
   bio: string | null;
-  location: string | null;
+  location?: string | null;
 }
 
 interface UserSettingsFormProps {
@@ -28,13 +28,15 @@ interface UserSettingsFormProps {
 
 export function UserSettingsForm({ user }: UserSettingsFormProps) {
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: user.name || "",
     image: user.image || "",
     bio: user.bio || "",
     location: user.location || "",
   });
+
+  // Use TanStack Query mutation
+  const updateProfileMutation = useUpdateUserProfile();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -43,32 +45,16 @@ export function UserSettingsForm({ user }: UserSettingsFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
 
-    try {
-      const response = await fetch(`/api/users/${user.id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        next: { revalidate: 0 },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to update profile");
-      }
-
-      toast.success("Profile updated successfully");
-      router.refresh();
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Something went wrong";
-      toast.error(errorMessage);
-    } finally {
-      setIsSubmitting(false);
-    }
+    // Use TanStack Query mutation
+    updateProfileMutation.mutate(formData, {
+      onSuccess: () => {
+        router.refresh();
+      },
+      onError: () => {
+        // Error toast is already handled in the hook
+      },
+    });
   };
 
   return (
@@ -144,8 +130,8 @@ export function UserSettingsForm({ user }: UserSettingsFormProps) {
           <Button variant="outline" type="button" onClick={() => router.back()}>
             Cancel
           </Button>
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? (
+          <Button type="submit" disabled={updateProfileMutation.isPending}>
+            {updateProfileMutation.isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Saving...

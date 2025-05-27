@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, useEffect, useState } from "react";
 
 import PostCard from "@/app/components/PostCard";
 import { Button } from "@/app/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { Separator } from "@/app/components/ui/separator";
+import { Skeleton } from "@/app/components/ui/skeleton";
 import {
   Pagination,
   PaginationContent,
@@ -23,32 +24,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/app/components/ui/select";
-
-interface Post {
-  id: string;
-  title: string;
-  excerpt: string;
-  content: string;
-  status: string;
-  createdAt: string;
-  updatedAt: string;
-  featuredImage: string | null;
-  readingTime: number;
-  author: {
-    id: string;
-    name: string;
-    image: string | null;
-  };
-  categories: {
-    category: {
-      id: string;
-      name: string;
-    };
-  }[];
-  viewCount: number;
-  likeCount: number;
-  commentCount: number;
-}
+import { usePosts } from "@/hooks/use-posts";
+import { useCategories } from "@/hooks/use-categories";
 
 interface Category {
   id: string;
@@ -58,31 +35,107 @@ interface Category {
   postCount: number;
 }
 
-interface PaginationData {
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}
+
 
 interface PostsPageClientProps {
-  posts: Post[];
-  categories: Category[];
-  pagination: PaginationData;
-  selectedCategoryId?: string;
+  searchParams: {
+    categoryId?: string;
+    page?: string;
+  };
 }
 
 export default function PostsPageClient({
-  posts,
-  categories,
-  pagination,
-  selectedCategoryId,
+  searchParams,
 }: PostsPageClientProps) {
   const router = useRouter();
-  
+  const [page, setPage] = useState(1);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>();
+
+  // Update state when searchParams change
+  useEffect(() => {
+    setPage(Number(searchParams.page) || 1);
+    setSelectedCategoryId(searchParams.categoryId);
+  }, [searchParams]);
+
+  // Use TanStack Query hooks
+  const { data: postsData, isLoading: postsLoading, error: postsError } = usePosts({
+    page,
+    limit: 12,
+    categoryId: selectedCategoryId,
+    status: 'published'
+  });
+
+  const { data: categories = [], isLoading: categoriesLoading, error: categoriesError } = useCategories({ dashboard: false });
+
+  const isLoading = postsLoading || categoriesLoading;
+  const error = postsError || categoriesError;
+  const posts = postsData?.posts || [];
+  const pagination = postsData?.pagination || { total: 0, page: 1, limit: 12, totalPages: 1 };
+
   const selectedCategory = selectedCategoryId
-    ? categories.find((c: Category) => c.id === selectedCategoryId)
+    ? categories.find((c) => c.id === selectedCategoryId)
     : null;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex flex-col md:flex-row gap-8">
+              {/* Mobile Categories Dropdown Skeleton */}
+              <div className="md:hidden w-full mb-4">
+                <Skeleton className="h-10 w-full" />
+              </div>
+
+              {/* Desktop Sidebar Skeleton */}
+              <div className="hidden md:block w-64 shrink-0">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Categories</CardTitle>
+                    <CardDescription>Filter posts by category</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <Skeleton className="h-10 w-full" />
+                    <Separator />
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Skeleton key={i} className="h-10 w-full" />
+                    ))}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Main Content Skeleton */}
+              <div className="flex-1">
+                <div className="mb-6">
+                  <Skeleton className="h-8 w-48" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <Skeleton key={i} className="h-64 w-full" />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center py-12">
+              <h1 className="text-2xl font-bold mb-4">Error Loading Posts</h1>
+              <p className="text-red-500">Failed to load posts. Please try again later.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -114,7 +167,7 @@ export default function PostsPageClient({
                 </SelectContent>
               </Select>
             </div>
-            
+
             {/* Desktop Sidebar */}
             <div className="hidden md:block w-64 shrink-0">
               <Card>
@@ -176,14 +229,10 @@ export default function PostsPageClient({
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   <Suspense fallback={<div>Loading posts...</div>}>
-                    {posts.map((post: Post) => (
-                      <PostCard 
-                        key={post.id} 
-                        post={{
-                          ...post,
-                          publishedAt: new Date(post.createdAt),
-                          createdAt: new Date(post.createdAt)
-                        }} 
+                    {posts.map((post) => (
+                      <PostCard
+                        key={post.id}
+                        post={post}
                       />
                     ))}
                   </Suspense>

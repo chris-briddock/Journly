@@ -1,11 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useSession } from 'next-auth/react';
 import { format } from 'date-fns';
 import { CreditCard, Loader2, AlertCircle, BookOpen } from 'lucide-react';
-import { toast } from 'sonner';
 
 import { Button } from '@/app/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/app/components/ui/card';
@@ -15,170 +12,34 @@ import { Alert, AlertDescription, AlertTitle } from '@/app/components/ui/alert';
 import { DashboardHeader } from '@/app/components/dashboard/DashboardHeader';
 import { DashboardShell } from '@/app/components/dashboard/DashboardShell';
 import { formatPrice } from '@/lib/stripe';
-import { getApiUrl } from '@/lib/getApiUrl';
-
-interface Subscription {
-  id: string;
-  tier: 'FREE' | 'MEMBER';
-  status: string;
-  currentPeriodStart: string;
-  currentPeriodEnd: string;
-  cancelAtPeriodEnd: boolean;
-  stripeCustomerId: string | null;
-  stripeSubscriptionId: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
+import { useSubscription, useArticleCount, useCancelSubscription, useCreateBillingPortalSession } from '@/hooks/use-subscriptions';
 
 export default function SubscriptionSettingsPage() {
-  const { data: session } = useSession();
-  const [subscription, setSubscription] = useState<Subscription | null>(null);
-  const [articlesRead, setArticlesRead] = useState<number>(0);
-  const [monthlyLimit, setMonthlyLimit] = useState<number>(5);
-  const [loading, setLoading] = useState(true);
-  const [cancelLoading, setCancelLoading] = useState(false);
-  const [manageBillingLoading, setManageBillingLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Use TanStack Query to fetch subscription and article count data
+  const { data: subscription, isLoading: subscriptionLoading, error: subscriptionError } = useSubscription();
+  const { data: articleData } = useArticleCount();
 
-  useEffect(() => {
-    const fetchSubscription = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+  // Use TanStack Query mutations for subscription actions
+  const cancelSubscriptionMutation = useCancelSubscription();
+  const createBillingPortalMutation = useCreateBillingPortalSession();
 
-        const url = getApiUrl('/api/subscriptions');
-
-        // During build time, skip API call
-        if (!url) {
-          console.log('[Build] Skipping subscription API call during static generation');
-          setLoading(false);
-          return;
-        }
-
-        const response = await fetch(url, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch subscription');
-        }
-
-        const data = await response.json();
-        setSubscription(data.subscription);
-
-        // Fetch article count
-        const articleUrl = getApiUrl('/api/users/article-count');
-
-        if (articleUrl) {
-          const articleResponse = await fetch(articleUrl, {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          });
-
-          if (articleResponse.ok) {
-            const articleData = await articleResponse.json();
-            setArticlesRead(articleData.articlesReadThisMonth || 0);
-            setMonthlyLimit(articleData.monthlyArticleLimit || 5);
-          }
-        }
-      } catch (err) {
-        console.error('Error fetching subscription:', err);
-        setError('Failed to load subscription information. Please try again later.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (session?.user) {
-      fetchSubscription();
-    }
-  }, [session]);
+  const articlesRead = articleData?.articlesReadThisMonth || 0;
+  const monthlyLimit = 5; // Default monthly limit for free users
+  const loading = subscriptionLoading;
+  const cancelLoading = cancelSubscriptionMutation.isPending;
+  const manageBillingLoading = createBillingPortalMutation.isPending;
+  const error = subscriptionError ? 'Failed to load subscription information. Please try again later.' : null;
 
   const handleCancelSubscription = async () => {
     if (!confirm('Are you sure you want to cancel your subscription? You will still have access until the end of your current billing period.')) {
       return;
     }
 
-    try {
-      setCancelLoading(true);
-
-      const url = getApiUrl('/api/subscriptions');
-
-      // During build time, skip API call
-      if (!url) {
-        console.log('[Build] Skipping cancel subscription API call during static generation');
-        setCancelLoading(false);
-        return;
-      }
-
-      const response = await fetch(url, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to cancel subscription');
-      }
-
-      const data = await response.json();
-      setSubscription(data.subscription);
-
-      toast.success('Subscription cancelled successfully');
-    } catch (err) {
-      console.error('Error cancelling subscription:', err);
-      toast.error('Failed to cancel subscription. Please try again later.');
-    } finally {
-      setCancelLoading(false);
-    }
+    cancelSubscriptionMutation.mutate();
   };
 
   const handleManageBilling = async () => {
-    try {
-      setManageBillingLoading(true);
-
-      const apiUrl = getApiUrl('/api/subscriptions/billing-portal');
-
-      // During build time, skip API call
-      if (!apiUrl) {
-        console.log('[Build] Skipping billing portal API call during static generation');
-        setManageBillingLoading(false);
-        return;
-      }
-
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          credentials: 'include',
-        },
-        body: JSON.stringify({
-          returnUrl: window.location.href,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create billing portal session');
-      }
-
-      const { url } = await response.json();
-
-      if (url) {
-        window.location.href = url;
-      } else {
-        throw new Error('Invalid billing portal URL');
-      }
-    } catch (err) {
-      console.error('Error creating billing portal session:', err);
-      toast.error('Failed to open billing portal. Please try again later.');
-      setManageBillingLoading(false);
-    }
+    createBillingPortalMutation.mutate(window.location.href);
   };
 
   const formatDate = (dateString: string) => {
@@ -270,9 +131,9 @@ export default function SubscriptionSettingsPage() {
                       <span className="font-medium">{formatPrice(499)}/month</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Billing Period</span>
+                      <span className="text-muted-foreground">Next Billing Date</span>
                       <span className="font-medium">
-                        {formatDate(subscription.currentPeriodStart)} - {formatDate(subscription.currentPeriodEnd)}
+                        {formatDate(subscription.currentPeriodEnd)}
                       </span>
                     </div>
                     {subscription.cancelAtPeriodEnd && (
@@ -323,24 +184,22 @@ export default function SubscriptionSettingsPage() {
                     'Cancel Subscription'
                   )}
                 </Button>
-                {subscription.stripeCustomerId && (
-                  <Button
-                    onClick={handleManageBilling}
-                    disabled={manageBillingLoading}
-                  >
-                    {manageBillingLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Loading...
-                      </>
-                    ) : (
-                      <>
-                        <CreditCard className="mr-2 h-4 w-4" />
-                        Manage Billing
-                      </>
-                    )}
-                  </Button>
-                )}
+                <Button
+                  onClick={handleManageBilling}
+                  disabled={manageBillingLoading}
+                >
+                  {manageBillingLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Loading...
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard className="mr-2 h-4 w-4" />
+                      Manage Billing
+                    </>
+                  )}
+                </Button>
               </CardFooter>
             )}
           </Card>

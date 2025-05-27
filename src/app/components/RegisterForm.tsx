@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useForm } from "react-hook-form";
 import { AlertCircle, Loader2 } from "lucide-react";
+import { useRegisterUser } from "@/hooks/use-users";
 
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -26,8 +27,10 @@ type FormValues = {
 
 export default function RegisterForm() {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Use TanStack Query mutation
+  const registerUserMutation = useRegisterUser();
 
   const form = useForm<FormValues>({
     defaultValues: {
@@ -38,39 +41,25 @@ export default function RegisterForm() {
   });
 
   const onSubmit = async (values: FormValues) => {
-    setIsLoading(true);
     setError("");
 
-    try {
-      const response = await fetch("/api/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        next: { revalidate: 0 },
-        body: JSON.stringify(values),
-      });
+    // Use TanStack Query mutation
+    registerUserMutation.mutate(values, {
+      onSuccess: async () => {
+        // Sign in the user after successful registration
+        await signIn("credentials", {
+          redirect: false,
+          email: values.email,
+          password: values.password,
+        });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Registration failed");
-      }
-
-      // Sign in the user after successful registration
-      await signIn("credentials", {
-        redirect: false,
-        email: values.email,
-        password: values.password,
-      });
-
-      router.push("/dashboard");
-      router.refresh();
-    } catch (error) {
-      setError(error instanceof Error ? error.message : "Registration failed");
-    } finally {
-      setIsLoading(false);
-    }
+        router.push("/dashboard");
+        router.refresh();
+      },
+      onError: (error: Error) => {
+        setError(error.message || "Registration failed");
+      },
+    });
   };
 
   return (
@@ -136,8 +125,8 @@ export default function RegisterForm() {
             )}
           />
 
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? (
+          <Button type="submit" className="w-full" disabled={registerUserMutation.isPending}>
+            {registerUserMutation.isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Creating account...

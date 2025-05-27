@@ -52,6 +52,7 @@ export function PostStatusFilter() {
           <SelectItem value="all">All Posts</SelectItem>
           <SelectItem value="published">Published</SelectItem>
           <SelectItem value="draft">Drafts</SelectItem>
+          <SelectItem value="scheduled">Scheduled</SelectItem>
         </SelectContent>
       </Select>
     </div>

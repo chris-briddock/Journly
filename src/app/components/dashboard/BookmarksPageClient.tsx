@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent } from "@/app/components/ui/card";
 import { Button } from "@/app/components/ui/button";
 import { Badge } from "@/app/components/ui/badge";
@@ -10,96 +10,43 @@ import Link from "next/link";
 import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
 import { getInitials } from "@/lib/utils";
-import { toast } from "sonner";
-
-interface Post {
-  id: string;
-  title: string;
-  excerpt: string;
-  featuredImage?: string;
-  readingTime: number;
-  createdAt: string;
-  bookmarkedAt: string;
-  author: {
-    id: string;
-    name: string;
-    image?: string;
-  };
-  categories: Array<{
-    category: {
-      id: string;
-      name: string;
-    };
-  }>;
-}
-
-interface BookmarksResponse {
-  posts: Post[];
-  pagination: {
-    page: number;
-    limit: number;
-    totalCount: number;
-    totalPages: number;
-    hasNextPage: boolean;
-    hasPreviousPage: boolean;
-  };
-}
+import { useBookmarks, useTogglePostBookmark } from "@/hooks/use-posts";
 
 export function BookmarksPageClient() {
-  const [bookmarks, setBookmarks] = useState<Post[]>([]);
-  const [pagination, setPagination] = useState({
+  const [currentPage, setCurrentPage] = useState(1);
+  const limit = 10;
+
+  // Use TanStack Query hooks
+  const {
+    data: bookmarksData,
+    isLoading,
+    error
+  } = useBookmarks({ page: currentPage, limit });
+
+  const toggleBookmarkMutation = useTogglePostBookmark();
+
+  // Extract data from query response
+  const bookmarks = bookmarksData?.posts || [];
+  const pagination = bookmarksData?.pagination || {
     page: 1,
     limit: 10,
     totalCount: 0,
     totalPages: 0,
     hasNextPage: false,
     hasPreviousPage: false,
-  });
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    fetchBookmarks(1);
-  }, []);
-
-  const fetchBookmarks = async (page: number) => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(`/api/bookmarks?page=${page}&limit=10`);
-      if (response.ok) {
-        const data: BookmarksResponse = await response.json();
-        setBookmarks(data.posts);
-        setPagination(data.pagination);
-      } else {
-        toast.error("Failed to fetch bookmarks");
-      }
-    } catch (error) {
-      console.error('Error fetching bookmarks:', error);
-      toast.error("Failed to fetch bookmarks");
-    } finally {
-      setIsLoading(false);
-    }
   };
 
-  const removeBookmark = async (postId: string) => {
-    try {
-      const response = await fetch(`/api/posts/${postId}/bookmark`, {
-        method: 'DELETE',
-      });
+  // Handle errors
+  if (error) {
+    console.error("Error fetching bookmarks:", error);
+  }
 
-      if (response.ok) {
-        setBookmarks(bookmarks.filter(post => post.id !== postId));
-        setPagination(prev => ({
-          ...prev,
-          totalCount: prev.totalCount - 1,
-        }));
-        toast.success("Bookmark removed");
-      } else {
-        toast.error("Failed to remove bookmark");
-      }
-    } catch (error) {
-      console.error('Error removing bookmark:', error);
-      toast.error("Failed to remove bookmark");
-    }
+  const removeBookmark = (postId: string) => {
+    toggleBookmarkMutation.mutate(postId);
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
   };
 
   if (isLoading) {
@@ -157,7 +104,7 @@ export function BookmarksPageClient() {
                     />
                   </div>
                 )}
-                
+
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
@@ -169,29 +116,29 @@ export function BookmarksPageClient() {
                           {post.title}
                         </h3>
                       </Link>
-                      
+
                       {post.excerpt && (
                         <p className="text-muted-foreground mt-2 line-clamp-2">
                           {post.excerpt}
                         </p>
                       )}
-                      
+
                       <div className="flex items-center gap-4 mt-3 text-sm text-muted-foreground">
                         <div className="flex items-center gap-2">
                           <Avatar className="h-5 w-5">
-                            <AvatarImage src={post.author.image} />
+                            <AvatarImage src={post.author.image || undefined} />
                             <AvatarFallback className="text-xs">
                               {getInitials(post.author.name)}
                             </AvatarFallback>
                           </Avatar>
                           <span>{post.author.name}</span>
                         </div>
-                        
+
                         <div className="flex items-center gap-1">
                           <Clock className="h-4 w-4" />
                           <span>{post.readingTime} min read</span>
                         </div>
-                        
+
                         <div className="flex items-center gap-1">
                           <Calendar className="h-4 w-4" />
                           <span>
@@ -199,7 +146,7 @@ export function BookmarksPageClient() {
                           </span>
                         </div>
                       </div>
-                      
+
                       {post.categories.length > 0 && (
                         <div className="flex flex-wrap gap-2 mt-3">
                           {post.categories.map(({ category }) => (
@@ -210,7 +157,7 @@ export function BookmarksPageClient() {
                         </div>
                       )}
                     </div>
-                    
+
                     <Button
                       variant="ghost"
                       size="sm"
@@ -233,26 +180,26 @@ export function BookmarksPageClient() {
           <p className="text-sm text-muted-foreground">
             Showing {bookmarks.length} of {pagination.totalCount} bookmarks
           </p>
-          
+
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
-              onClick={() => fetchBookmarks(pagination.page - 1)}
+              onClick={() => handlePageChange(pagination.page - 1)}
               disabled={!pagination.hasPreviousPage}
             >
               <ChevronLeft className="h-4 w-4" />
               Previous
             </Button>
-            
+
             <span className="text-sm">
               Page {pagination.page} of {pagination.totalPages}
             </span>
-            
+
             <Button
               variant="outline"
               size="sm"
-              onClick={() => fetchBookmarks(pagination.page + 1)}
+              onClick={() => handlePageChange(pagination.page + 1)}
               disabled={!pagination.hasNextPage}
             >
               Next

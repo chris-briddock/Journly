@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { Edit, FileText, BarChart2, Tag, Settings, BookOpen, Clock, CreditCard, Bookmark } from 'lucide-react';
@@ -8,35 +7,22 @@ import { Button } from '@/app/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/app/components/ui/card';
 import { Skeleton } from '@/app/components/ui/skeleton';
 import { Badge } from '@/app/components/ui/badge';
-import { getDashboardStats } from '@/lib/services/getDashboardStats';
-import { getDashboardRecentPosts } from '@/lib/services/getDashboardRecentPosts';
-import { getScheduledPosts } from '@/lib/services/getScheduledPosts';
-
-interface DashboardStats {
-  totalPosts: number;
-  publishedPosts: number;
-  draftPosts: number;
-  scheduledPosts: number;
-  totalViews: number;
-  totalLikes: number;
-  totalComments: number;
-}
-
-interface Post {
-  id: string;
-  title: string;
-  status: string;
-  createdAt: Date;
-}
-
-interface ScheduledPost {
-  id: string;
-  title: string;
-  scheduledPublishAt: Date;
-}
+import { useDashboardStats } from '@/hooks/use-dashboard';
+import { useRecentPosts } from '@/hooks/use-posts';
+import { useScheduledPosts } from '@/hooks/use-posts';
 
 export default function DashboardContent() {
-  const [stats, setStats] = useState<DashboardStats>({
+  // Use TanStack Query hooks
+  const { data: stats, isLoading: statsLoading, error: statsError } = useDashboardStats();
+  const { data: recentPosts = [], isLoading: postsLoading, error: postsError } = useRecentPosts(5);
+  const { data: scheduledData, isLoading: scheduledLoading, error: scheduledError } = useScheduledPosts({ limit: 5 });
+
+  const loading = statsLoading || postsLoading || scheduledLoading;
+  const error = statsError || postsError || scheduledError;
+  const scheduledPosts = scheduledData?.posts || [];
+
+  // Provide default values for stats
+  const defaultStats = {
     totalPosts: 0,
     publishedPosts: 0,
     draftPosts: 0,
@@ -44,38 +30,8 @@ export default function DashboardContent() {
     totalViews: 0,
     totalLikes: 0,
     totalComments: 0,
-  });
-
-  const [recentPosts, setRecentPosts] = useState<Post[]>([]);
-  const [scheduledPosts, setScheduledPosts] = useState<ScheduledPost[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const [statsData, postsData, scheduledData] = await Promise.all([
-          getDashboardStats(),
-          getDashboardRecentPosts(5),
-          getScheduledPosts({ limit: 5 }),
-        ]);
-
-        setStats(statsData);
-        setRecentPosts(postsData);
-        setScheduledPosts(scheduledData.posts || []);
-      } catch (err) {
-        console.error('Error fetching dashboard data:', err);
-        setError('Failed to load dashboard data. Please try again later.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchDashboardData();
-  }, []);
+  };
+  const safeStats = stats || defaultStats;
 
   const dashboardItems = [
     {
@@ -159,7 +115,7 @@ export default function DashboardContent() {
         <div className="max-w-6xl mx-auto">
           <h1 className="text-3xl font-bold mb-8">Dashboard</h1>
           <div className="flex flex-col justify-center items-center h-64">
-            <p className="text-lg text-red-500 mb-4">{error}</p>
+            <p className="text-lg text-red-500 mb-4">{error?.message || 'An error occurred'}</p>
             <Button onClick={() => window.location.reload()}>Retry</Button>
           </div>
         </div>
@@ -180,9 +136,9 @@ export default function DashboardContent() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{stats.totalPosts}</div>
+              <div className="text-3xl font-bold">{safeStats.totalPosts}</div>
               <p className="text-xs text-muted-foreground mt-1">
-                {stats.publishedPosts} published, {stats.draftPosts} drafts, {stats.scheduledPosts} scheduled
+                {safeStats.publishedPosts} published, {safeStats.draftPosts} drafts, {safeStats.scheduledPosts} scheduled
               </p>
             </CardContent>
           </Card>
@@ -193,7 +149,7 @@ export default function DashboardContent() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{stats.totalViews}</div>
+              <div className="text-3xl font-bold">{safeStats.totalViews}</div>
             </CardContent>
           </Card>
           <Card>
@@ -203,7 +159,7 @@ export default function DashboardContent() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{stats.totalLikes}</div>
+              <div className="text-3xl font-bold">{safeStats.totalLikes}</div>
             </CardContent>
           </Card>
           <Card>
@@ -213,7 +169,7 @@ export default function DashboardContent() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{stats.totalComments}</div>
+              <div className="text-3xl font-bold">{safeStats.totalComments}</div>
             </CardContent>
           </Card>
         </div>
@@ -343,7 +299,7 @@ export default function DashboardContent() {
                         <div className="flex items-center gap-2 mt-1">
                           <Clock className="h-3 w-3 text-muted-foreground" />
                           <span className="text-xs text-muted-foreground">
-                            Scheduled for {format(new Date(post.scheduledPublishAt), "MMM d, yyyy 'at' h:mm a")}
+                            Scheduled for {post.scheduledPublishAt ? format(new Date(post.scheduledPublishAt), "MMM d, yyyy 'at' h:mm a") : 'Unknown'}
                           </span>
                         </div>
                       </div>

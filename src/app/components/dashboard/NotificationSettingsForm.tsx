@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Loader2, Bell, Mail, Info } from "lucide-react";
+import { useNotificationPreferences, useUpdateNotificationPreferences } from "@/hooks/use-users";
 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../../components/ui/card";
 import { Label } from "../../components/ui/label";
@@ -15,7 +16,12 @@ import { Badge } from "../../components/ui/badge";
 
 export function NotificationSettingsForm() {
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Use TanStack Query hooks
+  const { data: notificationData, isLoading, error } = useNotificationPreferences();
+  const updateNotificationsMutation = useUpdateNotificationPreferences();
+
+  // Initialize settings from query data
   const [settings, setSettings] = useState({
     emailNotifications: true,
     browserNotifications: false,
@@ -32,35 +38,23 @@ export function NotificationSettingsForm() {
     mentionsInComments: true,
   });
 
-  const [isLoading, setIsLoading] = useState(true);
-
   // Check if browser notifications are supported
   const [notificationsSupported, setNotificationsSupported] = useState(false);
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | null>(null);
 
-  // Fetch user's notification preferences
+  // Update settings when data is loaded
   useEffect(() => {
-    const fetchPreferences = async () => {
-      try {
-        setIsLoading(true);
-        const response = await fetch('/api/user/notification-preferences', {
-          next: { revalidate: 0 }
-        });
+    if (notificationData) {
+      setSettings(notificationData);
+    }
+  }, [notificationData]);
 
-        if (response.ok) {
-          const data = await response.json();
-          setSettings(data);
-        }
-      } catch (error) {
-        console.error('Error fetching notification preferences:', error);
-        toast.error('Failed to load notification preferences');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchPreferences();
-  }, []);
+  // Handle errors
+  useEffect(() => {
+    if (error) {
+      console.error('Error fetching notification preferences:', error);
+    }
+  }, [error]);
 
   // Check if browser notifications are supported
   useEffect(() => {
@@ -97,31 +91,16 @@ export function NotificationSettingsForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
 
-    try {
-      // Call the API to save notification preferences
-      const response = await fetch('/api/user/notification-preferences', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        next: { revalidate: 0 },
-        body: JSON.stringify(settings),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to save notification preferences');
-      }
-
-      toast.success("Notification settings updated successfully");
-      router.refresh(); // Refresh the page to show updated settings
-    } catch (error) {
-      toast.error("Failed to update notification settings");
-      console.error(error);
-    } finally {
-      setIsSubmitting(false);
-    }
+    // Use TanStack Query mutation
+    updateNotificationsMutation.mutate(settings, {
+      onSuccess: () => {
+        router.refresh(); // Refresh the page to show updated settings
+      },
+      onError: () => {
+        // Error toast is already handled in the hook
+      },
+    });
   };
 
   return (
@@ -378,8 +357,8 @@ export function NotificationSettingsForm() {
           <p className="text-sm text-muted-foreground">
             Last updated: {new Date().toLocaleDateString()}
           </p>
-          <Button type="submit" disabled={isSubmitting} className="bg-green-600 hover:bg-green-700">
-            {isSubmitting ? (
+          <Button type="submit" disabled={updateNotificationsMutation.isPending} className="bg-green-600 hover:bg-green-700">
+            {updateNotificationsMutation.isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Saving...

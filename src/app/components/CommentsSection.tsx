@@ -1,48 +1,38 @@
 "use client";
 
-import { useState } from "react";
-import { toast } from "sonner";
-
 import { CommentList, CommentType } from "./CommentList";
+import { usePostComments } from "@/hooks/use-comments";
 
 type CommentsSectionProps = {
   postId: string;
-  initialComments: CommentType[];
+  initialComments?: CommentType[];
 };
 
-export function CommentsSection({ postId, initialComments }: CommentsSectionProps) {
-  const [comments, setComments] = useState<CommentType[]>(initialComments);
-  const [isLoading, setIsLoading] = useState(false);
+export function CommentsSection({ postId, initialComments = [] }: CommentsSectionProps) {
+  // Use TanStack Query hook for comments
+  const {
+    data: comments = initialComments,
+    isLoading,
+    error,
+    refetch
+  } = usePostComments(postId);
 
-  const fetchComments = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(`/api/comments?postId=${postId}`, {
-        next: { revalidate: 0 }
-      });
-      if (!response.ok) {
-        throw new Error("Failed to fetch comments");
-      }
-      const data = await response.json();
-      setComments(data);
-    } catch (error) {
-      toast.error("Failed to load comments");
-      console.error(error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Handle errors
+  if (error) {
+    console.error("Error fetching comments:", error);
+  }
 
   const handleCommentAdded = () => {
-    fetchComments();
+    // Refetch comments when a new comment is added
+    refetch();
   };
 
   return (
     <div className={isLoading ? "opacity-70 pointer-events-none" : ""}>
-      <CommentList 
-        postId={postId} 
-        comments={comments} 
-        onCommentAdded={handleCommentAdded} 
+      <CommentList
+        postId={postId}
+        comments={comments}
+        onCommentAdded={handleCommentAdded}
       />
     </div>
   );

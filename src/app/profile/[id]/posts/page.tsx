@@ -1,7 +1,10 @@
-import { notFound } from "next/navigation";
+'use client';
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
+import { Skeleton } from "@/app/components/ui/skeleton";
 import PostCard from "@/app/components/PostCard";
 import {
   Pagination,
@@ -11,37 +14,88 @@ import {
   PaginationNext,
   PaginationPrevious
 } from "@/app/components/ui/pagination";
-import { getUser } from "@/lib/services/getUser";
-import { getUserPosts } from "@/lib/services/getUserPosts";
-import { Post } from "@/types/models/post";
+import { useUser, useUserPosts } from "@/hooks/use-users";
 
 type SearchParams = {
   page?: string;
 };
 
-// Use the imported service functions instead of direct Prisma calls
-
-export default async function UserPostsPage({
+export default function UserPostsPage({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string }>;
   searchParams: Promise<SearchParams>;
 }) {
-  const { id } = await params;
-  const searchParamsValue = await searchParams;
+  const [id, setId] = useState<string>('');
+  const [page, setPage] = useState(1);
 
-  const page = Number(searchParamsValue.page) || 1;
+  // Get the ID and search params from props
+  useEffect(() => {
+    Promise.all([params, searchParams]).then(([paramsData, searchParamsData]) => {
+      setId(paramsData.id);
+      setPage(Number(searchParamsData.page) || 1);
+    });
+  }, [params, searchParams]);
 
-  const [user, postsData] = await Promise.all([
-    getUser(id),
-    getUserPosts(id, { page, limit: 12 }),
-  ]);
+  const { data: user, isLoading: userLoading, error: userError } = useUser(id, !!id);
+  const { data: postsData, isLoading: postsLoading, error: postsError } = useUserPosts(
+    id,
+    { page, limit: 12 },
+    !!id
+  );
 
-  const { posts, pagination } = postsData;
+  const isLoading = userLoading || postsLoading;
+  const error = userError || postsError;
+  const posts = postsData?.posts || [];
+  const pagination = postsData?.pagination || { totalPages: 1, page: 1, totalCount: 0 };
 
-  if (!user) {
-    notFound();
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-6xl mx-auto">
+            <div className="mb-8">
+              <Button variant="ghost" size="sm" asChild className="mb-2">
+                <Link href={`/profile/${id}`}>
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Back to Profile
+                </Link>
+              </Button>
+              <Skeleton className="h-8 w-48" />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-64 w-full" />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !user) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-6xl mx-auto">
+            <div className="mb-8">
+              <Button variant="ghost" size="sm" asChild className="mb-2">
+                <Link href={`/profile/${id}`}>
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Back to Profile
+                </Link>
+              </Button>
+              <h1 className="text-3xl font-bold">User Posts</h1>
+            </div>
+            <div className="text-center py-12">
+              <p className="text-red-500">User not found or failed to load.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -67,8 +121,26 @@ export default async function UserPostsPage({
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {posts.map((post: Post) => (
-                <PostCard key={post.id} post={post} />
+              {posts.map((post) => (
+                <PostCard
+                  key={post.id}
+                  post={{
+                    ...post,
+                    createdAt: new Date(post.createdAt),
+                    publishedAt: new Date(post.createdAt), // Use createdAt as fallback
+                    readingTime: 5, // Default reading time
+                    viewCount: 0,
+                    likeCount: 0,
+                    commentCount: 0,
+                    author: {
+                      id: user?.id || '',
+                      name: user?.name || 'Unknown',
+                      image: user?.image || null,
+                      bio: user?.bio || null,
+                    },
+                    categories: [],
+                  }}
+                />
               ))}
             </div>
           )}

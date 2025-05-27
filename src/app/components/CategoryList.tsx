@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Edit, Trash2, AlertCircle, Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { useDeleteCategory } from "@/hooks/use-categories";
 
 import { Button } from "@/app/components/ui/button";
 import { Badge } from "@/app/components/ui/badge";
@@ -34,35 +34,25 @@ type CategoryListProps = {
 };
 
 export default function CategoryList({ categories, userId }: CategoryListProps) {
-  const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [localCategories, setLocalCategories] = useState<Category[]>(categories);
 
+  // Use TanStack Query mutation
+  const deleteCategoryMutation = useDeleteCategory();
+
   const handleDelete = async (categoryId: string) => {
-    setIsDeleting(categoryId);
     setError(null);
 
-    try {
-      const response = await fetch(`/api/categories/${categoryId}`, {
-        method: "DELETE",
-        next: { revalidate: 0 }
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to delete category");
-      }
-
-      setLocalCategories((prev) => prev.filter((cat) => cat.id !== categoryId));
-      toast.success("Category deleted successfully");
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to delete category";
-      setError(errorMessage);
-      toast.error(errorMessage);
-    } finally {
-      setIsDeleting(null);
-    }
+    // Use TanStack Query mutation
+    deleteCategoryMutation.mutate(categoryId, {
+      onSuccess: () => {
+        setLocalCategories((prev) => prev.filter((cat) => cat.id !== categoryId));
+      },
+      onError: (error: Error) => {
+        const errorMessage = error.message || "Failed to delete category";
+        setError(errorMessage);
+      },
+    });
   };
 
   return (
@@ -143,10 +133,10 @@ export default function CategoryList({ categories, userId }: CategoryListProps) 
                             e.preventDefault();
                             handleDelete(category.id);
                           }}
-                          disabled={isDeleting === category.id || category.postCount > 0}
+                          disabled={deleteCategoryMutation.isPending || category.postCount > 0}
                           className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         >
-                          {isDeleting === category.id ? (
+                          {deleteCategoryMutation.isPending ? (
                             <>
                               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                               Deleting...

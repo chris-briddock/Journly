@@ -16,7 +16,10 @@ export async function GET(
   try {
     const { id } = await params;
     const post = await prisma.post.findUnique({
-      where: { id },
+      where: {
+        id,
+        status: "published" // Only fetch published posts for public access
+      },
       include: {
         author: {
           select: {
@@ -28,10 +31,16 @@ export async function GET(
         },
         categories: {
           include: {
-            category: true,
+            category: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
           },
         },
       },
+      // Include SEO fields for metadata generation
     });
 
     if (!post) {

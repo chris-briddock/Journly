@@ -2,7 +2,7 @@ import { ReactRenderer } from "@tiptap/react";
 import tippy, { Instance, Props } from "tippy.js";
 import { MentionList, MentionListRef } from "@/app/components/editor/MentionList";
 import { SuggestionKeyDownProps, SuggestionProps } from "@tiptap/suggestion";
-import { searchUsers } from "../services/getSearchUsers";
+import { searchUsers } from "../api/users";
 
 // User type definition for mentions
 export interface MentionUser {
@@ -24,7 +24,12 @@ export const mentionSuggestion = {
       const users = await searchUsers(query, 10);
 
       if (users && users.length > 0) {
-        return users.slice(0, 5);
+        // Transform users to match MentionUser format
+        return users.slice(0, 5).map(user => ({
+          id: user.id,
+          label: user.name || user.email,
+          avatar: user.image
+        }));
       } else {
         // If no users found or API fails, use fallback users
         if (!query) {

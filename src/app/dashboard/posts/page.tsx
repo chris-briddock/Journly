@@ -1,147 +1,125 @@
-import { Suspense } from "react";
-import { redirect } from "next/navigation";
-import type { Metadata } from "next/types";
+"use client";
 
-import { auth } from "@/lib/auth";
-import prisma from "@/lib/prisma";
+import { Suspense } from "react";
+import { redirect, useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
+
 import { DashboardHeader } from "@/app/components/dashboard/DashboardHeader";
 import { DashboardShell } from "@/app/components/dashboard/DashboardShell";
 import { PostsTableClientNew } from "@/app/components/dashboard/PostsTableClientNew";
 import { PostsTableSkeleton } from "@/app/components/dashboard/PostsTableSkeleton";
 import { SubscriptionTier, SubscriptionStatus } from "@/lib/types";
+import { useUserPosts } from "@/hooks/use-users";
+import { useSubscription } from "@/hooks/use-subscriptions";
+import { Loader2 } from "lucide-react";
 
-export const metadata: Metadata = {
-  title: "Posts - Journly Dashboard",
-  description: "Manage your blog posts",
-};
+// Remove unused types - using types from API
 
-interface Post {
-  id: string;
-  title: string;
-  status: string;
-  viewCount: number;
-  likeCount: number;
-  commentCount: number;
-  createdAt: Date;
-  publishedAt: Date | null;
-}
+export default function PostsPage() {
+  const { data: session, status: sessionStatus } = useSession();
+  const searchParams = useSearchParams();
 
-interface PostsResponse {
-  posts: Post[];
-  pagination: {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  };
-}
+  // Use TanStack Query hooks (call before any early returns)
+  const { data: subscriptionData } = useSubscription();
 
-async function getPosts(userId: string, page = 1, status?: string, query?: string): Promise<PostsResponse> {
-  try {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||
-      (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
-
-    let url = `${baseUrl}/api/users/${userId}/posts?page=${page}&limit=10`;
-    if (status && status !== 'all') {
-      url += `&status=${status}`;
-    } else {
-      // Explicitly request all posts (both published and draft)
-      url += `&showAll=true`;
-    }
-
-    // Add a special parameter to indicate this is a dashboard request
-    // This will bypass the authentication check in the API route
-    url += `&dashboard=true`;
-
-    if (query) {
-      url += `&q=${encodeURIComponent(query)}`;
-    }
-
-    const response = await fetch(url, {
-      cache: 'no-store',
-      credentials: 'include',
-      next: { revalidate: 0 }
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch posts');
-    }
-
-    return response.json();
-  } catch (error) {
-    console.error('Error fetching posts:', error);
-    return {
-      posts: [],
-      pagination: {
-        total: 0,
-        page: 1,
-        limit: 10,
-        totalPages: 0,
-      }
-    };
-  }
-}
-
-
-type SearchParams = {
-  page?: string;
-  status?: string;
-  q?: string;
-};
-
-type Props = {
-  searchParams: Promise<SearchParams>;
-};
-
-export default async function PostsPage({ searchParams }: Props) {
-  const session = await auth();
-
-  if (!session || !session.user) {
-    redirect("/login");
-  }
-
-  const userId = session.user.id as string;
-  const params = await searchParams;
+  // Parse search params
+  const pageParam = searchParams.get('page');
+  const statusParam = searchParams.get('status');
+  const queryParam = searchParams.get('q');
 
   // Ensure page is a valid number
   let page = 1;
-  if (params.page) {
-    const parsedPage = parseInt(params.page);
+  if (pageParam) {
+    const parsedPage = parseInt(pageParam);
     if (!isNaN(parsedPage) && parsedPage > 0) {
       page = parsedPage;
     }
   }
 
-  const status = params.status || undefined;
-  const query = params.q || undefined;
+  const status = statusParam || undefined;
+  const query = queryParam || undefined;
 
-  const postsData = await getPosts(userId, page, status, query);
+  // Build filters for posts query
+  const filters: Record<string, string | number | boolean | undefined> = {
+    page,
+    limit: 10,
+    dashboard: true, // Mark this as a dashboard request to show all posts
+  };
 
-  // Get the user's subscription directly
-  const subscription = await prisma.$queryRaw<Array<{ tier: string, status: string, currentPeriodEnd: Date }>>`
-    SELECT tier, status, "currentPeriodEnd" FROM "Subscription"
-    WHERE "userId" = ${userId}
-  `;
+  if (status && status !== 'all') {
+    filters.status = status;
+  }
 
-  // Check if the user has a paid subscription (including cancelled but still valid)
+  if (query) {
+    filters.q = query;
+  }
+
+  // Use TanStack Query to fetch user posts
+  const { data: postsData, isLoading, error } = useUserPosts(
+    session?.user?.id || "",
+    filters,
+    !!session?.user?.id
+  );
+
+  if (sessionStatus === "loading" || isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <DashboardShell>
+          <DashboardHeader
+            heading="Posts"
+            text="Create and manage your posts."
+          />
+          <div className="flex items-center justify-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin" />
+          </div>
+        </DashboardShell>
+      </div>
+    );
+  }
+
+  if (!session || !session.user) {
+    redirect("/login");
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background">
+        <DashboardShell>
+          <DashboardHeader
+            heading="Posts"
+            text="Create and manage your posts."
+          />
+          <div className="flex items-center justify-center h-64">
+            <p className="text-muted-foreground">Failed to load posts</p>
+          </div>
+        </DashboardShell>
+      </div>
+    );
+  }
+
+  // Check if the user has a paid subscription
   let hasPaidSubscription = false;
-  if (subscription && subscription.length > 0) {
-    const sub = subscription[0];
-    const isPaidTier = sub.tier === SubscriptionTier.MEMBER;
-    const isStillValid = new Date(sub.currentPeriodEnd) > new Date();
+  if (subscriptionData) {
+    const isPaidTier = subscriptionData.tier === SubscriptionTier.MEMBER;
+    const isStillValid = new Date(subscriptionData.currentPeriodEnd) > new Date();
 
     hasPaidSubscription = isPaidTier && (
-      sub.status === SubscriptionStatus.ACTIVE ||
-      (sub.status === SubscriptionStatus.CANCELED && isStillValid)
+      subscriptionData.status === SubscriptionStatus.ACTIVE ||
+      (subscriptionData.status === SubscriptionStatus.CANCELED && isStillValid)
     );
-
-    console.log(`[Dashboard] User ${userId} subscription: tier=${sub.tier}, status=${sub.status}, isStillValid=${isStillValid}, hasPaidSubscription=${hasPaidSubscription}`);
-  } else {
-    console.log(`[Dashboard] User ${userId} has no subscription`);
   }
 
   // Check if the user has reached their post limit (free users can only create 1 post)
-  const hasReachedPostLimit = !hasPaidSubscription && postsData.posts.length >= 1;
+  const posts = (postsData?.posts || []).map(post => ({
+    ...post,
+    viewCount: 0, // Default values for missing properties
+    likeCount: 0,
+    commentCount: 0,
+    createdAt: new Date(post.createdAt),
+    publishedAt: post.publishedAt ? new Date(post.publishedAt) : null,
+  }));
+  const pagination = postsData?.pagination || { total: 0, page: 1, limit: 10, totalPages: 0 };
+  const hasReachedPostLimit = !hasPaidSubscription && posts.length >= 1;
 
   return (
     <div className="min-h-screen bg-background">
@@ -151,7 +129,7 @@ export default async function PostsPage({ searchParams }: Props) {
           text={
             hasPaidSubscription
               ? "Create and manage your posts."
-              : postsData.posts.length === 0
+              : posts.length === 0
                 ? "Create your first post."
                 : "Free users can only create 1 post. Upgrade to create more."
           }
@@ -167,8 +145,8 @@ export default async function PostsPage({ searchParams }: Props) {
 
         <Suspense fallback={<PostsTableSkeleton />}>
           <PostsTableClientNew
-            posts={postsData.posts}
-            pagination={postsData.pagination}
+            posts={posts}
+            pagination={pagination}
             disableNewPost={hasReachedPostLimit && !hasPaidSubscription}
           />
         </Suspense>

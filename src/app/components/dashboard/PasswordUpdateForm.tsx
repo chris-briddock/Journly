@@ -4,8 +4,8 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { toast } from "sonner";
 import { AlertCircle, Eye, EyeOff, Loader2 } from "lucide-react";
+import { useUpdateUserPassword } from "@/hooks/use-users";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { Button } from "@/app/components/ui/button";
@@ -35,11 +35,13 @@ const passwordSchema = z.object({
 type FormValues = z.infer<typeof passwordSchema>;
 
 export function PasswordUpdateForm() {
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Use TanStack Query mutation
+  const updatePasswordMutation = useUpdateUserPassword();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(passwordSchema),
@@ -52,34 +54,25 @@ export function PasswordUpdateForm() {
   });
 
   const onSubmit = async (values: FormValues) => {
-    setIsSubmitting(true);
     setError("");
 
-    try {
-      const response = await fetch("/api/user/password", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
+    // Use TanStack Query mutation
+    updatePasswordMutation.mutate(
+      {
+        currentPassword: values.currentPassword,
+        newPassword: values.newPassword,
+        confirmPassword: values.confirmPassword,
+      },
+      {
+        onSuccess: () => {
+          form.reset();
         },
-        next: { revalidate: 0 },
-        body: JSON.stringify(values),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to update password");
+        onError: (error: Error) => {
+          const errorMessage = error.message || "An unexpected error occurred";
+          setError(errorMessage);
+        },
       }
-
-      toast.success("Password updated successfully");
-      form.reset();
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
-      setError(errorMessage);
-      toast.error("Failed to update password");
-    } finally {
-      setIsSubmitting(false);
-    }
+    );
   };
 
   return (
@@ -211,8 +204,8 @@ export function PasswordUpdateForm() {
               )}
             />
 
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? (
+            <Button type="submit" className="w-full" disabled={updatePasswordMutation.isPending}>
+              {updatePasswordMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Updating...

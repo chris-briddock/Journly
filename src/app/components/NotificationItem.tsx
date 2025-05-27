@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
-import { toast } from "sonner";
+import { useMarkNotificationsAsRead } from "@/hooks/use-notifications";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar";
 import { Button } from "@/app/components/ui/button";
@@ -36,36 +36,24 @@ interface NotificationItemProps {
 
 export function NotificationItem({ notification }: NotificationItemProps) {
   const router = useRouter();
-  const [, setIsLoading] = useState(false);
   const [isRead, setIsRead] = useState(notification.read);
+
+  // Use TanStack Query mutation
+  const markAsReadMutation = useMarkNotificationsAsRead();
 
   const handleMarkAsRead = async () => {
     if (isRead) return;
 
-    try {
-      setIsLoading(true);
-
-      const response = await fetch("/api/notifications", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        next: { revalidate: 0 },
-        body: JSON.stringify({ ids: [notification.id] }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to mark notification as read");
-      }
-
-      setIsRead(true);
-      router.refresh();
-    } catch (error) {
-      console.error("Error marking notification as read:", error);
-      toast.error("Failed to mark notification as read");
-    } finally {
-      setIsLoading(false);
-    }
+    // Use TanStack Query mutation
+    markAsReadMutation.mutate([notification.id], {
+      onSuccess: () => {
+        setIsRead(true);
+        router.refresh();
+      },
+      onError: () => {
+        // Error toast is already handled in the hook
+      },
+    });
   };
 
   const handleClick = async () => {

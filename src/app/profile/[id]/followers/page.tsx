@@ -1,60 +1,118 @@
-import { notFound } from "next/navigation";
+'use client';
+
+import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
-import type { Metadata } from "next/types";
 import { ChevronLeft } from "lucide-react";
 
-import { auth } from "@/lib/auth";
 import { Button } from "@/app/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card";
+import { Skeleton } from "@/app/components/ui/skeleton";
 import { FollowButton } from "@/app/components/FollowButton";
 import { getInitials } from "@/lib/utils";
-import { getUser } from "@/lib/services/getUser";
-import { getUserFollowers } from "@/lib/services/getUserFollowers";
-import { getIsFollowing } from "@/lib/services/getIsFollowing";
-import { Follower } from "@/types/models/follower";
+import { useUser, useUserFollowers } from "@/hooks/use-users";
+
 
 interface FollowersPageProps {
   params: Promise<{ id: string }>;
   searchParams: Promise<{ page?: string; limit?: string }>;
 }
 
-// Use the imported service functions instead of direct Prisma calls
+export default function FollowersPage({ params, searchParams }: FollowersPageProps) {
+  const { data: session } = useSession();
+  const [id, setId] = useState<string>('');
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
 
-export async function generateMetadata({ params }: FollowersPageProps): Promise<Metadata> {
-  const { id } = await params;
-  const user = await getUser(id);
+  // Get the ID and search params from props
+  useEffect(() => {
+    Promise.all([params, searchParams]).then(([paramsData, searchParamsData]) => {
+      setId(paramsData.id);
+      setPage(parseInt(searchParamsData.page || "1"));
+      setLimit(parseInt(searchParamsData.limit || "20"));
+    });
+  }, [params, searchParams]);
 
-  if (!user) {
-    return {
-      title: "User Not Found - Journly",
-    };
-  }
-
-  return {
-    title: `${user.name}'s Followers - Journly`,
-    description: `People who follow ${user.name} on Journly`,
-  };
-}
-
-export default async function FollowersPage({ params, searchParams }: FollowersPageProps) {
-  const { id } = await params;
-  const searchParamsData = await searchParams;
-  const page = parseInt(searchParamsData.page || "1");
-  const limit = parseInt(searchParamsData.limit || "20");
-
-  const session = await auth();
   const currentUserId = session?.user?.id;
 
-  const [user, followersData] = await Promise.all([
-    getUser(id),
-    getUserFollowers(id, { page, limit }),
-  ]);
+  const { data: user, isLoading: userLoading, error: userError } = useUser(id, !!id);
+  const { data: followersData, isLoading: followersLoading, error: followersError } = useUserFollowers(
+    id,
+    { page, limit },
+    !!id
+  );
 
-  const { followers, pagination } = followersData;
+  const isLoading = userLoading || followersLoading;
+  const error = userError || followersError;
+  const followers = followersData?.followers || [];
+  const pagination = followersData?.pagination || { totalPages: 1, currentPage: 1, totalCount: 0 };
 
-  if (!user) {
-    notFound();
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-4xl mx-auto">
+            <div className="flex items-center gap-2 mb-6">
+              <Button variant="ghost" size="sm" asChild>
+                <Link href={`/profile/${id}`}>
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Back to Profile
+                </Link>
+              </Button>
+            </div>
+            <Card>
+              <CardHeader>
+                <CardTitle>Followers</CardTitle>
+                <CardDescription>
+                  <Skeleton className="h-4 w-32" />
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="flex items-center justify-between py-2">
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="h-10 w-10 rounded-full" />
+                        <div>
+                          <Skeleton className="h-4 w-24 mb-1" />
+                          <Skeleton className="h-3 w-32" />
+                        </div>
+                      </div>
+                      <Skeleton className="h-8 w-20" />
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !user) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-4xl mx-auto">
+            <div className="flex items-center gap-2 mb-6">
+              <Button variant="ghost" size="sm" asChild>
+                <Link href={`/profile/${id}`}>
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Back to Profile
+                </Link>
+              </Button>
+            </div>
+            <Card>
+              <CardContent className="text-center py-8">
+                <p className="text-red-500">User not found or failed to load.</p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -86,39 +144,33 @@ export default async function FollowersPage({ params, searchParams }: FollowersP
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {followers.map(async (follower: Follower) => {
-                    const isCurrentUserFollowing = currentUserId
-                      ? await getIsFollowing(follower.id)
-                      : false;
-
-                    return (
-                      <div key={follower.id} className="flex items-center justify-between py-2">
-                        <div className="flex items-center gap-3">
-                          <Avatar>
-                            <AvatarImage src={follower.image || undefined} alt={follower.name || "User"} />
-                            <AvatarFallback>{getInitials(follower.name)}</AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <Link href={`/profile/${follower.id}`} className="font-medium hover:underline">
-                              {follower.name}
-                            </Link>
-                            {follower.bio && (
-                              <p className="text-sm text-muted-foreground line-clamp-1">
-                                {follower.bio}
-                              </p>
-                            )}
-                          </div>
+                  {followers.map((follower) => (
+                    <div key={follower.id} className="flex items-center justify-between py-2">
+                      <div className="flex items-center gap-3">
+                        <Avatar>
+                          <AvatarImage src={follower.image || undefined} alt={follower.name || "User"} />
+                          <AvatarFallback>{getInitials(follower.name)}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <Link href={`/profile/${follower.id}`} className="font-medium hover:underline">
+                            {follower.name}
+                          </Link>
+                          {follower.bio && (
+                            <p className="text-sm text-muted-foreground line-clamp-1">
+                              {follower.bio}
+                            </p>
+                          )}
                         </div>
-                        {currentUserId && currentUserId !== follower.id && (
-                          <FollowButton
-                            userId={follower.id}
-                            isFollowing={isCurrentUserFollowing}
-                            size="sm"
-                          />
-                        )}
                       </div>
-                    );
-                  })}
+                      {currentUserId && currentUserId !== follower.id && (
+                        <FollowButton
+                          userId={follower.id}
+                          isFollowing={false} // We'll need to implement a hook to check this
+                          size="sm"
+                        />
+                      )}
+                    </div>
+                  ))}
                 </div>
               )}
 

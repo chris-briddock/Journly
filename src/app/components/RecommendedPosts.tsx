@@ -1,38 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
 import { ThumbsUp, MessageSquare } from "lucide-react";
-import { toast } from "sonner";
 
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/app/components/ui/card";
-import { getApiUrl } from "@/lib/getApiUrl";
 import { Badge } from "@/app/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar";
 import { Skeleton } from "@/app/components/ui/skeleton";
-
-interface Post {
-  id: string;
-  title: string;
-  excerpt: string | null;
-  featuredImage: string | null;
-  createdAt: string;
-  likeCount: number;
-  commentCount: number;
-  author: {
-    id: string;
-    name: string | null;
-    image: string | null;
-  };
-  categories: {
-    category: {
-      id: string;
-      name: string;
-    };
-  }[];
-}
+import { useRecommendations, type RecommendedPost } from "@/hooks/use-recommendations";
 
 interface RecommendedPostsProps {
   limit?: number;
@@ -45,42 +22,7 @@ export function RecommendedPosts({
   title = "Recommended for you",
   description = "Based on your reading history"
 }: RecommendedPostsProps) {
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchRecommendations = async () => {
-      setIsLoading(true);
-      try {
-        const url = getApiUrl(`/api/recommendations?limit=${limit}`);
-
-        // During build time, skip API call
-        if (!url) {
-          console.log('[Build] Skipping recommendations API call during static generation');
-          setIsLoading(false);
-          return;
-        }
-
-        const response = await fetch(url, {
-          next: { revalidate: 0 }
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch recommendations");
-        }
-
-        const data = await response.json();
-        setPosts(data);
-      } catch (error) {
-        console.error("Error fetching recommendations:", error);
-        toast.error("Failed to load recommendations");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchRecommendations();
-  }, [limit]);
+  const { data: posts = [], isLoading, error } = useRecommendations(limit);
 
   const getInitials = (name: string | null) => {
     if (!name) return "U";
@@ -91,6 +33,11 @@ export function RecommendedPosts({
       .toUpperCase()
       .substring(0, 2);
   };
+
+  if (error) {
+    console.error("Error fetching recommendations:", error);
+    return null;
+  }
 
   if (isLoading) {
     return (
@@ -135,7 +82,7 @@ export function RecommendedPosts({
         <p className="text-muted-foreground">{description}</p>
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {posts.map((post) => (
+        {posts.map((post: RecommendedPost) => (
           <Card key={post.id} className="overflow-hidden flex flex-col">
             <div className="relative h-48 w-full">
               {post.featuredImage ? (

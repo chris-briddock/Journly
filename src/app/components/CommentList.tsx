@@ -5,9 +5,9 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { MessageSquare, ThumbsUp, MoreVertical, Reply, Pencil, Trash2, Loader2 } from "lucide-react";
-import { toast } from "sonner";
 import { formatCommentWithMentions } from "@/lib/commentMentions";
 import "./comment-mentions.css";
+import { useUpdateComment, useDeleteComment, useToggleCommentLike } from "@/hooks/use-comments";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar";
 import { Button } from "@/app/components/ui/button";
@@ -61,9 +61,12 @@ export function CommentList({ postId, comments, onCommentAdded }: CommentListPro
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [editingComment, setEditingComment] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [localComments, setLocalComments] = useState<CommentType[]>(comments);
-  const [isLiking, setIsLiking] = useState<Record<string, boolean>>({});
+
+  // Use TanStack Query mutations
+  const updateCommentMutation = useUpdateComment();
+  const deleteCommentMutation = useDeleteComment();
+  const toggleLikeMutation = useToggleCommentLike();
 
   // Group comments by parent
   const parentComments = localComments.filter((comment) => !comment.parentId);
@@ -109,115 +112,76 @@ export function CommentList({ postId, comments, onCommentAdded }: CommentListPro
 
   const handleSaveEdit = async (commentId: string) => {
     if (!editContent.trim()) {
-      toast.error("Comment cannot be empty");
       return;
     }
 
-    setIsSubmitting(true);
+    // Use TanStack Query mutation
+    updateCommentMutation.mutate(
+      { id: commentId, content: editContent.trim() },
+      {
+        onSuccess: () => {
+          // Update the comment in the local state
+          setLocalComments((prevComments) =>
+            prevComments.map((comment) =>
+              comment.id === commentId
+                ? { ...comment, content: editContent.trim() }
+                : comment
+            )
+          );
 
-    try {
-      const response = await fetch(`/api/comments/${commentId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
+          setEditingComment(null);
+          setEditContent("");
         },
-        next: { revalidate: 0 },
-        body: JSON.stringify({
-          content: editContent.trim(),
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to update comment");
+        onError: () => {
+          // Error toast is already handled in the hook
+        },
       }
-
-      // Update the comment in the local state
-      setLocalComments((prevComments) =>
-        prevComments.map((comment) =>
-          comment.id === commentId
-            ? { ...comment, content: editContent.trim() }
-            : comment
-        )
-      );
-
-      setEditingComment(null);
-      setEditContent("");
-      toast.success("Comment updated successfully");
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Something went wrong";
-      toast.error(errorMessage);
-    } finally {
-      setIsSubmitting(false);
-    }
+    );
   };
 
   const handleDeleteComment = async (commentId: string) => {
-    try {
-      const response = await fetch(`/api/comments/${commentId}`, {
-        method: "DELETE",
-        next: { revalidate: 0 }
-      });
+    // Use TanStack Query mutation
+    deleteCommentMutation.mutate(commentId, {
+      onSuccess: () => {
+        // Remove the comment from the local state
+        setLocalComments((prevComments) =>
+          prevComments.filter((comment) => comment.id !== commentId)
+        );
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to delete comment");
-      }
-
-      // Remove the comment from the local state
-      setLocalComments((prevComments) =>
-        prevComments.filter((comment) => comment.id !== commentId)
-      );
-
-      toast.success("Comment deleted successfully");
-
-      if (onCommentAdded) {
-        onCommentAdded();
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Something went wrong";
-      toast.error(errorMessage);
-    }
+        if (onCommentAdded) {
+          onCommentAdded();
+        }
+      },
+      onError: () => {
+        // Error toast is already handled in the hook
+      },
+    });
   };
 
   const handleLikeComment = async (commentId: string) => {
-    if (isLiking[commentId]) return;
+    if (toggleLikeMutation.isPending) return;
 
-    setIsLiking((prev) => ({ ...prev, [commentId]: true }));
-
-    try {
-      const response = await fetch(`/api/comments/${commentId}/like`, {
-        method: "POST",
-        next: { revalidate: 0 }
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to like comment");
-      }
-
-      // Update the like count in the local state
-      setLocalComments((prevComments) =>
-        prevComments.map((comment) =>
-          comment.id === commentId
-            ? {
-                ...comment,
-                likeCount: data.liked
-                  ? comment.likeCount + 1
-                  : Math.max(0, comment.likeCount - 1),
-              }
-            : comment
-        )
-      );
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Something went wrong";
-      toast.error(errorMessage);
-    } finally {
-      setIsLiking((prev) => ({ ...prev, [commentId]: false }));
-    }
+    // Use TanStack Query mutation
+    toggleLikeMutation.mutate(commentId, {
+      onSuccess: (data) => {
+        // Update the like count in the local state
+        setLocalComments((prevComments) =>
+          prevComments.map((comment) =>
+            comment.id === commentId
+              ? {
+                  ...comment,
+                  likeCount: data.liked
+                    ? comment.likeCount + 1
+                    : Math.max(0, comment.likeCount - 1),
+                }
+              : comment
+          )
+        );
+      },
+      onError: () => {
+        // Error toast is already handled in the hook
+      },
+    });
   };
 
   const renderComment = (comment: CommentType, isReply = false) => {
@@ -302,9 +266,9 @@ export function CommentList({ postId, comments, onCommentAdded }: CommentListPro
                   <Button
                     size="sm"
                     onClick={() => handleSaveEdit(comment.id)}
-                    disabled={isSubmitting}
+                    disabled={updateCommentMutation.isPending}
                   >
-                    {isSubmitting ? (
+                    {updateCommentMutation.isPending ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         Saving...
@@ -329,7 +293,7 @@ export function CommentList({ postId, comments, onCommentAdded }: CommentListPro
                   size="sm"
                   className="h-8 px-2"
                   onClick={() => handleLikeComment(comment.id)}
-                  disabled={isLiking[comment.id]}
+                  disabled={toggleLikeMutation.isPending}
                 >
                   <ThumbsUp className="mr-1 h-4 w-4" />
                   <span>{comment.likeCount}</span>
