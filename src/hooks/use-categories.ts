@@ -21,7 +21,7 @@ export function useCategories(filters: CategoryFilters = {}) {
   return useQuery({
     queryKey: queryKeys.categories.list(filters),
     queryFn: () => fetchCategories(filters),
-    staleTime: 10 * 60 * 1000, // 10 minutes - categories don't change often
+    staleTime: 0
   });
 }
 

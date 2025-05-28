@@ -7,13 +7,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/components/ui/ta
 import { DashboardHeader } from "@/app/components/dashboard/DashboardHeader";
 import { DashboardShell } from "@/app/components/dashboard/DashboardShell";
 import { BarChart, LineChart, PieChart, TrendingUp, Users, Eye, MessageSquare, ThumbsUp, Loader2 } from "lucide-react";
-// Remove unused import
 import { useUserPosts } from "@/hooks/use-users";
 
 export default function AnalyticsPage() {
   const { data: session, status } = useSession();
 
-  // Use TanStack Query to fetch user posts (call hooks before any early returns)
   const { data: postsData, isLoading, error } = useUserPosts(
     session?.user?.id || "",
     { status: "published" },

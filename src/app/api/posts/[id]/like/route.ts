@@ -3,7 +3,7 @@ import prisma from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { createLikeNotification } from '@/lib/notifications';
 
-// POST /api/posts/[id]/like - Like a post
+// POST /api/posts/[id]/like - Toggle like/unlike a post
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -40,101 +40,68 @@ export async function POST(
     });
 
     if (existingLike) {
-      return NextResponse.json(
-        { error: 'You have already liked this post' },
-        { status: 400 }
-      );
-    }
+      // Unlike the post
+      const updatedPost = await prisma.$transaction(async (tx) => {
+        // Delete like
+        await tx.like.delete({
+          where: {
+            id: existingLike.id,
+          },
+        });
 
-    // Create like and update post like count in a transaction
-    await prisma.$transaction(async (tx) => {
-      // Create like
-      await tx.like.create({
-        data: {
-          postId,
-          userId,
-        },
+        // Decrement post like count and return updated post
+        const updated = await tx.post.update({
+          where: { id: postId },
+          data: { likeCount: { decrement: 1 } },
+          select: { likeCount: true },
+        });
+
+        return updated;
       });
 
-      // Increment post like count
-      await tx.post.update({
-        where: { id: postId },
-        data: { likeCount: { increment: 1 } },
+      return NextResponse.json({
+        liked: false,
+        likesCount: updatedPost.likeCount
       });
-    });
+    } else {
+      // Like the post
+      const updatedPost = await prisma.$transaction(async (tx) => {
+        // Create like
+        await tx.like.create({
+          data: {
+            postId,
+            userId,
+          },
+        });
 
-    // Create notification
-    await createLikeNotification({
-      postId,
-      actionUserId: userId,
-    });
+        // Increment post like count and return updated post
+        const updated = await tx.post.update({
+          where: { id: postId },
+          data: { likeCount: { increment: 1 } },
+          select: { likeCount: true },
+        });
 
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Error liking post:', error);
-    return NextResponse.json(
-      { error: 'Failed to like post' },
-      { status: 500 }
-    );
-  }
-}
+        return updated;
+      });
 
-// DELETE /api/posts/[id]/like - Unlike a post
-export async function DELETE(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const session = await auth();
-
-    if (!session || !session.user) {
-      return NextResponse.json(
-        { error: 'You must be logged in to unlike a post' },
-        { status: 401 }
-      );
-    }
-
-    const userId = session.user.id as string;
-    const postId = id;
-
-    // Check if like exists
-    const existingLike = await prisma.like.findFirst({
-      where: {
+      // Create notification
+      await createLikeNotification({
         postId,
-        userId,
-      },
-    });
+        actionUserId: userId,
+      });
 
-    if (!existingLike) {
-      return NextResponse.json(
-        { error: 'You have not liked this post' },
-        { status: 400 }
-      );
+      return NextResponse.json({
+        liked: true,
+        likesCount: updatedPost.likeCount
+      });
     }
-
-    // Delete like and update post like count in a transaction
-    await prisma.$transaction(async (tx) => {
-      // Delete like
-      await tx.like.delete({
-        where: {
-          id: existingLike.id,
-        },
-      });
-
-      // Decrement post like count
-      await tx.post.update({
-        where: { id: postId },
-        data: { likeCount: { decrement: 1 } },
-      });
-    });
-
-    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error unliking post:', error);
+    console.error('Error toggling like:', error);
     return NextResponse.json(
-      { error: 'Failed to unlike post' },
+      { error: 'Failed to toggle like' },
       { status: 500 }
     );
   }
 }
+
+

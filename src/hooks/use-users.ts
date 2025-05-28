@@ -39,7 +39,7 @@ export function useSearchUsers(query: string = '', limit: number = 10, enabled: 
   return useQuery({
     queryKey: queryKeys.users.search(query, limit),
     queryFn: () => searchUsers(query, limit),
-    enabled: enabled && query.length > 0,
+    enabled: enabled && query.length >= 0, // Allow empty query to show all users
     staleTime: 2 * 60 * 1000, // 2 minutes
   });
 }

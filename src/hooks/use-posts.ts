@@ -18,11 +18,11 @@ import {
   togglePostLike,
   togglePostBookmark,
   fetchPostBookmarkStatus,
+  fetchPostLikeStatus,
   schedulePost,
   bulkDeletePosts,
   bulkUpdatePostStatus,
   checkScheduledPosts,
-  createComment,
   type PostFilters,
 } from '@/lib/api/posts';
 import { Post } from '@/types/models/post';
@@ -163,6 +163,18 @@ export function usePostBookmarkStatus(id: string, enabled: boolean = true) {
   return useQuery({
     queryKey: queryKeys.bookmarks.status(id),
     queryFn: () => fetchPostBookmarkStatus(id),
+    enabled: enabled && !!id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+/**
+ * Hook to fetch post like status
+ */
+export function usePostLikeStatus(id: string, enabled: boolean = true) {
+  return useQuery({
+    queryKey: queryKeys.likes.status(id),
+    queryFn: () => fetchPostLikeStatus(id),
     enabled: enabled && !!id,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
@@ -442,24 +454,3 @@ export function useCheckScheduledPosts(options?: {
   });
 }
 
-/**
- * Hook to create a comment
- */
-export function useCreateComment() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ postId, content, parentId }: { postId: string; content: string; parentId?: string }) =>
-      createComment(postId, content, parentId),
-    onSuccess: (_, { postId }) => {
-      // Invalidate comments for the post
-      queryClient.invalidateQueries({ queryKey: queryKeys.comments.list(postId) });
-
-      toast.success('Comment posted successfully!');
-    },
-    onError: (error) => {
-      toast.error('Failed to post comment. Please try again.');
-      console.error('Create comment error:', error);
-    },
-  });
-}

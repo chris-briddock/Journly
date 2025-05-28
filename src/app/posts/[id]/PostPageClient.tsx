@@ -22,7 +22,7 @@ import { RecommendedPosts } from "@/app/components/RecommendedPosts";
 import { getInitials } from "@/lib/utils";
 import { ReadingProgressTracker } from "@/app/components/ReadingProgressTracker";
 import { Post } from "@/types/models/post";
-import { usePost, useRelatedPosts, useArticleAccess } from "@/hooks/use-posts";
+import { usePost, useRelatedPosts, useArticleAccess, usePostLikeStatus } from "@/hooks/use-posts";
 import { usePostComments } from "@/hooks/use-comments";
 import { useArticleCount } from "@/hooks/use-subscriptions";
 import { Loader2 } from "lucide-react";
@@ -44,6 +44,9 @@ export function PostPageClient({ postId }: PostPageClientProps) {
     !!session?.user?.id && !!post
   );
 
+  // Get like status
+  const { data: likeStatus } = usePostLikeStatus(postId, !!session?.user?.id && !!post);
+
   // Get category IDs for related posts
   const categoryIds = Array.isArray(post?.categories)
     ? post.categories.map((c: { category?: { id?: string } }) => c?.category?.id).filter((id): id is string => Boolean(id))
@@ -56,24 +59,24 @@ export function PostPageClient({ postId }: PostPageClientProps) {
 
   // Handle access control and redirects
   useEffect(() => {
+    // Only redirect if not loading and not already redirected
+    if (postLoading || accessLoading) return;
+
     if (!session?.user?.id) {
-      // Redirect to login if not authenticated
       router.push(`/login?from=/posts/${postId}`);
       return;
     }
 
     if (accessError) {
-      // If there's an access error, redirect to subscription page
       router.push(`/subscription?from=/posts/${postId}`);
       return;
     }
 
     if (accessData && !accessData.canAccess) {
-      // If user can't access the article, redirect to subscription page
       router.push(`/subscription?from=/posts/${postId}`);
       return;
     }
-  }, [session, accessData, accessError, postId, router]);
+  }, [session, accessData, accessError, postId, router, postLoading, accessLoading]);
 
   const formatDate = (date: Date) => {
     return format(new Date(date), "MMMM d, yyyy");
@@ -145,15 +148,14 @@ export function PostPageClient({ postId }: PostPageClientProps) {
 
   const isAuthor = session.user.id === post.author.id;
 
-  // User has access to the article
   const hasAccess = accessData?.canAccess || false;
   const articlesReadThisMonth = articleCountData?.articlesReadThisMonth || 0;
-  const monthlyLimit = 5; // Default monthly limit for free users
+  const monthlyLimit = 5;
 
   return (
     <div className="min-h-screen bg-background">
       {/* Client-side component to track reading progress - only render when post is loaded */}
-      {post && <ReadingProgressTracker postId={post.id} />}
+      {!postLoading && !accessLoading && post && <ReadingProgressTracker postId={post.id} />}
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           {/* Post Header */}
@@ -248,6 +250,7 @@ export function PostPageClient({ postId }: PostPageClientProps) {
               <LikeButton
                 postId={post.id}
                 initialLikeCount={post.likeCount}
+                isLiked={likeStatus?.liked || false}
                 variant="ghost"
                 size="sm"
               />

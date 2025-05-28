@@ -13,8 +13,6 @@ import { useUserPosts } from "@/hooks/use-users";
 import { useSubscription } from "@/hooks/use-subscriptions";
 import { Loader2 } from "lucide-react";
 
-// Remove unused types - using types from API
-
 export default function PostsPage() {
   const { data: session, status: sessionStatus } = useSession();
   const searchParams = useSearchParams();

@@ -17,7 +17,7 @@ export function usePostComments(postId: string, enabled: boolean = true) {
     queryKey: queryKeys.comments.list(postId),
     queryFn: () => fetchComments(postId),
     enabled: enabled && !!postId,
-    staleTime: 30 * 1000, // 30 seconds - comments change frequently
+    staleTime: 0, // Always fresh - comments change frequently
   });
 }
 
@@ -29,18 +29,59 @@ export function useCreateComment() {
 
   return useMutation({
     mutationFn: createComment,
-    onSuccess: (_, { postId }) => {
-      // Invalidate comments for this post
-      queryClient.invalidateQueries({ queryKey: queryKeys.comments.list(postId) });
+    onMutate: async (newComment) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: queryKeys.comments.list(newComment.postId) });
+
+      // Snapshot the previous value
+      const previousComments = queryClient.getQueryData(queryKeys.comments.list(newComment.postId));
+
+      // Optimistically update to the new value
+      queryClient.setQueryData(queryKeys.comments.list(newComment.postId), (old: unknown) => {
+        if (!Array.isArray(old)) return old;
+
+        // Create a temporary comment for optimistic update
+        const tempComment = {
+          id: `temp-${Date.now()}`,
+          content: newComment.content,
+          likeCount: 0,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          postId: newComment.postId,
+          authorId: 'current-user',
+          parentId: newComment.parentId || null,
+          author: {
+            id: 'current-user',
+            name: 'You', // Will be replaced with actual data
+            image: null,
+          },
+        };
+
+        return [...old, tempComment];
+      });
+
+      // Return a context object with the snapshotted value
+      return { previousComments };
+    },
+    onSuccess: (_, variables) => {
+      // Invalidate comments for this post to get fresh data
+      queryClient.invalidateQueries({ queryKey: queryKeys.comments.list(variables.postId) });
 
       // Invalidate the post to update comment count
-      queryClient.invalidateQueries({ queryKey: queryKeys.posts.detail(postId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.posts.detail(variables.postId) });
 
       toast.success('Comment added successfully!');
     },
-    onError: (error) => {
+    onError: (err, variables, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      queryClient.setQueryData(queryKeys.comments.list(variables.postId), context?.previousComments);
+
       toast.error('Failed to add comment. Please try again.');
-      console.error('Create comment error:', error);
+      console.error('Create comment error:', err);
+    },
+    onSettled: (_, __, variables) => {
+      // Always refetch after error or success to ensure consistency
+      queryClient.invalidateQueries({ queryKey: queryKeys.comments.list(variables.postId) });
     },
   });
 }

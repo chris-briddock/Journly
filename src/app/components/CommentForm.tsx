@@ -15,7 +15,6 @@ import { getInitials } from "@/lib/utils";
 import { useSearchUsers } from "@/hooks/use-users";
 import { useCreateComment } from "@/hooks/use-comments";
 
-
 type CommentFormProps = {
   postId: string;
   parentId?: string | null;
@@ -35,7 +34,7 @@ export function CommentForm({ postId, parentId = null, onCommentSubmitted }: Com
   const { data: searchResults = [] } = useSearchUsers(
     mentionQuery || '',
     10,
-    mentionQuery !== null && mentionQuery.length > 0
+    mentionQuery !== null // Enable search when mentionQuery is not null (including empty string)
   );
 
   // Use TanStack Query for creating comments
