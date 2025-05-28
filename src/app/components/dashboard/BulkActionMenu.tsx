@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { MoreHorizontal, Trash2, Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { useBulkDeletePosts } from "@/hooks/use-posts";
 
 import { Button } from "../../components/ui/button";
 import {
@@ -33,47 +33,27 @@ interface BulkActionMenuProps {
 
 export function BulkActionMenu({ selectedIds, onActionComplete, disabled = false }: BulkActionMenuProps) {
   const router = useRouter();
-  const [isDeleting, setIsDeleting] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  // Use TanStack Query mutation for bulk delete
+  const bulkDeleteMutation = useBulkDeletePosts();
 
   const handleDelete = async () => {
     if (selectedIds.length === 0) return;
 
-    setIsDeleting(true);
-
-    try {
-      // Delete each post one by one
-      const results = await Promise.allSettled(
-        selectedIds.map(id =>
-          fetch(`/api/posts/${id}`, {
-            method: "DELETE",
-            next: { revalidate: 0 }
-          })
-        )
-      );
-
-      // Count successful and failed deletions
-      const successful = results.filter(r => r.status === 'fulfilled').length;
-      const failed = results.length - successful;
-
-      if (failed === 0) {
-        toast.success(`Successfully deleted ${successful} post${successful !== 1 ? 's' : ''}`);
-      } else if (successful === 0) {
-        toast.error(`Failed to delete ${failed} post${failed !== 1 ? 's' : ''}`);
-      } else {
-        toast.warning(`Deleted ${successful} post${successful !== 1 ? 's' : ''}, but failed to delete ${failed}`);
-      }
-
-      // Refresh the page to show updated data
-      router.refresh();
-      onActionComplete();
-    } catch (error) {
-      console.error("Error deleting posts:", error);
-      toast.error("An error occurred while deleting posts");
-    } finally {
-      setIsDeleting(false);
-      setIsDeleteDialogOpen(false);
-    }
+    // Use TanStack Query mutation
+    bulkDeleteMutation.mutate(selectedIds, {
+      onSuccess: () => {
+        // Refresh the page to show updated data
+        router.refresh();
+        onActionComplete();
+        setIsDeleteDialogOpen(false);
+      },
+      onError: () => {
+        // Error toast is already handled in the hook
+        setIsDeleteDialogOpen(false);
+      },
+    });
   };
 
   return (
@@ -108,16 +88,16 @@ export function BulkActionMenu({ selectedIds, onActionComplete, disabled = false
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={bulkDeleteMutation.isPending}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault();
                 handleDelete();
               }}
-              disabled={isDeleting}
+              disabled={bulkDeleteMutation.isPending}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {isDeleting ? (
+              {bulkDeleteMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Deleting...

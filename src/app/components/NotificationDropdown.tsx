@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Bell } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { toast } from "sonner";
 
 import {
   DropdownMenu,
@@ -18,127 +17,65 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar"
 import { Badge } from "@/app/components/ui/badge";
 import { Skeleton } from "@/app/components/ui/skeleton";
 import { getInitials } from "@/lib/utils";
+import {
+  useNotifications,
+  useUnreadNotificationCount,
+  useMarkNotificationsAsRead,
+  type Notification
+} from "@/hooks/use-notifications";
 
-interface Notification {
-  id: string;
-  type: string;
-  read: boolean;
-  message: string;
-  link: string | null;
-  createdAt: string;
-  groupId: string | null;
-  data: string | Record<string, unknown> | null; // Can be a string, parsed object, or null
-  actionUser: {
-    id: string;
-    name: string | null;
-    image: string | null;
-  } | null;
-  post?: {
-    id: string;
-    title: string;
-  } | null;
-  comment?: {
-    id: string;
-    content: string;
-    postId: string;
-  } | null;
-  _count?: {
-    groupedNotifications?: number;
-  };
-}
+
 
 export function NotificationDropdown() {
   const router = useRouter();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
 
-  // Fetch notifications
-  const fetchNotifications = async () => {
-    try {
-      setIsLoading(true);
-      const response = await fetch("/api/notifications?limit=10&grouped=true", {
-        next: { revalidate: 0 }
-      });
+  // Use TanStack Query hooks
+  const {
+    data: notificationData,
+    isLoading,
+    error
+  } = useNotifications({ limit: 10, grouped: true });
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch notifications");
+  const unreadCount = useUnreadNotificationCount();
+  const markAsReadMutation = useMarkNotificationsAsRead();
+
+  // Process notifications to handle grouped ones and parse data
+  const processedNotifications = (notificationData?.notifications || []).map((notification: Notification) => {
+    const processedNotification = { ...notification };
+
+    // If this notification has grouped notifications, update the message
+    if (notification._count?.groupedNotifications && notification._count.groupedNotifications > 0) {
+      // For likes, follows, etc.
+      if (notification.type === 'like') {
+        processedNotification.message = `${notification.actionUser?.name || 'Someone'} and ${notification._count.groupedNotifications} others liked your post`;
+      } else if (notification.type === 'follow') {
+        processedNotification.message = `${notification.actionUser?.name || 'Someone'} and ${notification._count.groupedNotifications} others started following you`;
       }
-
-      const data = await response.json();
-
-      // Process notifications to handle grouped ones
-      const processedNotifications = data.notifications.map((notification: Notification) => {
-        // If this notification has grouped notifications, update the message
-        if (notification._count?.groupedNotifications && notification._count.groupedNotifications > 0) {
-          // For likes, follows, etc.
-          if (notification.type === 'like') {
-            notification.message = `${notification.actionUser?.name || 'Someone'} and ${notification._count.groupedNotifications} others liked your post`;
-          } else if (notification.type === 'follow') {
-            notification.message = `${notification.actionUser?.name || 'Someone'} and ${notification._count.groupedNotifications} others started following you`;
-          }
-        }
-
-        // Parse JSON data if present and it's a string
-        if (notification.data && typeof notification.data === 'string') {
-          try {
-            const parsedData = JSON.parse(notification.data);
-            notification.data = parsedData;
-          } catch (e) {
-            console.error('Error parsing notification data:', e);
-          }
-        }
-
-        return notification;
-      });
-
-      setNotifications(processedNotifications);
-      setUnreadCount(processedNotifications.filter((n: Notification) => !n.read).length);
-    } catch (error) {
-      console.error("Error fetching notifications:", error);
-    } finally {
-      setIsLoading(false);
     }
-  };
 
-  // Mark notifications as read
-  const markAsRead = useCallback(async (ids?: string[]) => {
-    try {
-      const response = await fetch("/api/notifications", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        next: { revalidate: 0 },
-        body: JSON.stringify(ids ? { ids } : { all: true }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to mark notifications as read");
+    // Parse JSON data if present and it's a string
+    if (notification.data && typeof notification.data === 'string') {
+      try {
+        const parsedData = JSON.parse(notification.data);
+        processedNotification.data = parsedData;
+      } catch (e) {
+        console.error('Error parsing notification data:', e);
       }
-
-      // Update local state
-      if (ids) {
-        setNotifications(
-          notifications.map((notification) =>
-            ids.includes(notification.id)
-              ? { ...notification, read: true }
-              : notification
-          )
-        );
-        setUnreadCount(Math.max(0, unreadCount - ids.length));
-      } else {
-        setNotifications(
-          notifications.map((notification) => ({ ...notification, read: true }))
-        );
-        setUnreadCount(0);
-      }
-    } catch (error) {
-      console.error("Error marking notifications as read:", error);
-      toast.error("Failed to mark notifications as read");
     }
-  }, [notifications, unreadCount]);
+
+    return processedNotification;
+  });
+
+  // Handle errors
+  if (error) {
+    console.error("Error fetching notifications:", error);
+  }
+
+  // Mark notifications as read using TanStack Query mutation
+  const markAsRead = useCallback((ids?: string[]) => {
+    markAsReadMutation.mutate(ids);
+  }, [markAsReadMutation]);
 
   // Handle notification click
   const handleNotificationClick = (notification: Notification) => {
@@ -184,21 +121,11 @@ export function NotificationDropdown() {
     setIsOpen(false);
   };
 
-  // Fetch notifications on mount and when dropdown opens
-  useEffect(() => {
-    fetchNotifications();
-
-    // Set up polling for new notifications
-    const interval = setInterval(fetchNotifications, 60000); // Poll every minute
-
-    return () => clearInterval(interval);
-  }, []);
-
   // Mark all as read when dropdown opens
   useEffect(() => {
     if (isOpen && unreadCount > 0) {
       // Get IDs of unread notifications
-      const unreadIds = notifications
+      const unreadIds = processedNotifications
         .filter(notification => !notification.read)
         .map(notification => notification.id);
 
@@ -206,7 +133,7 @@ export function NotificationDropdown() {
         markAsRead(unreadIds);
       }
     }
-  }, [isOpen, unreadCount, notifications, markAsRead]);
+  }, [isOpen, unreadCount, processedNotifications, markAsRead]);
 
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
@@ -250,7 +177,7 @@ export function NotificationDropdown() {
               </div>
             ))}
           </div>
-        ) : notifications.length === 0 ? (
+        ) : processedNotifications.length === 0 ? (
           // Empty state
           <div className="p-8 text-center">
             <p className="text-muted-foreground">No notifications yet</p>
@@ -258,7 +185,7 @@ export function NotificationDropdown() {
         ) : (
           // Notifications list
           <div className="max-h-[400px] overflow-y-auto">
-            {notifications.map((notification) => (
+            {processedNotifications.map((notification) => (
               <DropdownMenuItem
                 key={notification.id}
                 className={`p-4 cursor-pointer ${

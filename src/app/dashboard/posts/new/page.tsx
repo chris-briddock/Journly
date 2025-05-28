@@ -1,57 +1,89 @@
+"use client";
+
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Loader2 } from "lucide-react";
+import { useSession } from "next-auth/react";
 
-import { auth } from "@/lib/auth";
-import { getApiUrl } from "@/lib/getApiUrl";
 import { Button } from "@/app/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card";
 import PostForm from "@/app/components/PostForm";
+import { useCategories } from "@/hooks/use-categories";
 
-interface Category {
-  id: string;
-  name: string;
-}
+export default function NewPostPage() {
+  const { data: session, status } = useSession();
 
-async function getCategories(): Promise<Category[]> {
-  try {
-    // Add a dashboard parameter to indicate this is a dashboard request
-    const url = getApiUrl('/api/categories/editor?dashboard=true');
-    console.log('Fetching categories with URL:', url);
+  // Use TanStack Query to fetch categories
+  const { data: categories, isLoading, error } = useCategories({ dashboard: true });
 
-    const response = await fetch(url, {
-      // Use next.js cache instead of no-store to allow static rendering
-      // This will be revalidated when categories are updated
-      next: { revalidate: 0 }, // Revalidate every 60 seconds
-      credentials: 'include', // Include credentials (cookies) for authentication
-      headers: {
-        'Content-Type': 'application/json',
-      }
-    });
-
-    console.log('Categories fetch response status:', response.status);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Categories API error response:', errorText);
-      return [];
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error('Error fetching categories:', error);
-    return [];
+  // Loading state
+  if (status === "loading" || isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
+        <div className="max-w-4xl mx-auto">
+          <div className="mb-6">
+            <Button variant="ghost" size="sm" asChild className="mb-2">
+              <Link href="/dashboard/posts">
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Back to Posts
+              </Link>
+            </Button>
+            <h1 className="text-3xl font-bold">Create Post</h1>
+          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Post Information</CardTitle>
+              <CardDescription>
+                Fill in the details below to create a new post
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-center h-64">
+                <Loader2 className="h-8 w-8 animate-spin" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
   }
-}
 
-export default async function NewPostPage() {
-  const session = await auth();
-
+  // Authentication check
   if (!session) {
     redirect("/login");
   }
 
-  const categories = await getCategories();
+  // Error state
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
+        <div className="max-w-4xl mx-auto">
+          <div className="mb-6">
+            <Button variant="ghost" size="sm" asChild className="mb-2">
+              <Link href="/dashboard/posts">
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Back to Posts
+              </Link>
+            </Button>
+            <h1 className="text-3xl font-bold">Create Post</h1>
+          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Post Information</CardTitle>
+              <CardDescription>
+                Fill in the details below to create a new post
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center text-red-500">
+                Failed to load categories. Please try again later.
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -74,7 +106,7 @@ export default async function NewPostPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <PostForm categories={categories} />
+            <PostForm categories={categories || []} />
           </CardContent>
         </Card>
       </div>

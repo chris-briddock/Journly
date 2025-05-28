@@ -11,32 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
 import { BookmarkButton } from "@/app/components/BookmarkButton";
 import { cleanHtml } from "@/lib/cleanHtml";
 import { getInitials } from "@/lib/utils";
-
-interface Category {
-  category: {
-    id: string;
-    name: string;
-  };
-};
-
-interface Post {
-  id: string;
-  title: string;
-  excerpt: string | null;
-  featuredImage: string | null;
-  readingTime: number;
-  publishedAt: Date | null;
-  createdAt: Date;
-  likeCount: number;
-  commentCount: number;
-  viewCount: number;
-  author: {
-    id: string;
-    name: string | null;
-    image: string | null;
-  };
-  categories: Category[];
-};
+import { Post } from "@/types/models/post";
 
 interface PostCardProps {
   post: Post;

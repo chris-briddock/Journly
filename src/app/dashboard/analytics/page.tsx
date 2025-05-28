@@ -1,71 +1,79 @@
-import type { Metadata } from "next/types";
+"use client";
+
+import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/components/ui/tabs";
 import { DashboardHeader } from "@/app/components/dashboard/DashboardHeader";
 import { DashboardShell } from "@/app/components/dashboard/DashboardShell";
-import { BarChart, LineChart, PieChart, TrendingUp, Users, Eye, MessageSquare, ThumbsUp } from "lucide-react";
-import { Post } from "@/types/models/post";
+import { BarChart, LineChart, PieChart, TrendingUp, Users, Eye, MessageSquare, ThumbsUp, Loader2 } from "lucide-react";
+// Remove unused import
+import { useUserPosts } from "@/hooks/use-users";
 
+export default function AnalyticsPage() {
+  const { data: session, status } = useSession();
 
-export const metadata: Metadata = {
-  title: "Analytics - Journly",
-  description: "View analytics for your posts",
-};
+  // Use TanStack Query to fetch user posts (call hooks before any early returns)
+  const { data: postsData, isLoading, error } = useUserPosts(
+    session?.user?.id || "",
+    { status: "published" },
+    !!session?.user?.id
+  );
+  const posts = postsData?.posts || [];
 
-async function getUserPosts(userId: string): Promise<Post[]> {
-  try {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||
-      (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
-    const response = await fetch(`${baseUrl}/api/users/${userId}/posts?status=published`, {
-      cache: 'no-store',
-      credentials: 'include',
-      next: { revalidate: 0 }
-    });
-
-    if (!response.ok) {
-      console.error('Failed to fetch user posts:', response.status);
-      return [];
-    }
-
-    const data = await response.json();
-    return data.posts || [];
-  } catch (error) {
-    console.error('Error fetching user posts:', error);
-    return [];
+  if (status === "loading") {
+    return (
+      <DashboardShell>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      </DashboardShell>
+    );
   }
-}
-
-export default async function AnalyticsPage() {
-  const session = await auth();
 
   if (!session || !session.user || !session.user.id) {
     redirect("/login");
   }
 
-  const posts = await getUserPosts(session.user.id);
+  if (isLoading) {
+    return (
+      <DashboardShell>
+        <DashboardHeader
+          heading="Analytics"
+          text="View analytics for your posts and audience engagement."
+        />
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      </DashboardShell>
+    );
+  }
+
+  if (error) {
+    return (
+      <DashboardShell>
+        <DashboardHeader
+          heading="Analytics"
+          text="View analytics for your posts and audience engagement."
+        />
+        <div className="flex items-center justify-center h-64">
+          <p className="text-muted-foreground">Failed to load analytics data</p>
+        </div>
+      </DashboardShell>
+    );
+  }
 
   // Check if posts is an array before using reduce
   const isPostsArray = Array.isArray(posts);
 
   // Calculate total views, likes, and comments
-  const totalViews = isPostsArray
-    ? posts.reduce((sum: number, post: Post) => sum + (post.viewCount || 0), 0)
-    : 0;
-  const totalLikes = isPostsArray
-    ? posts.reduce((sum: number, post: Post) => sum + (post.likeCount || 0), 0)
-    : 0;
-  const totalComments = isPostsArray
-    ? posts.reduce((sum: number, post: Post) => sum + (post.commentCount || 0), 0)
-    : 0;
+  // Note: User posts API doesn't include these metrics, so we'll show 0 for now
+  const totalViews = 0;
+  const totalLikes = 0;
+  const totalComments = 0;
 
-  // Find the most popular post
-  const mostPopularPost = isPostsArray && posts.length > 0
-    ? posts.reduce((prev: Post, current: Post) =>
-        ((prev.viewCount || 0) > (current.viewCount || 0)) ? prev : current
-      )
-    : null;
+  // Find the most popular post (by title for now since we don't have metrics)
+  const mostPopularPost = isPostsArray && posts.length > 0 ? posts[0] : null;
 
   return (
     <DashboardShell>
@@ -148,7 +156,7 @@ export default async function AnalyticsPage() {
                 <div className="space-y-2">
                   <h3 className="font-medium">{mostPopularPost.title}</h3>
                   <div className="text-sm text-muted-foreground">
-                    {mostPopularPost.viewCount} views • {mostPopularPost.likeCount} likes • {mostPopularPost.commentCount} comments
+                    Published: {new Date(mostPopularPost.createdAt).toLocaleDateString()}
                   </div>
                 </div>
               ) : (

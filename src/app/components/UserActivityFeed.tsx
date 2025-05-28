@@ -1,41 +1,19 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
 import { ThumbsUp, MessageSquare, FileText } from "lucide-react";
-import { toast } from "sonner";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card";
-
 import { Skeleton } from "@/app/components/ui/skeleton";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/app/components/ui/pagination";
 import { EmptyPlaceholder } from "@/app/components/EmptyPlaceholder";
+import { useUserActivity } from "@/hooks/use-users";
+import { UserActivity } from "@/types/models/userActivity";
 
 type ActivityType = 'post' | 'comment' | 'like';
-
-interface Activity {
-  id: string;
-  type: ActivityType;
-  createdAt: string;
-  title?: string;
-  content?: string;
-  excerpt?: string;
-  featuredImage?: string | null;
-  post?: {
-    id: string;
-    title: string;
-    featuredImage?: string | null;
-  };
-}
-
-interface PaginationData {
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}
 
 interface UserActivityFeedProps {
   userId: string;
@@ -43,44 +21,32 @@ interface UserActivityFeedProps {
 }
 
 export function UserActivityFeed({ userId, userName }: UserActivityFeedProps) {
-  const [activities, setActivities] = useState<Activity[]>([]);
-  const [pagination, setPagination] = useState<PaginationData>({
+  const [page, setPage] = useState(1);
+  const limit = 10;
+
+  // Use TanStack Query hook for user activity
+  const {
+    data: activityData,
+    isLoading,
+    error
+  } = useUserActivity(userId, { page, limit }, !!userId);
+
+  const activities = activityData?.items || [];
+  const pagination = activityData?.pagination || {
     total: 0,
-    page: 1,
-    limit: 10,
+    page,
+    limit,
     totalPages: 0,
-  });
-  const [isLoading, setIsLoading] = useState(true);
-
-  const fetchActivities = useCallback(async (page = 1) => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(`/api/users/${userId}/activity?page=${page}&limit=${pagination.limit}`, {
-        next: { revalidate: 0 }
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch user activity");
-      }
-
-      const data = await response.json();
-      setActivities(data.items);
-      setPagination(data.pagination);
-    } catch (error) {
-      console.error("Error fetching user activity:", error);
-      toast.error("Failed to load user activity");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [userId, pagination.limit]);
-
-  useEffect(() => {
-    fetchActivities();
-  }, [userId, fetchActivities]);
-
-  const handlePageChange = (page: number) => {
-    fetchActivities(page);
   };
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
+
+  // Handle error state
+  if (error) {
+    console.error("Error fetching user activity:", error);
+  }
 
   const getActivityIcon = (type: ActivityType) => {
     switch (type) {
@@ -93,7 +59,7 @@ export function UserActivityFeed({ userId, userName }: UserActivityFeedProps) {
     }
   };
 
-  const getActivityTitle = (activity: Activity) => {
+  const getActivityTitle = (activity: UserActivity) => {
     const name = userName || 'User';
 
     switch (activity.type) {

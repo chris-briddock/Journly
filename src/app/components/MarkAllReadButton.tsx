@@ -1,42 +1,18 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Check, Loader2 } from "lucide-react";
-import { toast } from "sonner";
-
 import { Button } from "@/app/components/ui/button";
+import { useMarkNotificationsAsRead } from "@/hooks/use-notifications";
 
 export function MarkAllReadButton() {
-  const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
+  const markAsReadMutation = useMarkNotificationsAsRead();
 
-  const handleMarkAllRead = async () => {
-    try {
-      setIsLoading(true);
-
-      const response = await fetch("/api/notifications", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        next: { revalidate: 0 },
-        body: JSON.stringify({ all: true }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to mark notifications as read");
-      }
-
-      toast.success("All notifications marked as read");
-      router.refresh();
-    } catch (error) {
-      console.error("Error marking notifications as read:", error);
-      toast.error("Failed to mark notifications as read");
-    } finally {
-      setIsLoading(false);
-    }
+  const handleMarkAllRead = () => {
+    // Mark all notifications as read (undefined means mark all)
+    markAsReadMutation.mutate(undefined);
   };
+
+  const isLoading = markAsReadMutation.isPending;
 
   return (
     <Button

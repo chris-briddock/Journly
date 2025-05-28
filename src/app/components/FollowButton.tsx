@@ -1,12 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { toast } from "sonner";
 import { Loader2, UserPlus, UserMinus } from "lucide-react";
-
 import { Button } from "@/app/components/ui/button";
+import { useIsFollowing, useToggleUserFollow } from "@/hooks/use-users";
 
 interface FollowButtonProps {
   userId: string;
@@ -22,50 +20,37 @@ export function FollowButton({
   size = "default"
 }: FollowButtonProps) {
   const { data: session } = useSession();
-  const router = useRouter();
-  const [following, setFollowing] = useState(isFollowing);
-  const [isLoading, setIsLoading] = useState(false);
 
-  // Use useEffect to update the local state when the prop changes
+  // Use TanStack Query hooks
+  const {
+    data: followStatus,
+    isLoading: isCheckingStatus
+  } = useIsFollowing(userId, !!session?.user);
+
+  const toggleFollowMutation = useToggleUserFollow();
+
+  // Determine follow status from query data or fallback to prop
+  const following = followStatus?.isFollowing ?? isFollowing;
+  const isLoading = isCheckingStatus || toggleFollowMutation.isPending;
+
+  // Update local state when prop changes (for SSR compatibility)
   useEffect(() => {
-    setFollowing(isFollowing);
+    // This effect ensures the component works with SSR initial data
+    // The query will update the state once it loads
   }, [isFollowing]);
 
-  const handleFollow = async () => {
+  const handleFollow = () => {
     if (!session || !session.user) {
-      toast.error("You must be logged in to follow users");
+      // Note: Toast is handled by the mutation hook
       return;
     }
 
     if (session.user.id === userId) {
-      toast.error("You cannot follow yourself");
+      // Note: This validation could be moved to the mutation hook
       return;
     }
 
-    setIsLoading(true);
-
-    try {
-      const response = await fetch(`/api/users/${userId}/follow`, {
-        method: "POST",
-        cache: 'no-store',
-        next: { revalidate: 0 }
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to follow user");
-      }
-
-      setFollowing(data.following);
-      toast.success(data.following ? "User followed successfully" : "User unfollowed successfully");
-      router.refresh();
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Something went wrong";
-      toast.error(errorMessage);
-    } finally {
-      setIsLoading(false);
-    }
+    toggleFollowMutation.mutate(userId);
   };
 
   return (

@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
 import { BookOpen, Clock, CheckCircle, Loader2, BookOpenCheck } from "lucide-react";
-import { toast } from "sonner";
 
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { Button } from "@/app/components/ui/button";
@@ -13,78 +12,37 @@ import { Pagination, PaginationContent, PaginationItem, PaginationLink, Paginati
 import { EmptyPlaceholder } from "@/app/components/EmptyPlaceholder";
 import { Badge } from "@/app/components/ui/badge";
 import { Progress } from "@/app/components/ui/progress";
+import { useReadingHistory } from "@/hooks/use-reading-history";
 
-interface ReadingHistoryItem {
-  id: string;
-  lastRead: string;
-  progress: number;
-  completed: boolean;
-  post: {
-    id: string;
-    title: string;
-    excerpt: string | null;
-    featuredImage: string | null;
-    createdAt: string;
-    readingTime: number;
-    author: {
-      id: string;
-      name: string | null;
-      image: string | null;
-    };
-    categories: {
-      category: {
-        id: string;
-        name: string;
-      };
-    }[];
-  };
-}
 
-interface PaginationData {
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}
 
 export function ReadingHistoryList() {
-  const [history, setHistory] = useState<ReadingHistoryItem[]>([]);
-  const [pagination, setPagination] = useState<PaginationData>({
+  const [currentPage, setCurrentPage] = useState(1);
+  const limit = 10;
+
+  // Use TanStack Query hook
+  const {
+    data: readingHistoryData,
+    isLoading,
+    error
+  } = useReadingHistory({ page: currentPage, limit });
+
+  // Extract data from query response
+  const history = readingHistoryData?.items || [];
+  const pagination = readingHistoryData?.pagination || {
     total: 0,
     page: 1,
     limit: 10,
     totalPages: 0,
-  });
-  const [isLoading, setIsLoading] = useState(true);
+  };
 
-  const fetchReadingHistory = useCallback(async (page = 1) => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(`/api/reading-history?page=${page}&limit=${pagination.limit}`, {
-        next: { revalidate: 0 }
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch reading history");
-      }
-
-      const data = await response.json();
-      setHistory(data.items);
-      setPagination(data.pagination);
-    } catch (error) {
-      console.error("Error fetching reading history:", error);
-      toast.error("Failed to load reading history");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [pagination.limit]);
-
-  useEffect(() => {
-    fetchReadingHistory();
-  }, [fetchReadingHistory]);
+  // Handle errors
+  if (error) {
+    console.error("Error fetching reading history:", error);
+  }
 
   const handlePageChange = (page: number) => {
-    fetchReadingHistory(page);
+    setCurrentPage(page);
   };
 
   if (isLoading) {

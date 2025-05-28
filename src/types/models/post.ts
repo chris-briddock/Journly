@@ -7,7 +7,7 @@ export interface Post {
   readingTime: number;
   publishedAt: Date | null;
   createdAt: Date;
-  status: string;
+  status: string | 'draft' | 'published' | 'scheduled';
   author: {
     id: string;
     name: string | null;

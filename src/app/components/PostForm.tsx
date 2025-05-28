@@ -5,8 +5,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { AlertCircle, Loader2, Upload, CalendarIcon } from "lucide-react";
-import { toast } from "sonner";
 import { format } from "date-fns";
+import { useCreatePost, useUpdatePost, useSchedulePost } from "@/hooks/use-posts";
 
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -82,9 +82,13 @@ export default function PostForm({
   isEditing = false,
 }: PostFormProps) {
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [content, setContent] = useState(initialData?.content || "");
+
+  // Use TanStack Query mutations
+  const createPostMutation = useCreatePost();
+  const updatePostMutation = useUpdatePost();
+  const schedulePostMutation = useSchedulePost();
 
 
 
@@ -113,7 +117,6 @@ export default function PostForm({
   });
 
   const onSubmit = async (values: FormValues) => {
-    setIsSubmitting(true);
     setError("");
 
     // Include the content from the editor and prepare SEO data
@@ -129,117 +132,103 @@ export default function PostForm({
       noIndex: values.noIndex,
     };
 
-    try {
-      // If status is scheduled, use the schedule API
-      if (values.status === "scheduled" && values.publishAt) {
-        // First create/update the post
-        const url = isEditing
-          ? `/api/posts/${initialData?.id}`
-          : "/api/posts";
+    // If status is scheduled, handle scheduling
+    if (values.status === "scheduled" && values.publishAt) {
+      const statusToSave = "scheduled";
+      const dataToSave = { ...postData, status: statusToSave };
 
-        const method = isEditing ? "PUT" : "POST";
-
-        // If the status is already "scheduled", keep it that way
-        const statusToSave = values.status === "scheduled" ? "scheduled" : "draft";
-
-        const response = await fetch(url, {
-          method,
-          headers: {
-            "Content-Type": "application/json",
-          },
-          next: { revalidate: 0 },
-          credentials: 'include',
-          body: JSON.stringify({
-            ...postData,
-            status: statusToSave,
-          }),
-        });
-
-        if (!response.ok) {
-          const data = await response.json();
-
-          // Check if this is a subscription required error
-          if (data.subscriptionRequired) {
-            // Redirect to subscription page
-            toast.error("Free users can only create 1 post. Please upgrade to create more posts.");
-            router.push("/subscription");
-            return;
+      if (isEditing && initialData?.id) {
+        // Update existing post and schedule
+        updatePostMutation.mutate(
+          { id: initialData.id, data: dataToSave },
+          {
+            onSuccess: (savedPost) => {
+              // Then schedule the post
+              schedulePostMutation.mutate(
+                { postId: savedPost.id, publishAt: values.publishAt! },
+                {
+                  onSuccess: () => {
+                    router.push("/dashboard/posts");
+                    router.refresh();
+                  },
+                  onError: (error: Error) => {
+                    setError(error.message || "Failed to schedule post");
+                  },
+                }
+              );
+            },
+            onError: (error: Error) => {
+              if (error.message.includes("subscription")) {
+                router.push("/subscription");
+                return;
+              }
+              setError(error.message || "Failed to save post");
+            },
           }
-
-          throw new Error(data.error || "Failed to save post");
-        }
-
-        const savedPost = await response.json();
-
-        // Then schedule the post
-        const scheduleResponse = await fetch("/api/posts/schedule", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          next: { revalidate: 0 },
-          credentials: 'include',
-          body: JSON.stringify({
-            postId: savedPost.id,
-            publishAt: values.publishAt,
-          }),
-        });
-
-        if (!scheduleResponse.ok) {
-          const data = await scheduleResponse.json();
-          throw new Error(data.error || "Failed to schedule post");
-        }
-
-        toast.success(
-          isEditing ? "Post updated and scheduled" : "Post created and scheduled"
         );
-
-        router.push("/dashboard/posts");
-        router.refresh();
-        return;
+      } else {
+        // Create new post and schedule
+        createPostMutation.mutate(dataToSave, {
+          onSuccess: (savedPost) => {
+            // Then schedule the post
+            schedulePostMutation.mutate(
+              { postId: savedPost.id, publishAt: values.publishAt! },
+              {
+                onSuccess: () => {
+                  router.push("/dashboard/posts");
+                  router.refresh();
+                },
+                onError: (error: Error) => {
+                  setError(error.message || "Failed to schedule post");
+                },
+              }
+            );
+          },
+          onError: (error: Error) => {
+            if (error.message.includes("subscription")) {
+              router.push("/subscription");
+              return;
+            }
+            setError(error.message || "Failed to save post");
+          },
+        });
       }
-
+    } else {
       // Regular post creation/update
-      const url = isEditing
-        ? `/api/posts/${initialData?.id}`
-        : "/api/posts";
-
-      const method = isEditing ? "PUT" : "POST";
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        next: { revalidate: 0 },
-        credentials: 'include',
-        body: JSON.stringify(postData),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        // Check if this is a subscription required error
-        if (data.subscriptionRequired) {
-          // Redirect to subscription page
-          toast.error("Free users can only create 1 post. Please upgrade to create more posts.");
-          router.push("/subscription");
-          return;
-        }
-        throw new Error(data.error || "Something went wrong");
+      if (isEditing && initialData?.id) {
+        // Update existing post
+        updatePostMutation.mutate(
+          { id: initialData.id, data: postData },
+          {
+            onSuccess: () => {
+              router.push("/dashboard/posts");
+              router.refresh();
+            },
+            onError: (error: Error) => {
+              if (error.message.includes("subscription")) {
+                router.push("/subscription");
+                return;
+              }
+              setError(error.message || "Failed to save post");
+            },
+          }
+        );
+      } else {
+        // Create new post
+        createPostMutation.mutate(postData, {
+          onSuccess: () => {
+            router.push("/dashboard/posts");
+            router.refresh();
+          },
+          onError: (error: Error) => {
+            if (error.message.includes("subscription")) {
+              router.push("/subscription");
+              return;
+            }
+            setError(error.message || "Failed to save post");
+          },
+        });
       }
-
-      toast.success(
-        isEditing ? "Post updated successfully" : "Post created successfully"
-      );
-
-      router.push("/dashboard/posts");
-      router.refresh();
-    } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "Something went wrong");
-      toast.error("Failed to save post");
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -473,12 +462,12 @@ export default function PostForm({
               type="button"
               variant="outline"
               onClick={() => router.back()}
-              disabled={isSubmitting}
+              disabled={createPostMutation.isPending || updatePostMutation.isPending || schedulePostMutation.isPending}
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? (
+            <Button type="submit" disabled={createPostMutation.isPending || updatePostMutation.isPending || schedulePostMutation.isPending}>
+              {(createPostMutation.isPending || updatePostMutation.isPending || schedulePostMutation.isPending) ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   {isEditing ? "Updating..." : "Creating..."}

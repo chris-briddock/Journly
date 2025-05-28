@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { AlertCircle, Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { useCreateCategory, useUpdateCategory } from "@/hooks/use-categories";
 
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
@@ -38,8 +38,11 @@ export default function CategoryForm({
   isEditing = false,
 }: CategoryFormProps = {}) {
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  // Use TanStack Query mutations
+  const createCategoryMutation = useCreateCategory();
+  const updateCategoryMutation = useUpdateCategory();
 
   const form = useForm<FormValues>({
     defaultValues: {
@@ -49,42 +52,33 @@ export default function CategoryForm({
   });
 
   const onSubmit = async (values: FormValues) => {
-    setIsSubmitting(true);
     setError("");
 
-    try {
-      const url = isEditing
-        ? `/api/categories/${initialData?.id}`
-        : "/api/categories";
-      
-      const method = isEditing ? "PUT" : "POST";
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        next: { revalidate: 0 },
-        body: JSON.stringify(values),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Something went wrong");
-      }
-
-      toast.success(
-        isEditing ? "Category updated successfully" : "Category created successfully"
+    if (isEditing && initialData?.id) {
+      // Use update mutation
+      updateCategoryMutation.mutate(
+        { id: initialData.id, data: values },
+        {
+          onSuccess: () => {
+            router.push("/dashboard/categories");
+            router.refresh();
+          },
+          onError: (error: Error) => {
+            setError(error.message || "Something went wrong");
+          },
+        }
       );
-      
-      router.push("/dashboard/categories");
-      router.refresh();
-    } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "Something went wrong");
-      toast.error("Failed to save category");
-    } finally {
-      setIsSubmitting(false);
+    } else {
+      // Use create mutation
+      createCategoryMutation.mutate(values, {
+        onSuccess: () => {
+          router.push("/dashboard/categories");
+          router.refresh();
+        },
+        onError: (error: Error) => {
+          setError(error.message || "Something went wrong");
+        },
+      });
     }
   };
 
@@ -142,12 +136,12 @@ export default function CategoryForm({
               type="button"
               variant="outline"
               onClick={() => router.back()}
-              disabled={isSubmitting}
+              disabled={createCategoryMutation.isPending || updateCategoryMutation.isPending}
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? (
+            <Button type="submit" disabled={createCategoryMutation.isPending || updateCategoryMutation.isPending}>
+              {(createCategoryMutation.isPending || updateCategoryMutation.isPending) ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   {isEditing ? "Updating..." : "Creating..."}

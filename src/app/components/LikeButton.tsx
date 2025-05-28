@@ -1,12 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { toast } from "sonner";
 import { Heart, Loader2 } from "lucide-react";
-
 import { Button } from "@/app/components/ui/button";
+import { useTogglePostLike } from "@/hooks/use-posts";
 
 interface LikeButtonProps {
   postId: string;
@@ -24,42 +22,39 @@ export function LikeButton({
   size = "sm"
 }: LikeButtonProps) {
   const { data: session } = useSession();
-  const router = useRouter();
   const [liked, setLiked] = useState(isLiked);
   const [likeCount, setLikeCount] = useState(initialLikeCount);
-  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLike = async () => {
+  // Use TanStack Query mutation
+  const toggleLikeMutation = useTogglePostLike();
+
+  const handleLike = () => {
     if (!session || !session.user) {
-      toast.error("You must be logged in to like posts");
+      // Note: We could show a toast here, but the mutation hook handles error messages
       return;
     }
 
-    setIsLoading(true);
+    // Optimistically update local state for immediate feedback
+    const newLiked = !liked;
+    setLiked(newLiked);
+    setLikeCount(prev => newLiked ? prev + 1 : prev - 1);
 
-    try {
-      const response = await fetch(`/api/posts/${postId}/like`, {
-        method: liked ? "DELETE" : "POST",
-        next: { revalidate: 0 }
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to like post");
+    // Trigger the mutation
+    toggleLikeMutation.mutate(postId, {
+      onSuccess: (result) => {
+        // Update with actual values from API
+        setLiked(result.liked);
+        setLikeCount(result.likesCount);
+      },
+      onError: () => {
+        // Rollback optimistic update on error
+        setLiked(!newLiked);
+        setLikeCount(prev => newLiked ? prev - 1 : prev + 1);
       }
-
-      setLiked(!liked);
-      setLikeCount(prev => liked ? prev - 1 : prev + 1);
-      toast.success(liked ? "Post unliked" : "Post liked");
-      router.refresh();
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Something went wrong";
-      toast.error(errorMessage);
-    } finally {
-      setIsLoading(false);
-    }
+    });
   };
+
+  const isLoading = toggleLikeMutation.isPending;
 
   return (
     <Button

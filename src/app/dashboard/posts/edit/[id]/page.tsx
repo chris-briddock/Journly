@@ -1,36 +1,16 @@
+"use client";
+
+import React from "react";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
-import type { Metadata } from "next/types";
+import { ChevronLeft, Loader2 } from "lucide-react";
+import { useSession } from "next-auth/react";
 
-import { auth } from "@/lib/auth";
 import { Button } from "@/app/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card";
 import PostForm from "@/app/components/PostForm";
-
-interface Post {
-  id: string;
-  title: string;
-  content: string;
-  excerpt: string | null;
-  featuredImage: string | null;
-  status: string;
-  authorId: string;
-  categoryIds: string[];
-  scheduledPublishAt?: string | null;
-  // SEO fields
-  seoTitle?: string | null;
-  seoDescription?: string | null;
-  seoKeywords?: string | null;
-  seoCanonicalUrl?: string | null;
-  ogImage?: string | null;
-  noIndex?: boolean;
-}
-
-interface Category {
-  id: string;
-  name: string;
-}
+import { usePostForEdit } from "@/hooks/use-posts";
+import { useCategories } from "@/hooks/use-categories";
 
 type Props = {
   params: Promise<{
@@ -38,113 +18,101 @@ type Props = {
   }>;
 };
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { id } = await params;
-  const post = await getPost(id);
+export default function EditPostPage({ params }: Props) {
+  const { data: session, status } = useSession();
 
-  return {
-    title: post ? `Edit ${post.title} - Journly` : "Edit Post - Journly",
-  };
-}
+  // Parse params (this will be a promise in Next.js 15)
+  const [postId, setPostId] = React.useState<string>("");
 
-async function getPost(id: string): Promise<Post | null> {
-  try {
-    // Add a dashboard parameter to indicate this is a dashboard request
-    const url = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/posts/${id}/edit?dashboard=true`;
-    console.log('Fetching post with URL:', url);
+  React.useEffect(() => {
+    const getParams = async () => {
+      const { id } = await params;
+      setPostId(id);
+    };
+    getParams();
+  }, [params]);
 
-    const response = await fetch(url, {
-      // Use next.js cache instead of no-store to allow static rendering
-      next: { revalidate: 0 }, // Revalidate every 60 seconds
-      credentials: 'include', // Include credentials (cookies) for authentication
-      headers: {
-        'Content-Type': 'application/json',
-      }
-    });
+  // Use TanStack Query hooks (call before any early returns)
+  const { data: post, isLoading: postLoading, error: postError } = usePostForEdit(postId, !!postId);
+  const { data: categories, isLoading: categoriesLoading } = useCategories({ dashboard: true });
 
-    console.log('Fetch response status:', response.status);
-
-    if (response.status === 404) {
-      return null;
-    }
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('API error response:', errorText);
-      throw new Error('Failed to fetch post');
-    }
-
-    return response.json();
-  } catch (error) {
-    console.error('Error fetching post:', error);
-    return null;
+  // Loading states
+  if (status === "loading" || postLoading || categoriesLoading || !postId) {
+    return (
+      <div className="container mx-auto py-8 px-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="mb-6">
+            <Button variant="ghost" size="sm" asChild className="mb-2">
+              <Link href="/dashboard/posts">
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Back to Posts
+              </Link>
+            </Button>
+            <h1 className="text-3xl font-bold">Edit Post</h1>
+          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Post Information</CardTitle>
+              <CardDescription>
+                Update your post details below
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-center h-64">
+                <Loader2 className="h-8 w-8 animate-spin" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
   }
-}
 
-async function getCategories(): Promise<Category[]> {
-  try {
-    // Add a dashboard parameter to indicate this is a dashboard request
-    const url = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/categories/editor?dashboard=true`;
-    console.log('Fetching categories with URL:', url);
-
-    const response = await fetch(url, {
-      // Use next.js cache instead of no-store to allow static rendering
-      // This will be revalidated when categories are updated
-      next: { revalidate: 0 }, // Revalidate every 60 seconds
-      credentials: 'include', // Include credentials (cookies) for authentication
-      headers: {
-        'Content-Type': 'application/json',
-      }
-    });
-
-    console.log('Categories fetch response status:', response.status);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Categories API error response:', errorText);
-      throw new Error('Failed to fetch categories');
-    }
-
-    return response.json();
-  } catch (error) {
-    console.error('Error fetching categories:', error);
-    return [];
-  }
-}
-
-export default async function EditPostPage({ params }: Props) {
-  const session = await auth();
-
-  // Debug session information
-  console.log('Edit Page - Session:', session ? 'exists' : 'null');
-  console.log('Edit Page - User:', session?.user ? `ID: ${session.user.id}` : 'null');
-
-  if (!session) {
-    console.log('Edit Page - No session, redirecting to login');
+  // Authentication check
+  if (!session?.user?.id) {
     redirect("/login");
   }
 
-  const { id } = await params;
-  console.log('Edit Page - Post ID:', id);
-
-  const [post, categories] = await Promise.all([
-    getPost(id),
-    getCategories(),
-  ]);
-
-  console.log('Edit Page - Post fetched:', post ? 'success' : 'null');
-  console.log('Edit Page - Categories fetched:', categories.length);
-
-  if (!post) {
-    console.log('Edit Page - Post not found');
+  // Error states
+  if (postError || !post) {
     notFound();
   }
 
   // Check if the user is the author of the post
-  console.log('Edit Page - Author check:', `Post author: ${post.authorId}, User: ${session.user?.id}`);
-  if (post.authorId !== session.user?.id) {
-    console.log('Edit Page - User is not the author, redirecting');
+  if (!post.author || post.author.id !== session.user.id) {
     redirect("/dashboard/posts");
+  }
+
+  // Additional safety check to ensure post is fully loaded
+  if (!post || !post.id || !post.title || !post.categories) {
+    return (
+      <div className="container mx-auto py-8 px-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="mb-6">
+            <Button variant="ghost" size="sm" asChild className="mb-2">
+              <Link href="/dashboard/posts">
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Back to Posts
+              </Link>
+            </Button>
+            <h1 className="text-3xl font-bold">Edit Post</h1>
+          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Post Information</CardTitle>
+              <CardDescription>
+                Loading post data...
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-center h-64">
+                <Loader2 className="h-8 w-8 animate-spin" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -176,8 +144,10 @@ export default async function EditPostPage({ params }: Props) {
                 excerpt: post.excerpt || "",
                 featuredImage: post.featuredImage || "",
                 status: post.status,
-                categoryIds: post.categoryIds,
-                scheduledPublishAt: post.scheduledPublishAt || undefined,
+                categoryIds: Array.isArray(post.categories)
+                  ? post.categories.map(c => c?.category?.id).filter(Boolean)
+                  : [],
+                scheduledPublishAt: post.scheduledPublishAt ? new Date(post.scheduledPublishAt).toISOString() : undefined,
                 // SEO fields
                 seoTitle: post.seoTitle || "",
                 seoDescription: post.seoDescription || "",
@@ -186,7 +156,7 @@ export default async function EditPostPage({ params }: Props) {
                 ogImage: post.ogImage || "",
                 noIndex: post.noIndex || false,
               }}
-              categories={categories}
+              categories={categories || []}
               isEditing
             />
           </CardContent>

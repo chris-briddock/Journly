@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
-import { articleAccessMiddleware } from './middleware/article-access';
 
 // This function can be marked `async` if using `await` inside
 export async function middleware(request: NextRequest) {
@@ -24,25 +23,25 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Protect individual post pages (but not preview pages)
+  // For individual post pages, we'll handle access control in the page component
+  // instead of middleware to avoid Prisma Edge Runtime issues
   if (path.startsWith('/posts/') && path !== '/posts/' && !path.includes('/edit/') && !path.includes('/preview')) {
     console.log(`[Main Middleware] Handling individual post page`);
 
-    // Extract the post ID from the path
-    const postId = path.split('/')[2];
-    console.log(`[Main Middleware] Extracted post ID: ${postId}`);
+    // Just check if user is logged in - detailed access control will be in the page component
+    const token = await getToken({
+      req: request,
+      secret: process.env.NEXTAUTH_SECRET
+    });
+    const userId = token?.sub || null;
 
-    // Use the article access middleware
-    console.log(`[Main Middleware] Calling article access middleware`);
-    const response = await articleAccessMiddleware(request, postId);
-
-    // If the middleware returns a response, return it
-    if (response) {
-      console.log(`[Main Middleware] Middleware returned a response, redirecting`);
-      return response;
+    // If the user is not logged in, redirect to the login page
+    if (!userId) {
+      console.log(`[Main Middleware] Redirecting to login page`);
+      return NextResponse.redirect(new URL('/login?from=' + path, request.url));
     }
 
-    console.log(`[Main Middleware] Middleware allowed access`);
+    console.log(`[Main Middleware] User authenticated, allowing access to post page`);
   }
 
   return NextResponse.next();

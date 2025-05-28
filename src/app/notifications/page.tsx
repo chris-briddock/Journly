@@ -1,82 +1,89 @@
-import type { Metadata } from "next/types";
-import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
-import { Notification } from "@/types/models/notification";
-import { cookies } from "next/headers";
+"use client";
 
+import React from "react";
+import { redirect, useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 
 import { DashboardShell } from "@/app/components/dashboard/DashboardShell";
 import { Button } from "@/app/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/components/ui/tabs";
+import { Loader2 } from "lucide-react";
 import { MarkAllReadButton } from "../components/MarkAllReadButton";
 import { NotificationItem } from "../components/NotificationItem";
+import { useNotifications, type Notification } from "@/hooks/use-notifications";
 
-export const metadata: Metadata = {
-  title: "Notifications - Journly",
-  description: "View your notifications",
-};
+export default function NotificationsPage() {
+  const { data: session, status } = useSession();
+  const searchParams = useSearchParams();
 
-interface NotificationsPageProps {
-  searchParams: Promise<{
-    page?: string;
-    limit?: string;
-    tab?: string;
-  }>;
-}
+  // Parse search params
+  const page = parseInt(searchParams.get('page') || "1");
+  const limit = parseInt(searchParams.get('limit') || "20");
+  const tab = searchParams.get('tab') || "all";
 
-async function getNotificationsFromApi(unreadOnly = false, page = 1, limit = 20) {
-  // Use absolute URL with the correct origin for server components
-  const baseUrl = process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : process.env.NODE_ENV === 'development'
-      ? 'http://localhost:3000'
-      : '';
-
-  const url = new URL('/api/notifications', baseUrl);
-
-  // Add query parameters
-  url.searchParams.append('unread', unreadOnly.toString());
-  url.searchParams.append('page', page.toString());
-  url.searchParams.append('limit', limit.toString());
-
-  const cookieStore = cookies();
-  const cookieHeader = cookieStore.toString();
-
-  const response = await fetch(url, {
-    credentials: 'include',
-    headers: {      
-      'Content-Type': 'application/json',
-      'cookie': cookieHeader,
-    },
-    cache: 'no-store',
+  // Use TanStack Query to fetch notifications
+  const { data: notificationData, isLoading, error } = useNotifications({
+    page,
+    limit,
+    unreadOnly: tab === "unread",
   });
 
-  if (!response.ok) {
-    throw new Error(`Failed to fetch notifications: ${response.statusText}`);
+  // Loading state
+  if (status === "loading" || isLoading) {
+    return (
+      <DashboardShell>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Notifications</h1>
+            <p className="text-muted-foreground">
+              View and manage your notifications
+            </p>
+          </div>
+          <MarkAllReadButton />
+        </div>
+        <div className="mt-6 space-y-4">
+          <div className="flex items-center justify-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin" />
+          </div>
+        </div>
+      </DashboardShell>
+    );
   }
 
-  return response.json();
-}
-
-export default async function NotificationsPage({ searchParams }: NotificationsPageProps) {
-  const session = await auth();
-
-  // Redirect if not logged in
+  // Authentication check
   if (!session || !session.user) {
     redirect("/login");
   }
 
-  const params = await searchParams;
-  const page = parseInt(params.page || "1");
-  const limit = parseInt(params.limit || "20");
-  const tab = params.tab || "all";
+  // Error state
+  if (error) {
+    return (
+      <DashboardShell>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Notifications</h1>
+            <p className="text-muted-foreground">
+              View and manage your notifications
+            </p>
+          </div>
+          <MarkAllReadButton />
+        </div>
+        <div className="mt-6">
+          <Card>
+            <CardContent className="p-6">
+              <div className="text-center">
+                <p className="text-red-500">Failed to load notifications. Please try again later.</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </DashboardShell>
+    );
+  }
 
-  const { notifications, pagination } = await getNotificationsFromApi(
-    tab === "unread",
-    page,
-    limit
-  );
+  const notifications = notificationData?.notifications || [];
+  const pagination = notificationData?.pagination || { total: 0, page: 1, limit: 20, totalPages: 0 };
 
   return (
     <>
@@ -118,7 +125,10 @@ export default async function NotificationsPage({ searchParams }: NotificationsP
                   {notifications.map((notification: Notification) => (
                     <NotificationItem
                       key={notification.id}
-                      notification={notification}
+                      notification={{
+                        ...notification,
+                        createdAt: new Date(notification.createdAt),
+                      }}
                     />
                   ))}
                 </div>
@@ -163,7 +173,10 @@ export default async function NotificationsPage({ searchParams }: NotificationsP
                   {notifications.map((notification: Notification) => (
                     <NotificationItem
                       key={notification.id}
-                      notification={notification}
+                      notification={{
+                        ...notification,
+                        createdAt: new Date(notification.createdAt),
+                      }}
                     />
                   ))}
                 </div>

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { AlertCircle, Loader2, Upload } from "lucide-react";
-import { toast } from "sonner";
+import { useUpdateUserProfile } from "@/hooks/use-users";
 
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -41,8 +41,10 @@ type FormValues = {
 
 export default function ProfileForm({ initialData }: ProfileFormProps) {
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  // Use TanStack Query mutation
+  const updateProfileMutation = useUpdateUserProfile();
 
   const form = useForm<FormValues>({
     defaultValues: {
@@ -54,35 +56,19 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
   });
 
   const onSubmit = async (values: FormValues) => {
-    setIsSubmitting(true);
     setError("");
 
-    try {
-      const response = await fetch("/api/profile", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        next: { revalidate: 0 },
-        body: JSON.stringify(values),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Something went wrong");
-      }
-
-      toast.success("Profile updated successfully");
-      router.push(`/profile/${initialData.id}`);
-      router.refresh();
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Something went wrong";
-      setError(errorMessage);
-      toast.error("Failed to update profile: " + errorMessage);
-    } finally {
-      setIsSubmitting(false);
-    }
+    // Use TanStack Query mutation
+    updateProfileMutation.mutate(values, {
+      onSuccess: () => {
+        router.push(`/profile/${initialData.id}`);
+        router.refresh();
+      },
+      onError: (error: Error) => {
+        const errorMessage = error.message || "Something went wrong";
+        setError(errorMessage);
+      },
+    });
   };
 
 
@@ -198,12 +184,12 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
               type="button"
               variant="outline"
               onClick={() => router.back()}
-              disabled={isSubmitting}
+              disabled={updateProfileMutation.isPending}
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? (
+            <Button type="submit" disabled={updateProfileMutation.isPending}>
+              {updateProfileMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Updating...

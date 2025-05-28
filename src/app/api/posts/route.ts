@@ -6,6 +6,9 @@ import { processPostMentions } from '@/lib/mentions';
 import { createNewPostNotification } from '@/lib/notifications';
 import { SubscriptionTier, SubscriptionStatus } from '@/lib/types';
 
+// Force Node.js runtime for subscription service compatibility
+export const runtime = 'nodejs';
+
 // GET /api/posts - Get all posts
 export async function GET(request: NextRequest) {
   try {

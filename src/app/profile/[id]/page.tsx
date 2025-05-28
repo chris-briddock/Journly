@@ -1,64 +1,108 @@
-import { notFound } from "next/navigation";
+'use client';
+
+import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { format } from "date-fns";
-import { CalendarDays, Mail, MapPin, Edit, ArrowRight } from "lucide-react";
+import { CalendarDays, Mail, Edit, ArrowRight } from "lucide-react";
 
-import { auth } from "@/lib/auth";
 import { Button } from "@/app/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/components/ui/tabs";
 import { Separator } from "@/app/components/ui/separator";
+import { Skeleton } from "@/app/components/ui/skeleton";
 import PostCard from "@/app/components/PostCard";
 import { FollowButton } from "@/app/components/FollowButton";
 import { UserActivityFeed } from "@/app/components/UserActivityFeed";
 import { getInitials } from "@/lib/utils";
-import { Post } from "@/types/models/post";
-import { getUser as getUserApi } from "@/lib/services/getUser";
-import { getIsFollowing as isFollowingApi } from "@/lib/services/getIsFollowing";
-import { getUserPosts as getUserPostsApi } from "@/lib/services/getUserPosts";
+import { useUser, useUserPosts } from "@/hooks/use-users";
 
 
-
-async function getUser(id: string) {
-  return await getUserApi(id);
-}
-
-async function isFollowing(followerId: string, followingId: string) {
-  if (!followerId || !followingId) return false;
-
-  return await isFollowingApi(followingId);
-}
-
-async function getUserPosts(userId: string): Promise<Post[]> {
-  const response = await getUserPostsApi(userId, { limit: 9 });
-  return response.posts || [];
-}
-
-export default async function ProfilePage({
+export default function ProfilePage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await params;
-  const session = await auth();
+  const { data: session } = useSession();
+  const [id, setId] = useState<string>('');
+
+  // Get the ID from params
+  useEffect(() => {
+    params.then(({ id }) => setId(id));
+  }, [params]);
+
   const currentUserId = session?.user?.id;
 
-  const [user, posts, following] = await Promise.all([
-    getUser(id),
-    getUserPosts(id),
-    currentUserId ? isFollowing(currentUserId, id) : false,
-  ]);
+  const { data: user, isLoading: userLoading, error: userError } = useUser(id, !!id);
+  const { data: postsData, isLoading: postsLoading, error: postsError } = useUserPosts(
+    id,
+    { limit: 9 },
+    !!id
+  );
 
-  if (!user) {
-    notFound();
+  const isLoading = userLoading || postsLoading;
+  const error = userError || postsError;
+  const posts = postsData?.posts || [];
+  const isCurrentUser = currentUserId === user?.id;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-6xl mx-auto">
+            {/* Profile Header Skeleton */}
+            <div className="flex flex-col md:flex-row gap-8 mb-8">
+              <div className="flex-shrink-0 flex flex-col items-center md:items-start">
+                <Skeleton className="h-32 w-32 rounded-full mb-4" />
+                <Skeleton className="h-10 w-24" />
+              </div>
+              <div className="flex-1">
+                <div className="flex flex-col md:flex-row md:items-center justify-between mb-4">
+                  <Skeleton className="h-8 w-48 mb-2 md:mb-0" />
+                  <div className="flex items-center gap-4">
+                    <Skeleton className="h-12 w-16" />
+                    <Skeleton className="h-12 w-16" />
+                    <Skeleton className="h-12 w-16" />
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-3/4" />
+                </div>
+              </div>
+            </div>
+            {/* Content Skeleton */}
+            <div className="space-y-4">
+              <Skeleton className="h-10 w-full" />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <Skeleton key={i} className="h-64 w-full" />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
-  const isCurrentUser = currentUserId === user.id;
+  if (error || !user) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center py-12">
+              <h1 className="text-2xl font-bold mb-4">User Not Found</h1>
+              <p className="text-muted-foreground">The user you&apos;re looking for doesn&apos;t exist or failed to load.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
 
-  const formatDate = (date: Date) => {
-    return format(new Date(date), "MMMM yyyy");
-  };
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -81,7 +125,7 @@ export default async function ProfilePage({
               ) : (
                 <FollowButton
                   userId={user.id}
-                  isFollowing={following}
+                  isFollowing={false} // We'll need to implement a hook to check this
                   variant="outline"
                   size="sm"
                 />
@@ -92,17 +136,17 @@ export default async function ProfilePage({
                 <h1 className="text-3xl font-bold mb-2 md:mb-0">{user.name}</h1>
                 <div className="flex items-center gap-4">
                   <div className="text-center">
-                    <p className="text-xl font-semibold">{user.postCount}</p>
+                    <p className="text-xl font-semibold">{posts.length}</p>
                     <p className="text-sm text-muted-foreground">Posts</p>
                   </div>
                   <Separator orientation="vertical" className="h-10" />
                   <Link href={`/profile/${user.id}/followers`} className="text-center hover:opacity-80">
-                    <p className="text-xl font-semibold">{user.followerCount}</p>
+                    <p className="text-xl font-semibold">0</p>
                     <p className="text-sm text-muted-foreground">Followers</p>
                   </Link>
                   <Separator orientation="vertical" className="h-10" />
                   <Link href={`/profile/${user.id}/following`} className="text-center hover:opacity-80">
-                    <p className="text-xl font-semibold">{user.followingCount}</p>
+                    <p className="text-xl font-semibold">0</p>
                     <p className="text-sm text-muted-foreground">Following</p>
                   </Link>
                 </div>
@@ -112,12 +156,7 @@ export default async function ProfilePage({
                   <p className="text-muted-foreground">{user.bio}</p>
                 )}
                 <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                  {user.location && (
-                    <div className="flex items-center gap-1">
-                      <MapPin className="h-4 w-4" />
-                      <span>{user.location}</span>
-                    </div>
-                  )}
+
                   {user.email && isCurrentUser && (
                     <div className="flex items-center gap-1">
                       <Mail className="h-4 w-4" />
@@ -126,7 +165,7 @@ export default async function ProfilePage({
                   )}
                   <div className="flex items-center gap-1">
                     <CalendarDays className="h-4 w-4" />
-                    <span>Joined {formatDate(user.createdAt)}</span>
+                    <span>Joined {format(new Date(user.createdAt), "MMMM yyyy")}</span>
                   </div>
                 </div>
               </div>
@@ -158,7 +197,25 @@ export default async function ProfilePage({
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {posts.map((post) => (
-                    <PostCard key={post.id} post={post} />
+                    <PostCard
+                      key={post.id}
+                      post={{
+                        ...post,
+                        createdAt: new Date(post.createdAt),
+                        publishedAt: new Date(post.createdAt), // Use createdAt as fallback
+                        readingTime: 5, // Default reading time
+                        viewCount: 0,
+                        likeCount: 0,
+                        commentCount: 0,
+                        author: {
+                          id: user.id,
+                          name: user.name,
+                          image: user.image,
+                          bio: user.bio,
+                        },
+                        categories: [],
+                      }}
+                    />
                   ))}
                 </div>
               )}
@@ -191,17 +248,8 @@ export default async function ProfilePage({
                 </div>
                 <Separator />
                 <div>
-                  <h2 className="text-xl font-semibold mb-4">Location</h2>
-                  {user.location ? (
-                    <p className="text-muted-foreground">{user.location}</p>
-                  ) : (
-                    <p className="text-muted-foreground italic">No location provided.</p>
-                  )}
-                </div>
-                <Separator />
-                <div>
                   <h2 className="text-xl font-semibold mb-4">Member Since</h2>
-                  <p className="text-muted-foreground">{formatDate(user.createdAt)}</p>
+                  <p className="text-muted-foreground">{format(new Date(user.createdAt), "MMMM yyyy")}</p>
                 </div>
               </div>
             </TabsContent>

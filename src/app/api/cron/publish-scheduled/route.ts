@@ -3,6 +3,9 @@ import prisma from '@/lib/prisma';
 import { createNewPostNotification } from '@/lib/notifications';
 import { processPostMentions } from '@/lib/mentions';
 
+// Force Node.js runtime for notification service compatibility
+export const runtime = 'nodejs';
+
 // This route would be called by a cron job every few minutes
 // to publish scheduled posts that are due
 

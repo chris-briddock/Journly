@@ -1,5 +1,5 @@
 import { MentionUser } from "@/types/models/mentionUser";
-import { searchUsers } from "./services/getSearchUsers";
+import { searchUsers } from "@/lib/api/users";
 
 // User type definition for mentions
 
@@ -45,7 +45,12 @@ export const commentMentionSuggestion = {
       const users = await searchUsers(query, 10);
 
       if (users && users.length > 0) {
-        return users.slice(0, 5);
+        // Transform users to match MentionUser format
+        return users.slice(0, 5).map(user => ({
+          id: user.id,
+          label: user.name || user.email,
+          avatar: user.image
+        }));
       } else {
         // If no users found or API fails, use fallback users
         if (!query) {

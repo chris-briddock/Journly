@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { startOfMonth, isAfter } from 'date-fns';
+import { useArticleResetStatus, useResetArticleCount } from '@/hooks/use-users';
 
 /**
  * Component that checks if article counts need to be reset
@@ -11,40 +12,30 @@ import { startOfMonth, isAfter } from 'date-fns';
 export function ArticleResetCheck() {
   const { data: session } = useSession();
 
+  // Use TanStack Query hooks
+  const { data: resetStatusData, error: resetStatusError } = useArticleResetStatus(!!session?.user?.id);
+  const resetArticleCountMutation = useResetArticleCount();
+
   useEffect(() => {
     // Only run for authenticated users
-    if (!session?.user?.id) return;
+    if (!session?.user?.id || !resetStatusData) return;
 
-    const checkAndResetArticleCounts = async () => {
-      try {
-        // Get the user's last reset date
-        const response = await fetch('/api/users/article-reset-check');
-        
-        if (!response.ok) {
-          console.error('Failed to check article reset status');
-          return;
-        }
+    // If the last reset date is before the start of the current month, reset the counts
+    const startOfCurrentMonth = startOfMonth(new Date());
+    const lastResetDate = resetStatusData.lastArticleResetDate ? new Date(resetStatusData.lastArticleResetDate) : null;
 
-        const data = await response.json();
-        
-        // If the last reset date is before the start of the current month, reset the counts
-        const startOfCurrentMonth = startOfMonth(new Date());
-        const lastResetDate = data.lastArticleResetDate ? new Date(data.lastArticleResetDate) : null;
-        
-        if (!lastResetDate || isAfter(startOfCurrentMonth, lastResetDate)) {
-          // Reset the user's article count
-          await fetch('/api/users/reset-article-count', {
-            method: 'POST',
-          });
-        }
-      } catch (error) {
-        console.error('Error checking article reset status:', error);
-      }
-    };
+    if (!lastResetDate || isAfter(startOfCurrentMonth, lastResetDate)) {
+      // Reset the user's article count
+      resetArticleCountMutation.mutate();
+    }
+  }, [session, resetStatusData, resetArticleCountMutation]);
 
-    // Run the check when the component mounts
-    checkAndResetArticleCounts();
-  }, [session]);
+  // Handle errors
+  useEffect(() => {
+    if (resetStatusError) {
+      console.error('Error checking article reset status:', resetStatusError);
+    }
+  }, [resetStatusError]);
 
   // This component doesn't render anything
   return null;

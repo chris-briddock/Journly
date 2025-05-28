@@ -1,15 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
-
-interface ScheduledPostsResponse {
-  success: boolean;
-  message: string;
-  publishedCount: number;
-  publishedPostIds?: string[];
-}
+import { useSession } from 'next-auth/react';
+import { useScheduledPostsPoller } from '@/hooks/use-posts';
 
 /**
  * Component that polls the scheduled posts endpoint to check for posts that need to be published
@@ -17,56 +12,31 @@ interface ScheduledPostsResponse {
  */
 export function ScheduledPostsPoller() {
   const router = useRouter();
-  const [isPolling, setIsPolling] = useState(false);
+  const { data: session, status } = useSession();
 
-  // Function to check for scheduled posts
-  const checkScheduledPosts = async () => {
-    if (isPolling) return; // Prevent multiple simultaneous requests
+  // Only poll when user is authenticated and session is loaded
+  const shouldPoll = status === 'authenticated' && !!session?.user?.id;
 
-    try {
-      setIsPolling(true);
+  // Use TanStack Query hook for polling (only when authenticated)
+  const { data: scheduledPostsData, error } = useScheduledPostsPoller(shouldPoll);
 
-      // Call the publish-scheduled endpoint
-      const response = await fetch('/api/cron/publish-scheduled', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        cache: 'no-store',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to check scheduled posts');
-      }
-
-      const data = await response.json() as ScheduledPostsResponse;
-
-      // If posts were published, show a toast and refresh the page
-      if (data.publishedCount > 0) {
-        toast.success(`${data.publishedCount} scheduled post${data.publishedCount === 1 ? '' : 's'} published`);
-
-        // Refresh the page to show the updated posts
-        router.refresh();
-      }
-    } catch (error: unknown) {
-      console.error('Error checking scheduled posts:', error);
-      // Don't show an error toast to avoid annoying the user
-    } finally {
-      setIsPolling(false);
-    }
-  };
-
+  // Handle successful polling results
   useEffect(() => {
-    // Check immediately on component mount
-    checkScheduledPosts();
+    if (scheduledPostsData && scheduledPostsData.publishedCount > 0) {
+      toast.success(`${scheduledPostsData.publishedCount} scheduled post${scheduledPostsData.publishedCount === 1 ? '' : 's'} published`);
 
-    // Set up polling interval (every 60 seconds)
-    const interval = setInterval(checkScheduledPosts, 60 * 1000);
+      // Refresh the page to show the updated posts
+      router.refresh();
+    }
+  }, [scheduledPostsData, router]);
 
-    // Clean up interval on component unmount
-    return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Handle errors (but don't show toast to avoid annoying the user)
+  useEffect(() => {
+    if (error && shouldPoll) {
+      console.error('Error checking scheduled posts:', error);
+      // Only log errors when we're actually supposed to be polling
+    }
+  }, [error, shouldPoll]);
 
   // This component doesn't render anything visible
   return null;

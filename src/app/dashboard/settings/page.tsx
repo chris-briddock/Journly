@@ -1,6 +1,8 @@
-import type { Metadata } from "next/types";
+"use client";
+
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
+import { useSession } from "next-auth/react";
+import { Loader2 } from "lucide-react";
 import { DashboardHeader } from "@/app/components/dashboard/DashboardHeader";
 import { DashboardShell } from "@/app/components/dashboard/DashboardShell";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/components/ui/tabs";
@@ -8,46 +10,36 @@ import { UserSettingsForm } from "@/app/components/dashboard/UserSettingsForm";
 import { NotificationSettingsForm } from "@/app/components/dashboard/NotificationSettingsForm";
 import { PasswordUpdateForm } from "@/app/components/dashboard/PasswordUpdateForm";
 import { DisplaySettingsForm } from "@/app/components/dashboard/DisplaySettingsForm";
+import { useUser } from "@/hooks/use-users";
 
-interface User {
-  id: string;
-  name: string | null;
-  email: string | null;
-  image: string | null;
-  bio: string | null;
-  location: string | null;
-}
+export default function SettingsPage() {
+  const { data: session, status } = useSession();
 
-export const metadata: Metadata = {
-  title: "Settings - Journly",
-  description: "Manage your account settings",
-};
+  // Use TanStack Query to fetch user data
+  const { data: user, isLoading, error } = useUser(session?.user?.id || "", !!session?.user?.id);
 
-async function getUserById(userId: string): Promise<User> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||
-    (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
-  const response = await fetch(`${baseUrl}/api/users/${userId}`, {
-    cache: 'no-store',
-    next: { revalidate: 0 }
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch user');
+  // Loading state
+  if (status === "loading" || isLoading) {
+    return (
+      <DashboardShell>
+        <DashboardHeader
+          heading="Settings"
+          text="Manage your account settings and preferences."
+        />
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      </DashboardShell>
+    );
   }
 
-  return response.json();
-}
-
-export default async function SettingsPage() {
-  const session = await auth();
-
+  // Authentication check
   if (!session || !session.user || !session.user.id) {
     redirect("/login");
   }
 
-  const user = await getUserById(session.user.id);
-
-  if (!user) {
+  // Error state or no user
+  if (error || !user) {
     redirect("/login");
   }
 

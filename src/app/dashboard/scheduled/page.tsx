@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { Edit, Clock, Calendar, RefreshCw } from 'lucide-react';
@@ -11,100 +11,41 @@ import { Badge } from '@/app/components/ui/badge';
 import { toast } from 'sonner';
 import { DashboardHeader } from '@/app/components/dashboard/DashboardHeader';
 import { DashboardShell } from '@/app/components/dashboard/DashboardShell';
-
-interface ScheduledPost {
-  id: string;
-  title: string;
-  scheduledPublishAt: string;
-  excerpt?: string;
-  featuredImage?: string;
-}
-
-interface ScheduledPostsResponse {
-  posts: ScheduledPost[];
-  pagination: {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  };
-}
+import { useScheduledPosts, useCheckScheduledPosts } from '@/hooks/use-posts';
 
 export default function ScheduledPostsPage() {
-  const [posts, setPosts] = useState<ScheduledPost[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [lastChecked, setLastChecked] = useState<Date | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
 
-  const fetchScheduledPosts = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  // Use TanStack Query to fetch scheduled posts
+  const { data: scheduledData, isLoading, error, refetch } = useScheduledPosts();
 
-      const response = await fetch('/api/posts/schedule', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        cache: 'no-store',
-        next: { revalidate: 0 },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch scheduled posts');
-      }
-
-      const data: ScheduledPostsResponse = await response.json();
-      setPosts(data.posts || []);
-      setLastChecked(new Date());
-    } catch (err: unknown) {
-      console.error('Error fetching scheduled posts:', err);
-      setError('Failed to load scheduled posts. Please try again later.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const checkScheduledPosts = async () => {
-    try {
-      setRefreshing(true);
-
-      // Call the publish-scheduled endpoint
-      const response = await fetch('/api/cron/publish-scheduled', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        cache: 'no-store',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to check scheduled posts');
-      }
-
-      const data = await response.json();
+  // Use TanStack Query mutation for checking scheduled posts
+  const checkScheduledPostsMutation = useCheckScheduledPosts({
+    onSuccess: (data) => {
       setLastChecked(new Date());
 
       // If posts were published, show a toast and refresh the list
       if (data.publishedCount > 0) {
         toast.success(`${data.publishedCount} scheduled post${data.publishedCount === 1 ? '' : 's'} published`);
-        fetchScheduledPosts();
+        refetch(); // Refresh the scheduled posts list
       } else {
         toast.info('No posts due for publishing');
-        fetchScheduledPosts();
+        refetch(); // Still refresh to ensure data is current
       }
-    } catch (error: unknown) {
+    },
+    onError: (error) => {
       console.error('Error checking scheduled posts:', error);
       toast.error('Failed to check scheduled posts');
-    } finally {
-      setRefreshing(false);
-    }
+    },
+  });
+
+  const checkScheduledPosts = () => {
+    checkScheduledPostsMutation.mutate();
   };
 
-  useEffect(() => {
-    fetchScheduledPosts();
-  }, []);
+  const posts = scheduledData?.posts || [];
+  const loading = isLoading;
+  const refreshing = checkScheduledPostsMutation.isPending;
 
   return (
     <DashboardShell>
@@ -167,8 +108,8 @@ export default function ScheduledPostsPage() {
       ) : error ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <p className="text-destructive mb-4">{error}</p>
-            <Button onClick={fetchScheduledPosts}>Try Again</Button>
+            <p className="text-destructive mb-4">Failed to load scheduled posts. Please try again later.</p>
+            <Button onClick={() => refetch()}>Try Again</Button>
           </CardContent>
         </Card>
       ) : posts.length === 0 ? (
@@ -193,7 +134,7 @@ export default function ScheduledPostsPage() {
                 </CardTitle>
                 <CardDescription className="flex items-center mt-2">
                   <Calendar className="h-4 w-4 mr-2" />
-                  Scheduled for {format(new Date(post.scheduledPublishAt), "MMMM d, yyyy 'at' h:mm a")}
+                  Scheduled for {post.scheduledPublishAt ? format(new Date(post.scheduledPublishAt), "MMMM d, yyyy 'at' h:mm a") : 'Unknown'}
                 </CardDescription>
               </CardHeader>
               <CardContent>

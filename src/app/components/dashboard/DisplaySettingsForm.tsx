@@ -30,28 +30,33 @@ export function DisplaySettingsForm() {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   const [settings, setSettings] = useState({
     theme: "system",
     compactView: false,
     fontSize: "100",
   });
 
-  // Initialize settings with current theme
+  // Initialize client-side state and load localStorage settings
   useEffect(() => {
+    setIsClient(true);
+
     if (theme) {
       setSettings((prev) => ({ ...prev, theme }));
     }
-    
-    // Here we could also load other settings from localStorage if needed
-    const storedCompactView = localStorage.getItem("compactView");
-    const storedFontSize = localStorage.getItem("fontSize");
-    
-    if (storedCompactView) {
-      setSettings((prev) => ({ ...prev, compactView: storedCompactView === "true" }));
-    }
-    
-    if (storedFontSize) {
-      setSettings((prev) => ({ ...prev, fontSize: storedFontSize }));
+
+    // Only access localStorage on the client side to prevent hydration errors
+    if (typeof window !== 'undefined') {
+      const storedCompactView = localStorage.getItem("compactView");
+      const storedFontSize = localStorage.getItem("fontSize");
+
+      if (storedCompactView) {
+        setSettings((prev) => ({ ...prev, compactView: storedCompactView === "true" }));
+      }
+
+      if (storedFontSize) {
+        setSettings((prev) => ({ ...prev, fontSize: storedFontSize }));
+      }
     }
   }, [theme]);
 
@@ -74,19 +79,22 @@ export function DisplaySettingsForm() {
     try {
       // Apply theme change
       setTheme(settings.theme);
-      
-      // Save other settings to localStorage
-      localStorage.setItem("compactView", settings.compactView.toString());
-      localStorage.setItem("fontSize", settings.fontSize);
-      
-      // Apply font size to document root
-      document.documentElement.style.setProperty("--font-size-adjustment", `${parseInt(settings.fontSize) / 100}`);
-      
-      // Apply compact view class if enabled
-      if (settings.compactView) {
-        document.documentElement.classList.add("compact-view");
-      } else {
-        document.documentElement.classList.remove("compact-view");
+
+      // Only access localStorage and DOM on the client side
+      if (typeof window !== 'undefined') {
+        // Save other settings to localStorage
+        localStorage.setItem("compactView", settings.compactView.toString());
+        localStorage.setItem("fontSize", settings.fontSize);
+
+        // Apply font size to document root
+        document.documentElement.style.setProperty("--font-size-adjustment", `${parseInt(settings.fontSize) / 100}`);
+
+        // Apply compact view class if enabled
+        if (settings.compactView) {
+          document.documentElement.classList.add("compact-view");
+        } else {
+          document.documentElement.classList.remove("compact-view");
+        }
       }
 
       toast.success("Display settings updated successfully");
@@ -98,6 +106,25 @@ export function DisplaySettingsForm() {
       setIsSubmitting(false);
     }
   };
+
+  // Show loading state until client-side hydration is complete
+  if (!isClient) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Display Settings</CardTitle>
+          <CardDescription>
+            Customize how Journly looks and feels for you.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="flex items-center justify-center h-32">
+            <Loader2 className="h-6 w-6 animate-spin" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit}>

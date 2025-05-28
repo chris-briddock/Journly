@@ -5,6 +5,7 @@ import { Toaster } from "sonner";
 import "./globals.css";
 import { ThemeProvider } from "@/app/components/ThemeProvider";
 import { SessionProvider } from "@/app/components/SessionProvider";
+import { QueryProvider } from "@/app/components/providers/query-provider";
 import { auth } from "@/lib/auth";
 import { Analytics } from "@vercel/analytics/next"
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -39,12 +40,14 @@ export default async function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <SessionProvider session={session}>
-            <ArticleResetCheck />
-            <SimpleNavigation />
-            {children}
-            <Toaster position="top-right" />
-          </SessionProvider>
+          <QueryProvider>
+            <SessionProvider session={session}>
+              <ArticleResetCheck />
+              <SimpleNavigation />
+              {children}
+              <Toaster position="top-right" />
+            </SessionProvider>
+          </QueryProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -1,9 +1,53 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
+// Simple in-memory cache for rate limiting
+const trendingRequestCache = new Map<string, { count: number; resetTime: number }>();
+
+// Rate limiting function for trending categories
+function checkTrendingRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const windowMs = 60 * 1000; // 1 minute window
+  const maxRequests = 20; // Max 20 requests per minute per IP
+
+  const key = `trending-categories:${ip}`;
+  const current = trendingRequestCache.get(key);
+
+  if (!current || now > current.resetTime) {
+    // Reset or initialize
+    trendingRequestCache.set(key, { count: 1, resetTime: now + windowMs });
+    return true;
+  }
+
+  if (current.count >= maxRequests) {
+    return false;
+  }
+
+  current.count++;
+  return true;
+}
+
 // GET /api/categories/trending - Get trending categories based on recent activity
 export async function GET(request: NextRequest) {
   try {
+    // Get client IP for rate limiting
+    const ip = request.headers.get('x-forwarded-for') ||
+               request.headers.get('x-real-ip') ||
+               'unknown';
+
+    // Check rate limit
+    if (!checkTrendingRateLimit(ip)) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.' },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': '60'
+          }
+        }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '5');
     const days = parseInt(searchParams.get('days') || '7'); // Look at activity in the last 7 days
@@ -24,7 +68,7 @@ export async function GET(request: NextRequest) {
       recentViewCount: bigint;
       activityScore: number;
     }>>`
-      SELECT 
+      SELECT
         c.id,
         c.name,
         c.description,
@@ -41,8 +85,8 @@ export async function GET(request: NextRequest) {
         ) as "activityScore"
       FROM "Category" c
       LEFT JOIN "PostCategory" pc ON c.id = pc."categoryId"
-      LEFT JOIN "Post" p ON pc."postId" = p.id 
-        AND p.status = 'published' 
+      LEFT JOIN "Post" p ON pc."postId" = p.id
+        AND p.status = 'published'
         AND p."publishedAt" >= ${dateThreshold}
       WHERE c."isDefault" = true OR c."postCount" > 0
       GROUP BY c.id, c.name, c.description, c."postCount"
@@ -64,10 +108,14 @@ export async function GET(request: NextRequest) {
       activityScore: category.activityScore,
     }));
 
-    return NextResponse.json({
+    // Add cache headers
+    const response = NextResponse.json({
       categories: formattedCategories,
       period: `${days} days`,
     });
+    response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
+
+    return response;
   } catch (error) {
     console.error('Error fetching trending categories:', error);
     return NextResponse.json(

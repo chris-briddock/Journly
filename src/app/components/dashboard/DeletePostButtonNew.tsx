@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2, Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { useDeletePost } from "@/hooks/use-posts";
 
 import { Button } from "@/app/components/ui/button";
 import {
@@ -25,40 +25,31 @@ interface DeletePostButtonProps {
 
 export function DeletePostButtonNew({ postId, postTitle }: DeletePostButtonProps) {
   const router = useRouter();
-  const [isDeleting, setIsDeleting] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
+  // Use TanStack Query mutation for delete
+  const deletePostMutation = useDeletePost();
+
   const handleDelete = async () => {
-    setIsDeleting(true);
-    
-    try {
-      const response = await fetch(`/api/posts/${postId}`, {
-        method: "DELETE",
-        next: { revalidate: 0 }
-      });
-      
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to delete post");
-      }
-      
-      toast.success("Post deleted successfully");
-      router.refresh();
-    } catch (error) {
-      console.error("Error deleting post:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to delete post");
-    } finally {
-      setIsDeleting(false);
-      setIsOpen(false);
-    }
+    // Use TanStack Query mutation
+    deletePostMutation.mutate(postId, {
+      onSuccess: () => {
+        router.refresh();
+        setIsOpen(false);
+      },
+      onError: () => {
+        // Error toast is already handled in the hook
+        setIsOpen(false);
+      },
+    });
   };
 
   return (
     <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
       <AlertDialogTrigger asChild>
-        <Button 
-          variant="ghost" 
-          size="icon" 
+        <Button
+          variant="ghost"
+          size="icon"
           className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
         >
           <Trash2 className="h-4 w-4" />
@@ -73,16 +64,16 @@ export function DeletePostButtonNew({ postId, postTitle }: DeletePostButtonProps
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={deletePostMutation.isPending}>Cancel</AlertDialogCancel>
           <AlertDialogAction
             onClick={(e) => {
               e.preventDefault();
               handleDelete();
             }}
-            disabled={isDeleting}
+            disabled={deletePostMutation.isPending}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            {isDeleting ? (
+            {deletePostMutation.isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Deleting...

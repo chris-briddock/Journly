@@ -2,6 +2,8 @@
  * Service for managing SEO metadata
  */
 
+import { getApiUrl } from "../getApiUrl";
+
 export interface SeoMetadata {
   seoTitle?: string;
   seoDescription?: string;
@@ -22,7 +24,19 @@ export async function generateSeoMetadata(postData: {
   excerpt?: string;
 }): Promise<SeoMetadata> {
   try {
-    const response = await fetch('/api/posts/seo', {
+    const url = getApiUrl('/api/posts/seo');
+
+    // During build time, return default metadata
+    if (!url) {
+      console.log('[Build] Returning default SEO metadata during static generation');
+      return {
+        seoTitle: postData.title || 'Default Title',
+        seoDescription: postData.excerpt || 'Default description',
+        seoKeywords: '',
+      };
+    }
+
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -48,7 +62,15 @@ export async function generateSeoMetadata(postData: {
  */
 export async function getSeoMetadata(postId: string): Promise<SeoMetadata> {
   try {
-    const response = await fetch(`/api/posts/seo/${postId}`, {
+    const url = getApiUrl(`/api/posts/seo/${postId}`);
+
+    // During build time, return empty metadata
+    if (!url) {
+      console.log('[Build] Returning empty SEO metadata during static generation');
+      return {};
+    }
+
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -77,7 +99,15 @@ export async function updateSeoMetadata(
   metadata: SeoMetadata
 ): Promise<SeoMetadata> {
   try {
-    const response = await fetch(`/api/posts/seo/${postId}`, {
+    const url = getApiUrl(`/api/posts/seo/${postId}`);
+
+    // During build time, return the input metadata
+    if (!url) {
+      console.log('[Build] Returning input SEO metadata during static generation');
+      return metadata;
+    }
+
+    const response = await fetch(url, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -106,7 +136,18 @@ export async function analyzeSeoMetadata(metadata: SeoMetadata): Promise<{
   recommendations: string[];
 }> {
   try {
-    const response = await fetch('/api/posts/seo/analyze', {
+    const url = getApiUrl('/api/posts/seo/analyze');
+
+    // During build time, return default analysis
+    if (!url) {
+      console.log('[Build] Returning default SEO analysis during static generation');
+      return {
+        score: 50,
+        recommendations: ['Build-time analysis not available'],
+      };
+    }
+
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

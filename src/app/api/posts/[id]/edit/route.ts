@@ -42,6 +42,13 @@ export async function GET(
     const post = await prisma.post.findUnique({
       where: { id },
       include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+          },
+        },
         categories: {
           select: {
             categoryId: true,

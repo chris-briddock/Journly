@@ -1,5 +1,3 @@
-import { getPosts as getPostsApi, } from "@/lib/services/getPosts";
-import { getCategories as getCategoriesApi } from "@/lib/services/getCategories";
 import PostsPageClient from "../components/PostsPageClient";
 import { auth } from "@/lib/auth";
 
@@ -7,22 +5,6 @@ type SearchParams = {
   categoryId?: string;
   page?: string;
 };
-
-async function getPosts(searchParams: SearchParams) {
-  const page = Number(searchParams.page) || 1;
-  const limit = 12;
-
-  return await getPostsApi({
-    page,
-    limit,
-    categoryId: searchParams.categoryId,
-    status: 'published'
-  });
-}
-
-async function getCategories() {
-  return await getCategoriesApi(false);
-}
 
 export default async function PostsPage({
   searchParams,
@@ -53,19 +35,9 @@ export default async function PostsPage({
     );
   }
 
-  const [{ posts, pagination }, categories] = await Promise.all([
-    getPosts(params),
-    getCategories(),
-  ]);
-
-  const selectedCategoryId = params.categoryId;
-
   return (
     <PostsPageClient
-      posts={posts}
-      categories={categories}
-      pagination={pagination}
-      selectedCategoryId={selectedCategoryId}
+      searchParams={params}
     />
   );
 }

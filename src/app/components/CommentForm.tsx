@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { Loader2, AtSign } from "lucide-react";
 import { toast } from "sonner";
@@ -12,7 +12,8 @@ import { Textarea } from "@/app/components/ui/textarea";
 import { Alert, AlertDescription } from "@/app/components/ui/alert";
 import { CommentMentionList } from "./CommentMentionList";
 import { getInitials } from "@/lib/utils";
-import { searchUsers } from "@/lib/services/getSearchUsers";
+import { useSearchUsers } from "@/hooks/use-users";
+import { useCreateComment } from "@/hooks/use-comments";
 
 
 type CommentFormProps = {
@@ -24,30 +25,30 @@ type CommentFormProps = {
 export function CommentForm({ postId, parentId = null, onCommentSubmitted }: CommentFormProps) {
   const { data: session } = useSession();
   const [content, setContent] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [subscriptionError, setSubscriptionError] = useState<string | null>(null);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
-  const [mentionResults, setMentionResults] = useState<Array<{id: string; label: string; avatar: string | null}>>([]);
   const [cursorPosition, setCursorPosition] = useState<{top: number; left: number} | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const userInitials = getInitials(session?.user?.name);
 
-  // Handle mention search
-  useEffect(() => {
-    const fetchUsers = async () => {
-      if (mentionQuery !== null) {
-        try {
-          const users = await searchUsers(mentionQuery);
-          setMentionResults(users);
-        } catch (error) {
-          console.error("Error fetching users for mention:", error);
-          setMentionResults([]);
-        }
-      }
-    };
+  // Use TanStack Query for user search
+  const { data: searchResults = [] } = useSearchUsers(
+    mentionQuery || '',
+    10,
+    mentionQuery !== null && mentionQuery.length > 0
+  );
 
-    fetchUsers();
-  }, [mentionQuery]);
+  // Use TanStack Query for creating comments
+  const createCommentMutation = useCreateComment();
+
+  // Transform search results to match expected format
+  const mentionResults = searchResults
+    .filter(user => user && (user.name || user.email)) // Filter out invalid users
+    .map(user => ({
+      id: user.id,
+      label: user.name || user.email || 'Unknown User',
+      avatar: user.image
+    }));
 
   // Handle textarea input to detect @ mentions
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -133,7 +134,7 @@ export function CommentForm({ postId, parentId = null, onCommentSubmitted }: Com
 
   // Handle selecting a user from the mention dropdown
   const handleSelectMention = (user: {id: string; label: string}) => {
-    if (!textareaRef.current) return;
+    if (!textareaRef.current || !user || !user.label) return;
 
     const textarea = textareaRef.current;
     const cursorPos = textarea.selectionStart;
@@ -168,46 +169,32 @@ export function CommentForm({ postId, parentId = null, onCommentSubmitted }: Com
       return;
     }
 
-    setIsSubmitting(true);
+    // Use TanStack Query mutation
+    createCommentMutation.mutate(
+      {
+        postId,
+        content: content.trim(),
+        parentId: parentId || undefined,
+      },
+      {
+        onSuccess: () => {
+          setContent("");
+          setSubscriptionError(null); // Clear any previous subscription errors
 
-    try {
-      const response = await fetch("/api/comments", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+          if (onCommentSubmitted) {
+            onCommentSubmitted();
+          }
         },
-        next: { revalidate: 0 },
-        body: JSON.stringify({
-          postId,
-          content: content.trim(),
-          parentId,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        // Check if this is a subscription-related error
-        if (response.status === 403 && data.subscriptionRequired) {
-          setSubscriptionError(data.error);
-          return;
-        }
-        throw new Error(data.error || "Failed to add comment");
+        onError: (error: Error & { status?: number; subscriptionRequired?: boolean; error?: string }) => {
+          // Check if this is a subscription-related error
+          if (error.status === 403 && error.subscriptionRequired) {
+            setSubscriptionError(error.error || 'Subscription required');
+            return;
+          }
+          // Error toast is already handled in the hook
+        },
       }
-
-      setContent("");
-      setSubscriptionError(null); // Clear any previous subscription errors
-      toast.success(parentId ? "Reply added successfully" : "Comment added successfully");
-
-      if (onCommentSubmitted) {
-        onCommentSubmitted();
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Something went wrong";
-      toast.error(errorMessage);
-    } finally {
-      setIsSubmitting(false);
-    }
+    );
   };
 
 
@@ -248,7 +235,7 @@ export function CommentForm({ postId, parentId = null, onCommentSubmitted }: Com
             value={content}
             onChange={handleTextareaChange}
             className="min-h-[100px] resize-none"
-            disabled={isSubmitting || !!subscriptionError}
+            disabled={createCommentMutation.isPending || !!subscriptionError}
           />
 
           {/* Mention dropdown */}
@@ -275,8 +262,8 @@ export function CommentForm({ postId, parentId = null, onCommentSubmitted }: Com
         </div>
       </div>
       <div className="flex justify-end">
-        <Button type="submit" disabled={isSubmitting || !content.trim() || !!subscriptionError}>
-          {isSubmitting ? (
+        <Button type="submit" disabled={createCommentMutation.isPending || !content.trim() || !!subscriptionError}>
+          {createCommentMutation.isPending ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               {parentId ? "Posting Reply..." : "Posting Comment..."}

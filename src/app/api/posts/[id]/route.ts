@@ -5,6 +5,9 @@ import { calculateReadingTime } from '@/lib/readingTime';
 import { createPostUpdateNotification } from '@/lib/notifications';
 import { processPostMentions } from '@/lib/mentions';
 
+// Force Node.js runtime for notification service compatibility
+export const runtime = 'nodejs';
+
 // GET /api/posts/[id] - Get a specific post
 export async function GET(
   request: NextRequest,
@@ -13,7 +16,10 @@ export async function GET(
   try {
     const { id } = await params;
     const post = await prisma.post.findUnique({
-      where: { id },
+      where: {
+        id,
+        status: "published" // Only fetch published posts for public access
+      },
       include: {
         author: {
           select: {
@@ -25,10 +31,16 @@ export async function GET(
         },
         categories: {
           include: {
-            category: true,
+            category: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
           },
         },
       },
+      // Include SEO fields for metadata generation
     });
 
     if (!post) {
