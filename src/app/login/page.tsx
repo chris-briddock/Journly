@@ -6,11 +6,23 @@ import { Button } from "@/app/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/app/components/ui/card";
 import LoginForm from "@/app/components/LoginForm";
 
-export default async function LoginPage() {
+type SearchParams = {
+  from?: string;
+};
+
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
+  const params = await searchParams;
   const session = await auth();
 
   if (session) {
-    redirect("/dashboard");
+    // If user is already logged in, redirect to the intended page or dashboard
+    const redirectTo = params.from && params.from !== '/login' ? params.from : '/dashboard';
+    console.log(`[Login Page] User already authenticated, redirecting to: ${redirectTo}`);
+    redirect(redirectTo);
   }
 
   return (
@@ -23,7 +35,7 @@ export default async function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <LoginForm />
+          <LoginForm from={params.from} />
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
           <div className="text-sm text-muted-foreground text-center">

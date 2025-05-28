@@ -38,7 +38,11 @@ interface Provider {
   callbackUrl: string;
 }
 
-export default function LoginForm() {
+interface LoginFormProps {
+  from?: string;
+}
+
+export default function LoginForm({ from }: LoginFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -77,7 +81,10 @@ export default function LoginForm() {
         return;
       }
 
-      router.push("/dashboard");
+      // Redirect to the intended page or dashboard
+      const redirectTo = from && from !== '/login' ? from : '/dashboard';
+      console.log(`[LoginForm] Login successful, redirecting to: ${redirectTo}`);
+      router.push(redirectTo);
       router.refresh();
     } catch {
       setError("An unexpected error occurred");
@@ -144,16 +151,19 @@ export default function LoginForm() {
 
       {providers && Object.values(providers)
         .filter((provider) => provider.id !== "credentials")
-        .map((provider) => (
-          <Button
-            key={provider.id}
-            variant="outline"
-            className="w-full"
-            onClick={() => signIn(provider.id, { callbackUrl: "/dashboard" })}
-          >
-            Sign in with {provider.name}
-          </Button>
-        ))}
+        .map((provider) => {
+          const callbackUrl = from && from !== '/login' ? from : '/dashboard';
+          return (
+            <Button
+              key={provider.id}
+              variant="outline"
+              className="w-full"
+              onClick={() => signIn(provider.id, { callbackUrl })}
+            >
+              Sign in with {provider.name}
+            </Button>
+          );
+        })}
     </div>
   );
 }
