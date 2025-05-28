@@ -1,7 +1,4 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
-
-import { auth } from "@/lib/auth";
 import { Button } from "@/app/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/app/components/ui/card";
 import LoginForm from "@/app/components/LoginForm";
@@ -16,14 +13,6 @@ export default async function LoginPage({
   searchParams: Promise<SearchParams>;
 }) {
   const params = await searchParams;
-  const session = await auth();
-
-  if (session) {
-    // If user is already logged in, redirect to the intended page or dashboard
-    const redirectTo = params.from && params.from !== '/login' ? params.from : '/dashboard';
-    console.log(`[Login Page] User already authenticated, redirecting to: ${redirectTo}`);
-    redirect(redirectTo);
-  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
