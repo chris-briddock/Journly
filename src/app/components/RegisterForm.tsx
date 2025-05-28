@@ -25,7 +25,11 @@ type FormValues = {
   password: string;
 };
 
-export default function RegisterForm() {
+interface RegisterFormProps {
+  from?: string;
+}
+
+export default function RegisterForm({ from }: RegisterFormProps) {
   const router = useRouter();
   const [error, setError] = useState("");
 
@@ -53,7 +57,9 @@ export default function RegisterForm() {
           password: values.password,
         });
 
-        router.push("/dashboard");
+        // Redirect to the intended page or dashboard
+        const redirectTo = from && from !== '/login' ? from : '/dashboard';
+        router.push(redirectTo);
         router.refresh();
       },
       onError: (error: Error) => {

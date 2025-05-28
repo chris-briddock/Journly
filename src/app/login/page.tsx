@@ -1,17 +1,18 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
-
-import { auth } from "@/lib/auth";
 import { Button } from "@/app/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/app/components/ui/card";
 import LoginForm from "@/app/components/LoginForm";
 
-export default async function LoginPage() {
-  const session = await auth();
+type SearchParams = {
+  from?: string;
+};
 
-  if (session) {
-    redirect("/dashboard");
-  }
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
+  const params = await searchParams;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
@@ -23,7 +24,7 @@ export default async function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <LoginForm />
+          <LoginForm from={params.from} />
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
           <div className="text-sm text-muted-foreground text-center">

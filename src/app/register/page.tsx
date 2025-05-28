@@ -6,11 +6,22 @@ import { Button } from "@/app/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/app/components/ui/card";
 import RegisterForm from "@/app/components/RegisterForm";
 
-export default async function RegisterPage() {
+type SearchParams = {
+  from?: string;
+};
+
+export default async function RegisterPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
+  const params = await searchParams;
   const session = await auth();
 
   if (session) {
-    redirect("/dashboard");
+    // If user is already logged in, redirect to the intended page or dashboard
+    const redirectTo = params.from && params.from !== '/login' ? params.from : '/dashboard';
+    redirect(redirectTo);
   }
 
   return (
@@ -23,7 +34,7 @@ export default async function RegisterPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <RegisterForm />
+          <RegisterForm from={params.from} />
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
           <div className="text-sm text-muted-foreground text-center">
