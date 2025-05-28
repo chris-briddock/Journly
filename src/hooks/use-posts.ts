@@ -34,7 +34,7 @@ export function usePosts(filters: PostFilters = {}) {
   return useQuery({
     queryKey: queryKeys.posts.list(filters),
     queryFn: () => fetchPosts(filters),
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    staleTime: 0
   });
 }
 
@@ -46,7 +46,7 @@ export function usePost(id: string, enabled: boolean = true) {
     queryKey: queryKeys.posts.detail(id),
     queryFn: () => fetchPost(id),
     enabled: enabled && !!id,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 0
   });
 }
 
@@ -58,7 +58,7 @@ export function usePostForView(id: string, enabled: boolean = true) {
     queryKey: queryKeys.posts.detail(id),
     queryFn: () => fetchPostForView(id),
     enabled: enabled && !!id,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 0
   });
 }
 
@@ -105,7 +105,7 @@ export function useRecentPosts(limit: number = 5) {
   return useQuery({
     queryKey: queryKeys.posts.recent(limit),
     queryFn: () => fetchRecentPosts(limit),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 0
   });
 }
 
@@ -123,6 +123,25 @@ export function useRelatedPosts(
     queryFn: () => fetchRelatedPosts(postId, categoryIds, limit),
     enabled: enabled && !!postId && categoryIds.length > 0,
     staleTime: 10 * 60 * 1000, // 10 minutes
+  });
+}
+
+/**
+ * Hook to check article access
+ */
+export function useArticleAccess(postId: string, enabled: boolean = true) {
+  return useQuery({
+    queryKey: ['article-access', postId],
+    queryFn: async () => {
+      const response = await fetch(`/api/posts/${postId}/access`);
+      if (!response.ok) {
+        throw new Error('Failed to check article access');
+      }
+      return response.json();
+    },
+    enabled: enabled && !!postId,
+    staleTime: 0, // Don't cache access checks
+    retry: false, // Don't retry on failure
   });
 }
 

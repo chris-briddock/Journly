@@ -1,10 +1,11 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { MessageSquare, Eye, Lock } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 import { Button } from "@/app/components/ui/button";
 import { Badge } from "@/app/components/ui/badge";
@@ -21,7 +22,7 @@ import { RecommendedPosts } from "@/app/components/RecommendedPosts";
 import { getInitials } from "@/lib/utils";
 import { ReadingProgressTracker } from "@/app/components/ReadingProgressTracker";
 import { Post } from "@/types/models/post";
-import { usePost, useRelatedPosts } from "@/hooks/use-posts";
+import { usePost, useRelatedPosts, useArticleAccess } from "@/hooks/use-posts";
 import { usePostComments } from "@/hooks/use-comments";
 import { useArticleCount } from "@/hooks/use-subscriptions";
 import { Loader2 } from "lucide-react";
@@ -32,9 +33,16 @@ type PostPageClientProps = {
 
 export function PostPageClient({ postId }: PostPageClientProps) {
   const { data: session } = useSession();
+  const router = useRouter();
 
   // Use TanStack Query to fetch post data
   const { data: post, isLoading: postLoading, error: postError } = usePost(postId);
+
+  // Check article access
+  const { data: accessData, isLoading: accessLoading, error: accessError } = useArticleAccess(
+    postId,
+    !!session?.user?.id && !!post
+  );
 
   // Get category IDs for related posts
   const categoryIds = Array.isArray(post?.categories)
@@ -46,12 +54,33 @@ export function PostPageClient({ postId }: PostPageClientProps) {
   const { data: comments } = usePostComments(postId);
   const { data: articleCountData } = useArticleCount();
 
+  // Handle access control and redirects
+  useEffect(() => {
+    if (!session?.user?.id) {
+      // Redirect to login if not authenticated
+      router.push(`/login?from=/posts/${postId}`);
+      return;
+    }
+
+    if (accessError) {
+      // If there's an access error, redirect to subscription page
+      router.push(`/subscription?from=/posts/${postId}`);
+      return;
+    }
+
+    if (accessData && !accessData.canAccess) {
+      // If user can't access the article, redirect to subscription page
+      router.push(`/subscription?from=/posts/${postId}`);
+      return;
+    }
+  }, [session, accessData, accessError, postId, router]);
+
   const formatDate = (date: Date) => {
     return format(new Date(date), "MMMM d, yyyy");
   };
 
   // Loading state
-  if (postLoading) {
+  if (postLoading || accessLoading) {
     return (
       <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-8">
@@ -99,11 +128,25 @@ export function PostPageClient({ postId }: PostPageClientProps) {
     );
   }
 
+  // Access control check
+  if (accessError || (accessData && !accessData.canAccess)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Access Restricted</h1>
+          <p className="mb-4">You need a subscription to access this article.</p>
+          <Button asChild>
+            <Link href={`/subscription?from=/posts/${post.id}`}>Get Subscription</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   const isAuthor = session.user.id === post.author.id;
 
-  // For now, we'll assume access is granted (the middleware should handle this)
-  // In a full implementation, you'd want to add access control hooks
-  const hasAccess = true; // Simplified for this migration
+  // User has access to the article
+  const hasAccess = accessData?.canAccess || false;
   const articlesReadThisMonth = articleCountData?.articlesReadThisMonth || 0;
   const monthlyLimit = 5; // Default monthly limit for free users
 
