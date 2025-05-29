@@ -12,6 +12,8 @@ type Props = {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
     const { id } = await params;
+
+    // Try to fetch metadata from API
     const metadataResponse = await fetchPostMetadata(id);
 
     // Return the metadata structure from our API
@@ -26,11 +28,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       alternates: metadataResponse.alternates,
     };
   } catch (error) {
-    console.error('Error generating metadata:', error);
-    return {
-      title: "Post Not Found",
-      description: "The requested post could not be found.",
-    };
+    console.error('Error generating metadata for post:', error);
+
+    // Try to get basic post info as fallback
+    try {
+      // Use a simpler approach for fallback
+      return {
+        title: "Loading Post...",
+        description: "Loading post content...",
+      };
+    } catch (fallbackError) {
+      console.error('Fallback metadata generation failed:', fallbackError);
+      return {
+        title: "Post Not Found",
+        description: "The requested post could not be found.",
+      };
+    }
   }
 }
 

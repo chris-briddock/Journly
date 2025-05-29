@@ -73,7 +73,7 @@ export async function POST(
         }),
       ]);
 
-      return NextResponse.json({ following: false });
+      return NextResponse.json({ isFollowing: false });
     } else {
       // Follow
       await prisma.$transaction([
@@ -99,7 +99,7 @@ export async function POST(
         followingId,
       });
 
-      return NextResponse.json({ following: true });
+      return NextResponse.json({ isFollowing: true });
     }
   } catch (error) {
     console.error('Error following/unfollowing user:', error);

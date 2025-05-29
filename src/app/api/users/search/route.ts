@@ -47,6 +47,10 @@ export async function GET(request: NextRequest) {
     // Format the users for the mention feature
     const formattedUsers = users.map(user => ({
       id: user.id,
+      name: user.name || user.email?.split('@')[0] || 'Unknown User',
+      email: user.email,
+      image: user.image || null,
+      // Keep label for backward compatibility
       label: user.name || user.email?.split('@')[0] || 'Unknown User',
       avatar: user.image || null,
     }));
