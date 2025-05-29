@@ -15,16 +15,14 @@ import { formatPrice } from '@/lib/stripe';
 import { useSubscription, useArticleCount, useCancelSubscription, useCreateBillingPortalSession } from '@/hooks/use-subscriptions';
 
 export default function SubscriptionSettingsPage() {
-  // Use TanStack Query to fetch subscription and article count data
   const { data: subscription, isLoading: subscriptionLoading, error: subscriptionError } = useSubscription();
   const { data: articleData } = useArticleCount();
 
-  // Use TanStack Query mutations for subscription actions
   const cancelSubscriptionMutation = useCancelSubscription();
   const createBillingPortalMutation = useCreateBillingPortalSession();
 
   const articlesRead = articleData?.articlesReadThisMonth || 0;
-  const monthlyLimit = 5; // Default monthly limit for free users
+  const monthlyLimit = 5;
   const loading = subscriptionLoading;
   const cancelLoading = cancelSubscriptionMutation.isPending;
   const manageBillingLoading = createBillingPortalMutation.isPending;

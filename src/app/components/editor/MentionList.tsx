@@ -87,6 +87,8 @@ export const MentionList = forwardRef<MentionListRef, MentionListProps>((props, 
                 <Image
                   src={item.avatar}
                   alt={item.label}
+                  width={28}
+                  height={28}
                   className="w-7 h-7 rounded-full object-cover border border-border"
                 />
               ) : (
@@ -96,7 +98,7 @@ export const MentionList = forwardRef<MentionListRef, MentionListProps>((props, 
               )}
               <div className="flex flex-col">
                 <span className="font-medium">{item.label}</span>
-                <span className="text-xs text-muted-foreground">@{item.label}</span>
+                <span className="text-xs text-muted-foreground">@{item.label.toLowerCase().replace(/\s+/g, '')}</span>
               </div>
             </button>
           ))}

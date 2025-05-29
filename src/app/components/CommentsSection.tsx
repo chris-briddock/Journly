@@ -13,8 +13,7 @@ export function CommentsSection({ postId, initialComments = [] }: CommentsSectio
   const {
     data: comments = initialComments,
     isLoading,
-    error,
-    refetch
+    error
   } = usePostComments(postId);
 
   // Handle errors
@@ -22,17 +21,12 @@ export function CommentsSection({ postId, initialComments = [] }: CommentsSectio
     console.error("Error fetching comments:", error);
   }
 
-  const handleCommentAdded = () => {
-    // Refetch comments when a new comment is added
-    refetch();
-  };
-
   return (
     <div className={isLoading ? "opacity-70 pointer-events-none" : ""}>
       <CommentList
         postId={postId}
         comments={comments}
-        onCommentAdded={handleCommentAdded}
+        onCommentAdded={() => {}}
       />
     </div>
   );

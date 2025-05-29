@@ -10,11 +10,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar"
 import { Button } from "@/app/components/ui/button";
 import { Textarea } from "@/app/components/ui/textarea";
 import { Alert, AlertDescription } from "@/app/components/ui/alert";
-import { CommentMentionList } from "./CommentMentionList";
+import { CommentMentionList, type MentionListRef } from "./CommentMentionList";
 import { getInitials } from "@/lib/utils";
 import { useSearchUsers } from "@/hooks/use-users";
 import { useCreateComment } from "@/hooks/use-comments";
-
 
 type CommentFormProps = {
   postId: string;
@@ -27,15 +26,15 @@ export function CommentForm({ postId, parentId = null, onCommentSubmitted }: Com
   const [content, setContent] = useState("");
   const [subscriptionError, setSubscriptionError] = useState<string | null>(null);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
-  const [cursorPosition, setCursorPosition] = useState<{top: number; left: number} | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const mentionListRef = useRef<MentionListRef>(null);
   const userInitials = getInitials(session?.user?.name);
 
   // Use TanStack Query for user search
   const { data: searchResults = [] } = useSearchUsers(
     mentionQuery || '',
     10,
-    mentionQuery !== null && mentionQuery.length > 0
+    mentionQuery !== null // Enable search when mentionQuery is not null (including empty string)
   );
 
   // Use TanStack Query for creating comments
@@ -46,9 +45,20 @@ export function CommentForm({ postId, parentId = null, onCommentSubmitted }: Com
     .filter(user => user && (user.name || user.email)) // Filter out invalid users
     .map(user => ({
       id: user.id,
-      label: user.name || user.email || 'Unknown User',
+      label: user.name || user.email?.split('@')[0] || 'Unknown User',
       avatar: user.image
     }));
+
+  // Handle keyboard events for mention navigation
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (mentionQuery !== null && mentionListRef.current) {
+      const handled = mentionListRef.current.onKeyDown({ event: e.nativeEvent });
+      if (handled) {
+        e.preventDefault();
+        return;
+      }
+    }
+  };
 
   // Handle textarea input to detect @ mentions
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -67,69 +77,17 @@ export function CommentForm({ postId, parentId = null, onCommentSubmitted }: Com
       // Check if there's a space between the last @ and the cursor
       const textBetweenAtAndCursor = textBeforeCursor.substring(lastAtPos + 1);
 
-      if (!textBetweenAtAndCursor.includes(' ') && textBetweenAtAndCursor.length > 0) {
-        // We have a potential mention
+      if (!textBetweenAtAndCursor.includes(' ')) {
+        // We have a potential mention (including when just typed @)
         setMentionQuery(textBetweenAtAndCursor);
-
-        // Calculate position for the mention dropdown
-        const cursorCoords = getCaretCoordinates(textarea, cursorPos);
-        setCursorPosition({
-          top: cursorCoords.top + 20, // Add some offset
-          left: cursorCoords.left
-        });
-      } else if (textBetweenAtAndCursor.length === 0) {
-        // Just typed @, start with empty query
-        setMentionQuery('');
-
-        // Calculate position for the mention dropdown
-        const cursorCoords = getCaretCoordinates(textarea, cursorPos);
-        setCursorPosition({
-          top: cursorCoords.top + 20, // Add some offset
-          left: cursorCoords.left
-        });
       } else {
-        // No active mention
+        // No active mention (space found after @)
         setMentionQuery(null);
-        setCursorPosition(null);
       }
     } else {
       // No @ symbol found
       setMentionQuery(null);
-      setCursorPosition(null);
     }
-  };
-
-  // Helper function to get caret coordinates in textarea
-  const getCaretCoordinates = (element: HTMLTextAreaElement, position: number) => {
-    const { offsetLeft: elementLeft, offsetTop: elementTop } = element;
-
-    // Create a temporary element to measure position
-    const div = document.createElement('div');
-    div.style.position = 'absolute';
-    div.style.visibility = 'hidden';
-    div.style.whiteSpace = 'pre-wrap';
-    div.style.height = 'auto';
-    div.style.width = element.offsetWidth + 'px';
-    div.style.fontSize = window.getComputedStyle(element).fontSize;
-    div.style.fontFamily = window.getComputedStyle(element).fontFamily;
-    div.style.lineHeight = window.getComputedStyle(element).lineHeight;
-    div.style.padding = window.getComputedStyle(element).padding;
-
-    div.textContent = element.value.substring(0, position);
-
-    // Create a span for the caret position
-    const span = document.createElement('span');
-    span.textContent = '.';
-    div.appendChild(span);
-
-    document.body.appendChild(div);
-    const { offsetLeft: spanLeft, offsetTop: spanTop } = span;
-    document.body.removeChild(div);
-
-    return {
-      left: elementLeft + spanLeft,
-      top: elementTop + spanTop
-    };
   };
 
   // Handle selecting a user from the mention dropdown
@@ -153,7 +111,6 @@ export function CommentForm({ postId, parentId = null, onCommentSubmitted }: Com
 
     // Reset mention state
     setMentionQuery(null);
-    setCursorPosition(null);
 
     // Focus back on textarea and set cursor position after the inserted mention
     textarea.focus();
@@ -234,23 +191,18 @@ export function CommentForm({ postId, parentId = null, onCommentSubmitted }: Com
             }
             value={content}
             onChange={handleTextareaChange}
+            onKeyDown={handleKeyDown}
             className="min-h-[100px] resize-none"
             disabled={createCommentMutation.isPending || !!subscriptionError}
           />
 
           {/* Mention dropdown */}
-          {mentionQuery !== null && cursorPosition && (
-            <div
-              className="absolute z-10"
-              style={{
-                top: `${cursorPosition.top}px`,
-                left: `${cursorPosition.left}px`
-              }}
-            >
+          {mentionQuery !== null && (
+            <div className="absolute top-full left-0 z-50 w-full">
               <CommentMentionList
                 items={mentionResults}
                 command={handleSelectMention}
-                ref={null} // We're not using the ref functionality here
+                ref={mentionListRef}
               />
             </div>
           )}

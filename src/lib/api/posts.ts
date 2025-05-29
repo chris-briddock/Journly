@@ -187,6 +187,13 @@ export function fetchPostBookmarkStatus(id: string): Promise<{ bookmarked: boole
 }
 
 /**
+ * Get like status for a post
+ */
+export function fetchPostLikeStatus(id: string): Promise<{ liked: boolean }> {
+  return apiGet<{ liked: boolean }>(`/api/posts/${id}/like-status`);
+}
+
+/**
  * Schedule a post
  */
 export function schedulePost(postId: string, publishAt: Date): Promise<{ success: boolean }> {

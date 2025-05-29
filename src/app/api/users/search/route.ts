@@ -3,9 +3,9 @@ import prisma from '@/lib/prisma';
 
 /**
  * Search users API endpoint
- * 
+ *
  * GET /api/users/search?q=query&limit=10
- * 
+ *
  * This endpoint allows searching for users by name or email
  * It's used for the mention feature in the rich text editor
  */
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
 
     // Build the where clause for searching users
     const where: Record<string, unknown> = {};
-    
+
     if (query) {
       // Search by name or email (case insensitive)
       where.OR = [
@@ -25,6 +25,7 @@ export async function GET(request: NextRequest) {
         { email: { contains: query, mode: 'insensitive' } },
       ];
     }
+    // If no query, we'll return recent users (no additional where clause needed)
 
     // Find users matching the query
     const users = await prisma.user.findMany({
@@ -36,14 +37,20 @@ export async function GET(request: NextRequest) {
         image: true,
       },
       take: limit,
-      orderBy: {
-        name: 'asc',
+      orderBy: query ? {
+        name: 'asc', // Sort by name when searching
+      } : {
+        createdAt: 'desc', // Show recent users when no query
       },
     });
 
     // Format the users for the mention feature
     const formattedUsers = users.map(user => ({
       id: user.id,
+      name: user.name || user.email?.split('@')[0] || 'Unknown User',
+      email: user.email,
+      image: user.image || null,
+      // Keep label for backward compatibility
       label: user.name || user.email?.split('@')[0] || 'Unknown User',
       avatar: user.image || null,
     }));

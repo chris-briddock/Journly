@@ -27,7 +27,7 @@ export const mentionSuggestion = {
         // Transform users to match MentionUser format
         return users.slice(0, 5).map(user => ({
           id: user.id,
-          label: user.name || user.email,
+          label: user.name || user.email?.split('@')[0] || 'Unknown User',
           avatar: user.image
         }));
       } else {

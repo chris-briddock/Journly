@@ -62,7 +62,7 @@ export default function SubscriptionSuccessPage() {
             <Link href={returnUrl}>Continue Reading</Link>
           </Button>
           <Button variant="outline" asChild>
-            <Link href="/dashboard/settings">Manage Subscription</Link>
+            <Link href="/dashboard/subscription">Manage Subscription</Link>
           </Button>
         </div>
       </div>

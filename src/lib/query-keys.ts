@@ -98,6 +98,12 @@ export const queryKeys = {
     status: (postId: string) => [...queryKeys.bookmarks.all, 'status', postId] as const,
   },
 
+  // Likes
+  likes: {
+    all: ['likes'] as const,
+    status: (postId: string) => [...queryKeys.likes.all, 'status', postId] as const,
+  },
+
   // Reading History
   readingHistory: {
     all: ['readingHistory'] as const,

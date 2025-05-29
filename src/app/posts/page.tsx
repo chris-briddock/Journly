@@ -14,8 +14,6 @@ export default async function PostsPage({
   const params = await searchParams;
   const session = await auth();
 
-  // If no user is logged in, they should be redirected by middleware
-  // This is a fallback in case middleware fails
   if (!session?.user) {
     return (
       <div className="min-h-screen flex items-center justify-center">

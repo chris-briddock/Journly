@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { debounce } from "lodash";
-import { useRecordReadingProgress } from "@/hooks/use-reading-history";
+import { recordReadingProgress as apiRecordReadingProgress } from "@/lib/api/reading-history";
 
 interface ReadingProgressTrackerProps {
   postId: string;
@@ -12,45 +12,54 @@ interface ReadingProgressTrackerProps {
 export function ReadingProgressTracker({ postId }: ReadingProgressTrackerProps) {
   const { data: session } = useSession();
   const [hasRecorded, setHasRecorded] = useState(false);
+  const currentProgressRef = useRef(0);
+  const hasRecordedRef = useRef(false);
+  const sessionRef = useRef(session);
 
-  // Use TanStack Query mutation
-  const recordProgressMutation = useRecordReadingProgress();
+  // Update refs when values change
+  useEffect(() => {
+    hasRecordedRef.current = hasRecorded;
+  }, [hasRecorded]);
 
-  // Record reading progress to API
-  const recordReadingProgress = useCallback((currentProgress: number, completed: boolean) => {
-    if (!session?.user) return;
-
-    recordProgressMutation.mutate({
-      postId,
-      progress: currentProgress,
-      completed,
-    });
-  }, [session, postId, recordProgressMutation]);
+  useEffect(() => {
+    sessionRef.current = session;
+  }, [session]);
 
   // Calculate reading progress
   useEffect(() => {
-    if (!session?.user) return;
+    if (!session?.user?.id) return;
 
-    let currentProgress = 0;
+    const recordProgress = async (progress: number, completed: boolean) => {
+      try {
+        await apiRecordReadingProgress(postId, progress, completed);
+      } catch (error) {
+        console.error('Failed to record reading progress:', error);
+      }
+    };
 
     const calculateProgress = () => {
+      // Check if user is still logged in
+      if (!sessionRef.current?.user?.id) return;
+
       const windowHeight = window.innerHeight;
       const documentHeight = document.documentElement.scrollHeight;
       const scrollTop = window.scrollY;
 
       // Calculate how far the user has scrolled as a percentage
-      currentProgress = Math.min(
+      const progress = Math.min(
         Math.round((scrollTop / (documentHeight - windowHeight)) * 100),
         100
       );
 
+      currentProgressRef.current = progress;
+
       // If user has read at least 70% of the post, record it as completed
-      if (currentProgress >= 70 && !hasRecorded) {
-        recordReadingProgress(currentProgress, true);
+      if (progress >= 70 && !hasRecordedRef.current) {
+        recordProgress(progress, true);
         setHasRecorded(true);
-      } else if (currentProgress >= 30) {
+      } else if (progress >= 30) {
         // Otherwise, periodically update progress
-        recordReadingProgress(currentProgress, false);
+        recordProgress(progress, false);
       }
     };
 
@@ -67,11 +76,11 @@ export function ReadingProgressTracker({ postId }: ReadingProgressTrackerProps) 
       debouncedCalculateProgress.cancel();
 
       // Record final progress when component unmounts
-      if (currentProgress > 0) {
-        recordReadingProgress(currentProgress, currentProgress >= 70);
+      if (currentProgressRef.current > 0 && sessionRef.current?.user?.id) {
+        recordProgress(currentProgressRef.current, currentProgressRef.current >= 70);
       }
     };
-  }, [session, postId, recordReadingProgress, hasRecorded]); // Include hasRecorded in dependencies
+  }, [session?.user?.id, postId]); // Minimal, stable dependencies
 
   // This component doesn't render anything visible
   return null;

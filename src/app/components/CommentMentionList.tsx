@@ -98,7 +98,7 @@ export const CommentMentionList = forwardRef<MentionListRef, MentionListProps>((
               )}
               <div className="flex flex-col">
                 <span className="font-medium">{item.label}</span>
-                <span className="text-xs text-muted-foreground">@{item.label}</span>
+                <span className="text-xs text-muted-foreground">@{item.label.toLowerCase().replace(/\s+/g, '')}</span>
               </div>
             </button>
           ))}
