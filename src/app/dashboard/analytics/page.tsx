@@ -6,18 +6,29 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/components/ui/tabs";
 import { DashboardHeader } from "@/app/components/dashboard/DashboardHeader";
 import { DashboardShell } from "@/app/components/dashboard/DashboardShell";
-import { BarChart, LineChart, PieChart, TrendingUp, Users, Eye, MessageSquare, ThumbsUp, Loader2 } from "lucide-react";
-import { useUserPosts } from "@/hooks/use-users";
+import { BarChart, PieChart, TrendingUp, Users, Eye, MessageSquare, ThumbsUp, Loader2 } from "lucide-react";
+import { useDashboardStats } from "@/hooks/use-dashboard";
+import { usePostAnalytics, useEngagementAnalytics } from "@/hooks/use-analytics";
+import { EngagementChart } from "@/app/components/analytics/EngagementChart";
+import { CategoryChart } from "@/app/components/analytics/CategoryChart";
 
 export default function AnalyticsPage() {
   const { data: session, status } = useSession();
 
-  const { data: postsData, isLoading, error } = useUserPosts(
-    session?.user?.id || "",
-    { status: "published" },
-    !!session?.user?.id
-  );
-  const posts = postsData?.posts || [];
+  // Fetch dashboard stats for analytics
+  const { data: stats, isLoading: statsLoading, error: statsError } = useDashboardStats();
+
+  // Fetch post analytics for detailed insights
+  const { data: analyticsData, isLoading: analyticsLoading, error: analyticsError } = usePostAnalytics({
+    limit: 10
+  });
+
+  // Fetch engagement analytics for charts
+  const { data: engagementData, isLoading: engagementLoading, error: engagementError } = useEngagementAnalytics();
+
+  const posts = analyticsData?.posts || [];
+  const isLoading = statsLoading || analyticsLoading || engagementLoading;
+  const error = statsError || analyticsError || engagementError;
 
   if (status === "loading") {
     return (
@@ -61,17 +72,14 @@ export default function AnalyticsPage() {
     );
   }
 
-  // Check if posts is an array before using reduce
-  const isPostsArray = Array.isArray(posts);
+  // Use real analytics data from dashboard stats
+  const totalViews = stats?.totalViews || 0;
+  const totalLikes = stats?.totalLikes || 0;
+  const totalComments = stats?.totalComments || 0;
+  const publishedPosts = stats?.publishedPosts || 0;
 
-  // Calculate total views, likes, and comments
-  // Note: User posts API doesn't include these metrics, so we'll show 0 for now
-  const totalViews = 0;
-  const totalLikes = 0;
-  const totalComments = 0;
-
-  // Find the most popular post (by title for now since we don't have metrics)
-  const mostPopularPost = isPostsArray && posts.length > 0 ? posts[0] : null;
+  // Find the most popular post (posts are already sorted by viewCount desc)
+  const mostPopularPost = Array.isArray(posts) && posts.length > 0 ? posts[0] : null;
 
   return (
     <DashboardShell>
@@ -122,11 +130,11 @@ export default function AnalyticsPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Posts</CardTitle>
+            <CardTitle className="text-sm font-medium">Published Posts</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{posts.length}</div>
+            <div className="text-2xl font-bold">{publishedPosts}</div>
             <p className="text-xs text-muted-foreground">
               Total published posts
             </p>
@@ -137,7 +145,7 @@ export default function AnalyticsPage() {
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="posts">Post Performance</TabsTrigger>
           <TabsTrigger value="engagement">Engagement</TabsTrigger>
         </TabsList>
 
@@ -154,7 +162,15 @@ export default function AnalyticsPage() {
                 <div className="space-y-2">
                   <h3 className="font-medium">{mostPopularPost.title}</h3>
                   <div className="text-sm text-muted-foreground">
-                    Published: {new Date(mostPopularPost.createdAt).toLocaleDateString()}
+                    Published: {mostPopularPost.publishedAt
+                      ? new Date(mostPopularPost.publishedAt).toLocaleDateString()
+                      : new Date(mostPopularPost.createdAt).toLocaleDateString()}
+                  </div>
+                  <div className="flex gap-4 text-sm">
+                    <span className="text-blue-600">{mostPopularPost.viewCount} views</span>
+                    <span className="text-green-600">{mostPopularPost.likeCount} likes</span>
+                    <span className="text-orange-600">{mostPopularPost.commentCount} comments</span>
+                    <span className="text-purple-600">{mostPopularPost.engagementRate}% engagement</span>
                   </div>
                 </div>
               ) : (
@@ -175,7 +191,7 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {posts.length > 0
+                  {totalViews > 0
                     ? `${((totalLikes + totalComments) / totalViews * 100).toFixed(1)}%`
                     : "0%"}
                 </div>
@@ -194,7 +210,7 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {posts.length > 0 ? Math.round(totalViews / posts.length) : 0}
+                  {publishedPosts > 0 ? Math.round(totalViews / publishedPosts) : 0}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Average views across all posts
@@ -211,7 +227,7 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {posts.length > 0 ? (totalComments / posts.length).toFixed(1) : 0}
+                  {publishedPosts > 0 ? (totalComments / publishedPosts).toFixed(1) : 0}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Average comments across all posts
@@ -221,21 +237,69 @@ export default function AnalyticsPage() {
           </div>
         </TabsContent>
 
-        <TabsContent value="analytics" className="space-y-4">
+        <TabsContent value="posts" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Views Over Time</CardTitle>
+              <CardTitle>Post Performance</CardTitle>
               <CardDescription>
-                This chart will show your post views over time
+                Detailed analytics for your published posts
               </CardDescription>
             </CardHeader>
-            <CardContent className="pl-2">
-              <div className="flex h-[200px] items-center justify-center">
-                <LineChart className="h-16 w-16 text-muted-foreground" />
-                <div className="ml-4 text-sm text-muted-foreground">
-                  Advanced analytics will be available in a future update
+            <CardContent>
+              {posts.length > 0 ? (
+                <div className="space-y-4">
+                  {posts.map((post) => (
+                    <div key={post.id} className="border rounded-lg p-4 space-y-2">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <h3 className="font-medium text-sm">{post.title}</h3>
+                          <p className="text-xs text-muted-foreground">
+                            Published: {post.publishedAt
+                              ? new Date(post.publishedAt).toLocaleDateString()
+                              : new Date(post.createdAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm font-medium">{post.engagementRate}%</div>
+                          <div className="text-xs text-muted-foreground">engagement</div>
+                        </div>
+                      </div>
+                      <div className="flex gap-4 text-xs">
+                        <span className="flex items-center gap-1">
+                          <Eye className="h-3 w-3" />
+                          {post.viewCount} views
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <ThumbsUp className="h-3 w-3" />
+                          {post.likeCount} likes
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <MessageSquare className="h-3 w-3" />
+                          {post.commentCount} comments
+                        </span>
+                      </div>
+                      {post.categories.length > 0 && (
+                        <div className="flex gap-1 flex-wrap">
+                          {post.categories.map((category) => (
+                            <span key={category.id} className="text-xs bg-gray-100 px-2 py-1 rounded">
+                              {category.name}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              </div>
+              ) : (
+                <div className="flex h-[200px] items-center justify-center">
+                  <div className="text-center">
+                    <TrendingUp className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                    <div className="text-sm text-muted-foreground">
+                      No published posts yet. Create your first post to see analytics!
+                    </div>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -246,16 +310,22 @@ export default function AnalyticsPage() {
               <CardHeader>
                 <CardTitle>Engagement by Post</CardTitle>
                 <CardDescription>
-                  Likes and comments distribution
+                  Views vs engagement for top performing posts
                 </CardDescription>
               </CardHeader>
-              <CardContent className="pl-2">
-                <div className="flex h-[200px] items-center justify-center">
-                  <BarChart className="h-16 w-16 text-muted-foreground" />
-                  <div className="ml-4 text-sm text-muted-foreground">
-                    Advanced analytics will be available in a future update
+              <CardContent>
+                {engagementData?.engagementByPost ? (
+                  <EngagementChart data={engagementData.engagementByPost} />
+                ) : (
+                  <div className="flex h-[200px] items-center justify-center">
+                    <div className="text-center">
+                      <BarChart className="h-16 w-16 text-muted-foreground mx-auto mb-2" />
+                      <div className="text-sm text-muted-foreground">
+                        {isLoading ? "Loading engagement data..." : "No engagement data available"}
+                      </div>
+                    </div>
                   </div>
-                </div>
+                )}
               </CardContent>
             </Card>
 
@@ -263,19 +333,80 @@ export default function AnalyticsPage() {
               <CardHeader>
                 <CardTitle>Category Distribution</CardTitle>
                 <CardDescription>
-                  Posts by category
+                  Posts distribution across categories
                 </CardDescription>
               </CardHeader>
-              <CardContent className="pl-2">
-                <div className="flex h-[200px] items-center justify-center">
-                  <PieChart className="h-16 w-16 text-muted-foreground" />
-                  <div className="ml-4 text-sm text-muted-foreground">
-                    Advanced analytics will be available in a future update
+              <CardContent>
+                {engagementData?.categoryDistribution ? (
+                  <CategoryChart data={engagementData.categoryDistribution} />
+                ) : (
+                  <div className="flex h-[200px] items-center justify-center">
+                    <div className="text-center">
+                      <PieChart className="h-16 w-16 text-muted-foreground mx-auto mb-2" />
+                      <div className="text-sm text-muted-foreground">
+                        {isLoading ? "Loading category data..." : "No category data available"}
+                      </div>
+                    </div>
                   </div>
-                </div>
+                )}
               </CardContent>
             </Card>
           </div>
+
+          {/* Additional Engagement Metrics */}
+          {engagementData?.summary && (
+            <div className="grid gap-4 md:grid-cols-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">Avg. Engagement Rate</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{engagementData.summary.averageEngagementRate}%</div>
+                  <p className="text-xs text-muted-foreground">
+                    Across all posts
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">Total Engagement</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {engagementData.summary.totalLikes + engagementData.summary.totalComments}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Likes + Comments
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">Active Categories</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{engagementData.summary.totalCategories}</div>
+                  <p className="text-xs text-muted-foreground">
+                    With published posts
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">Content Reach</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{engagementData.summary.totalViews}</div>
+                  <p className="text-xs text-muted-foreground">
+                    Total views
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
     </DashboardShell>

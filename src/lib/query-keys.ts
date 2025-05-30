@@ -123,4 +123,11 @@ export const queryKeys = {
     metadata: (postId: string) => [...queryKeys.seo.all, 'metadata', postId] as const,
     analysis: (metadata: Record<string, unknown>) => [...queryKeys.seo.all, 'analysis', metadata] as const,
   },
+
+  // Analytics
+  analytics: {
+    all: ['analytics'] as const,
+    posts: (filters: QueryFilters) => [...queryKeys.analytics.all, 'posts', filters] as const,
+    engagement: () => [...queryKeys.analytics.all, 'engagement'] as const,
+  },
 } as const;
