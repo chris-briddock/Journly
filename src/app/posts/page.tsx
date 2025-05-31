@@ -19,7 +19,7 @@ export default async function PostsPage({
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Login Required</h1>
-          <p className="mb-4">You need to be logged in to browse articles.</p>
+          <p className="mb-4">You need to be logged in to browse posts.</p>
           <div className="flex justify-center">
             <a
               href="/login?from=/posts"

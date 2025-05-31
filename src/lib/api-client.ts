@@ -72,7 +72,7 @@ async function apiRequest<T>(
   }
 
   if (!response.ok) {
-    let errorMessage = `API Error: ${response.status} ${response.statusText}`;
+    let errorMessage = `${response.statusText}`;
 
     // Try to get more specific error message from response body
     try {

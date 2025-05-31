@@ -130,4 +130,11 @@ export const queryKeys = {
     posts: (filters: QueryFilters) => [...queryKeys.analytics.all, 'posts', filters] as const,
     engagement: () => [...queryKeys.analytics.all, 'engagement'] as const,
   },
+
+  // Authentication
+  auth: {
+    all: ['auth'] as const,
+    resetToken: (token: string) => [...queryKeys.auth.all, 'resetToken', token] as const,
+    verificationToken: (token: string) => [...queryKeys.auth.all, 'verificationToken', token] as const,
+  },
 } as const;
