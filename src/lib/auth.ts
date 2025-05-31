@@ -41,6 +41,11 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
           throw new Error("Incorrect password. Please try again");
         }
 
+        // Check if email is verified
+        if (!user.emailVerified) {
+          throw new Error("EMAIL_NOT_VERIFIED");
+        }
+
         return {
           id: user.id,
           email: user.email,
@@ -58,6 +63,10 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
     signIn: "/login",
   },
   callbacks: {
+    async signIn() {
+      // Allow all sign-ins to proceed - error handling is done in the authorize function
+      return true;
+    },
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.sub || '';

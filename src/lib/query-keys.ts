@@ -73,7 +73,7 @@ export const queryKeys = {
   dashboard: {
     all: ['dashboard'] as const,
     stats: () => [...queryKeys.dashboard.all, 'stats'] as const,
-    recentPosts: () => [...queryKeys.dashboard.all, 'recentPosts'] as const,
+    recentPosts: (limit?: number) => [...queryKeys.dashboard.all, 'recentPosts', limit] as const,
   },
 
   // Notifications
@@ -122,5 +122,19 @@ export const queryKeys = {
     all: ['seo'] as const,
     metadata: (postId: string) => [...queryKeys.seo.all, 'metadata', postId] as const,
     analysis: (metadata: Record<string, unknown>) => [...queryKeys.seo.all, 'analysis', metadata] as const,
+  },
+
+  // Analytics
+  analytics: {
+    all: ['analytics'] as const,
+    posts: (filters: QueryFilters) => [...queryKeys.analytics.all, 'posts', filters] as const,
+    engagement: () => [...queryKeys.analytics.all, 'engagement'] as const,
+  },
+
+  // Authentication
+  auth: {
+    all: ['auth'] as const,
+    resetToken: (token: string) => [...queryKeys.auth.all, 'resetToken', token] as const,
+    verificationToken: (token: string) => [...queryKeys.auth.all, 'verificationToken', token] as const,
   },
 } as const;

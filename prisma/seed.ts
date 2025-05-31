@@ -9,12 +9,12 @@ async function main() {
 
   // Create a system user for categories with admin role
   const systemUser = await prisma.user.upsert({
-    where: { email: 'system@journly.com' },
+    where: { email: 'system@journly.site' },
     update: {
       role: 'admin'
     },
     create: {
-      email: 'system@journly.com',
+      email: 'system@journly.site',
       name: 'System',
       role: 'admin'
     },
@@ -25,17 +25,19 @@ async function main() {
   // Create an admin user with password and unlimited subscription
   const hashedPassword = await bcrypt.hash(`${process.env.ADMIN_PASSWORD}`, 10);
   const adminUser = await prisma.user.upsert({
-    where: { email: 'admin@journly.com' },
+    where: { email: 'chris@journly.site' },
     update: {
       role: 'admin',
-      monthlyArticleLimit: 999999 // Effectively unlimited articles
+      monthlyArticleLimit: 999999, // Effectively unlimited articles
+      emailVerified: new Date() // Admin should be pre-verified
     },
     create: {
-      email: 'admin@journly.com',
+      email: 'chris@journly.site',
       name: 'Admin',
       password: hashedPassword,
       role: 'admin',
-      monthlyArticleLimit: 999999 // Effectively unlimited articles
+      monthlyArticleLimit: 999999, // Effectively unlimited articles
+      emailVerified: new Date() // Admin should be pre-verified
     },
   });
 

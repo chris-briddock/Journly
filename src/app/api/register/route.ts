@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { createFreeSubscription } from '@/lib/services/subscription-service';
+import { createEmailVerificationToken } from '@/lib/auth-tokens';
+import { sendEmailVerificationEmail } from '@/lib/email';
 
 // Force Node.js runtime for subscription service compatibility
 export const runtime = 'nodejs';
@@ -39,6 +41,8 @@ export async function POST(request: NextRequest) {
         name,
         email,
         password: hashedPassword,
+        // Email is not verified yet
+        emailVerified: null,
       },
       select: {
         id: true,
@@ -51,7 +55,35 @@ export async function POST(request: NextRequest) {
     // Create a free subscription for the new user
     await createFreeSubscription(user.id);
 
-    return NextResponse.json(user, { status: 201 });
+    // Send email verification
+    try {
+      const verificationToken = await createEmailVerificationToken(user.id, user.email);
+      const emailResult = await sendEmailVerificationEmail(
+        user.email,
+        verificationToken,
+        user.name || undefined
+      );
+
+      if (!emailResult.success) {
+        console.error('[Registration] Failed to send verification email:', emailResult.error);
+        // Don't fail registration if email fails - user can resend later
+      } else {
+        console.log('[Registration] Verification email sent successfully:', {
+          userId: user.id,
+          email: user.email,
+          emailId: emailResult.id
+        });
+      }
+    } catch (emailError) {
+      console.error('[Registration] Error sending verification email:', emailError);
+      // Don't fail registration if email fails
+    }
+
+    return NextResponse.json({
+      ...user,
+      message: 'Account created successfully! Please check your email to verify your account.',
+      emailVerificationSent: true
+    }, { status: 201 });
   } catch (error) {
     console.error('Error registering user:', error);
     return NextResponse.json(

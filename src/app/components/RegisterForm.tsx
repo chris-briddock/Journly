@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
 import { useForm } from "react-hook-form";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { useRegisterUser } from "@/hooks/use-users";
@@ -25,11 +24,7 @@ type FormValues = {
   password: string;
 };
 
-interface RegisterFormProps {
-  from?: string;
-}
-
-export default function RegisterForm({ from }: RegisterFormProps) {
+export default function RegisterForm() {
   const router = useRouter();
   const [error, setError] = useState("");
 
@@ -50,16 +45,11 @@ export default function RegisterForm({ from }: RegisterFormProps) {
     // Use TanStack Query mutation
     registerUserMutation.mutate(values, {
       onSuccess: async () => {
-        // Sign in the user after successful registration
-        await signIn("credentials", {
-          redirect: false,
-          email: values.email,
-          password: values.password,
-        });
+        // Store email in sessionStorage for the success page
+        sessionStorage.setItem("registered_email", values.email);
 
-        // Redirect to the intended page or dashboard
-        const redirectTo = from && from !== '/login' ? from : '/dashboard';
-        router.push(redirectTo);
+        // Redirect to registration success page
+        router.push("/auth/register-success");
         router.refresh();
       },
       onError: (error: Error) => {

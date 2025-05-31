@@ -7,14 +7,13 @@ import { Button } from '@/app/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/app/components/ui/card';
 import { Skeleton } from '@/app/components/ui/skeleton';
 import { Badge } from '@/app/components/ui/badge';
-import { useDashboardStats } from '@/hooks/use-dashboard';
-import { useRecentPosts } from '@/hooks/use-posts';
+import { useDashboardStats, useDashboardRecentPosts } from '@/hooks/use-dashboard';
 import { useScheduledPosts } from '@/hooks/use-posts';
 
 export default function DashboardContent() {
   // Use TanStack Query hooks
   const { data: stats, isLoading: statsLoading, error: statsError } = useDashboardStats();
-  const { data: recentPosts = [], isLoading: postsLoading, error: postsError } = useRecentPosts(5);
+  const { data: recentPosts = [], isLoading: postsLoading, error: postsError } = useDashboardRecentPosts(5);
   const { data: scheduledData, isLoading: scheduledLoading, error: scheduledError } = useScheduledPosts({ limit: 5 });
 
   const loading = statsLoading || postsLoading || scheduledLoading;

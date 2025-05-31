@@ -34,7 +34,7 @@ export default async function RegisterPage({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <RegisterForm from={params.from} />
+          <RegisterForm />
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
           <div className="text-sm text-muted-foreground text-center">
