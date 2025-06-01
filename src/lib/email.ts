@@ -6,7 +6,7 @@ const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KE
 // Email configuration
 const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@journly.site';
 const APP_NAME = 'Journly';
-const APP_URL = process.env.VERCEL_URL || 'http://localhost:3000';
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
 export interface EmailOptions {
   to: string;
