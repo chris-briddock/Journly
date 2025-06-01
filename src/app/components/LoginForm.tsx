@@ -9,6 +9,7 @@ import { z } from "zod";
 import { AlertCircle, Loader2, Mail, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useResendVerification } from "@/hooks/use-auth";
+import { TwoFactorVerificationForm } from "@/app/components/auth/TwoFactorVerificationForm";
 
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
@@ -52,6 +53,9 @@ export default function LoginForm({ from }: LoginFormProps) {
   const [isEmailNotVerified, setIsEmailNotVerified] = useState(false);
   const [unverifiedEmail, setUnverifiedEmail] = useState("");
   const [resendSuccess, setResendSuccess] = useState(false);
+  const [showTwoFactor, setShowTwoFactor] = useState(false);
+  const [twoFactorUserId, setTwoFactorUserId] = useState("");
+  const [twoFactorCredentials, setTwoFactorCredentials] = useState({ email: "", password: "" });
 
   // Use TanStack Query mutation for resend verification
   const resendVerificationMutation = useResendVerification();
@@ -78,8 +82,46 @@ export default function LoginForm({ from }: LoginFormProps) {
     setError("");
     setIsEmailNotVerified(false);
     setResendSuccess(false);
+    setShowTwoFactor(false);
 
     try {
+      // First, check if the user requires 2FA
+      const checkResponse = await fetch('/api/auth/check-2fa', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: values.email,
+          password: values.password
+        }),
+      });
+
+      if (!checkResponse.ok) {
+        const errorData = await checkResponse.json();
+
+        // Handle email verification error
+        if (errorData.error === "EMAIL_NOT_VERIFIED" || errorData.requiresEmailVerification) {
+          setIsEmailNotVerified(true);
+          setUnverifiedEmail(values.email);
+          setError("Your email address is not verified. Please check your email for a verification link or resend a new one below.");
+          return;
+        }
+
+        // Handle other errors (invalid credentials, etc.)
+        setError(errorData.error || "Login failed");
+        return;
+      }
+
+      const userData = await checkResponse.json();
+
+      // If user requires 2FA, show the 2FA form
+      if (userData.requires2FA) {
+        setTwoFactorUserId(userData.userId);
+        setTwoFactorCredentials({ email: values.email, password: values.password });
+        setShowTwoFactor(true);
+        return;
+      }
+
+      // If no 2FA required, proceed with normal sign-in
       const result = await signIn("credentials", {
         redirect: false,
         email: values.email,
@@ -88,39 +130,6 @@ export default function LoginForm({ from }: LoginFormProps) {
 
       if (result?.error) {
         console.log('[LoginForm] NextAuth error:', result.error);
-
-        // Handle email verification error specifically
-        if (result.error === "EMAIL_NOT_VERIFIED" || result.error.includes("EMAIL_NOT_VERIFIED")) {
-          setIsEmailNotVerified(true);
-          setUnverifiedEmail(values.email);
-          setError("Your email address is not verified. Please check your email for a verification link or resend a new one below.");
-          return;
-        }
-
-        // Check if it's a configuration error that might be masking our custom error
-        if (result.error === "Configuration" || result.error === "CredentialsSignin") {
-          // Try to check if the user exists and is unverified
-          try {
-            const checkResponse = await fetch('/api/auth/check-user', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ email: values.email }),
-            });
-
-            if (checkResponse.ok) {
-              const userData = await checkResponse.json();
-              if (userData.exists && !userData.emailVerified) {
-                setIsEmailNotVerified(true);
-                setUnverifiedEmail(values.email);
-                setError("Your email address is not verified. Please check your email for a verification link or resend a new one below.");
-                return;
-              }
-            }
-          } catch (error) {
-            console.error('[LoginForm] Error checking user verification status:', error);
-          }
-        }
-
         setError(result.error);
         return;
       }
@@ -130,7 +139,8 @@ export default function LoginForm({ from }: LoginFormProps) {
       console.log(`[LoginForm] Login successful, redirecting to: ${redirectTo}`);
       router.push(redirectTo);
       router.refresh();
-    } catch {
+    } catch (error) {
+      console.error('[LoginForm] Login error:', error);
       setError("An unexpected error occurred");
     } finally {
       setIsLoading(false);
@@ -154,6 +164,33 @@ export default function LoginForm({ from }: LoginFormProps) {
       }
     );
   };
+
+  const handleTwoFactorSuccess = () => {
+    // After successful 2FA verification, redirect to dashboard
+    const redirectTo = from && from !== '/login' ? from : '/dashboard';
+    console.log(`[LoginForm] 2FA verification successful, redirecting to: ${redirectTo}`);
+    router.push(redirectTo);
+    router.refresh();
+  };
+
+  const handleTwoFactorCancel = () => {
+    setShowTwoFactor(false);
+    setTwoFactorUserId("");
+    setError("");
+  };
+
+  // Show 2FA verification form if needed
+  if (showTwoFactor && twoFactorUserId) {
+    return (
+      <TwoFactorVerificationForm
+        userId={twoFactorUserId}
+        email={twoFactorCredentials.email}
+        password={twoFactorCredentials.password}
+        onVerificationSuccess={handleTwoFactorSuccess}
+        onCancel={handleTwoFactorCancel}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">

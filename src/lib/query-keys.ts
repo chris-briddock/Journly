@@ -136,5 +136,6 @@ export const queryKeys = {
     all: ['auth'] as const,
     resetToken: (token: string) => [...queryKeys.auth.all, 'resetToken', token] as const,
     verificationToken: (token: string) => [...queryKeys.auth.all, 'verificationToken', token] as const,
+    twoFactorSetup: () => [...queryKeys.auth.all, 'twoFactorSetup'] as const,
   },
 } as const;
