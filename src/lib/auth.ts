@@ -3,6 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { verifyTwoFactorToken } from "@/lib/two-factor";
 
 export const { auth, handlers, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
@@ -11,7 +12,8 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
       name: "Credentials",
       credentials: {
         email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" }
+        password: { label: "Password", type: "password" },
+        twoFactorToken: { label: "2FA Token", type: "text" }
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
@@ -44,6 +46,38 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
         // Check if email is verified
         if (!user.emailVerified) {
           throw new Error("EMAIL_NOT_VERIFIED");
+        }
+
+        // Check if 2FA is enabled for this user
+        // Type assertion is safe here as we know the user object structure from Prisma
+        const userWithTwoFactor = user as typeof user & {
+          twoFactorEnabled?: boolean;
+          twoFactorSecret?: string | null;
+        };
+
+        if (userWithTwoFactor.twoFactorEnabled) {
+          // For 2FA users, we need to verify the TOTP token
+          // The token should be provided in credentials.twoFactorToken
+          const credentialsWithTwoFactor = credentials as typeof credentials & {
+            twoFactorToken?: string;
+          };
+          const twoFactorToken = credentialsWithTwoFactor.twoFactorToken;
+
+          if (!twoFactorToken) {
+            // Return null to indicate authentication failed, but don't throw an error
+            // The frontend will handle this by checking the error message
+            return null;
+          }
+
+          // Verify the 2FA token using the user's secret
+          if (!userWithTwoFactor.twoFactorSecret) {
+            return null;
+          }
+
+          const isValidToken = verifyTwoFactorToken(twoFactorToken, userWithTwoFactor.twoFactorSecret);
+          if (!isValidToken) {
+            return null;
+          }
         }
 
         return {

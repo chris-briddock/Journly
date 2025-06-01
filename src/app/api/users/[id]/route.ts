@@ -21,6 +21,7 @@ export async function GET(
         followerCount: true,
         followingCount: true,
         postCount: true,
+        twoFactorEnabled: true,
         createdAt: true,
       },
     });
@@ -83,6 +84,7 @@ export async function PATCH(
         followerCount: true,
         followingCount: true,
         postCount: true,
+        twoFactorEnabled: true,
         createdAt: true,
       },
     });

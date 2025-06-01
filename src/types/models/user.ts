@@ -4,7 +4,8 @@ export interface User {
   email: string;
   image: string | null;
   bio: string | null;
-  location: string
+  location: string;
+  twoFactorEnabled?: boolean;
   createdAt: string;
   updatedAt: string;
 }

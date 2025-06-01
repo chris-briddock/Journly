@@ -74,7 +74,9 @@
     "sonner": "^2.0.4",
     "stripe": "^18.2.0",
     "tailwind-merge": "^3.3.0",
-    "zod": "^3.25.42"
+    "zod": "^3.25.42",
+    "speakeasy": "^2.0.0",
+    "qrcode": "^1.5.4"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -91,6 +93,8 @@
     "@types/node": "^22.15.29",
     "@types/react": "^19.1.6",
     "@types/react-dom": "^19.1.5",
+    "@types/speakeasy": "^2.0.10",
+    "@types/qrcode": "^1.5.5",
     "@types/supertest": "^6.0.3",
     "cloc": "^2.4.0-cloc",
     "eslint": "^9",

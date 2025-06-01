@@ -10,6 +10,7 @@ import { UserSettingsForm } from "@/app/components/dashboard/UserSettingsForm";
 import { NotificationSettingsForm } from "@/app/components/dashboard/NotificationSettingsForm";
 import { PasswordUpdateForm } from "@/app/components/dashboard/PasswordUpdateForm";
 import { DisplaySettingsForm } from "@/app/components/dashboard/DisplaySettingsForm";
+import { TwoFactorSettings } from "@/app/components/dashboard/TwoFactorSettings";
 import { useUser } from "@/hooks/use-users";
 
 export default function SettingsPage() {
@@ -53,6 +54,7 @@ export default function SettingsPage() {
       <Tabs defaultValue="account" className="space-y-4">
         <TabsList>
           <TabsTrigger value="account">Account</TabsTrigger>
+          <TabsTrigger value="security">Security</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="display">Display</TabsTrigger>
         </TabsList>
@@ -60,6 +62,10 @@ export default function SettingsPage() {
         <TabsContent value="account" className="space-y-6">
           <UserSettingsForm user={user} />
           <PasswordUpdateForm />
+        </TabsContent>
+
+        <TabsContent value="security" className="space-y-6">
+          <TwoFactorSettings user={user} />
         </TabsContent>
 
         <TabsContent value="notifications">
