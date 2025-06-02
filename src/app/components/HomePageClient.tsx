@@ -6,6 +6,7 @@ import { cleanHtml, truncateText } from "@/lib/cleanHtml";
 import { useRecentPosts } from "@/hooks/use-posts";
 import { usePopularCategories } from "@/hooks/use-categories";
 import { Skeleton } from "@/app/components/ui/skeleton";
+import Footer from "./Footer";
 
 export function HomePageClient() {
   const { data: recentPosts = [], isLoading: postsLoading } = useRecentPosts(10);
@@ -328,27 +329,7 @@ export function HomePageClient() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-gray-200 py-12">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
-              <div>
-                <h3 className="text-2xl font-bold">Journly</h3>
-                <p className="text-muted-foreground mt-2">Where good ideas find you.</p>
-              </div>
-              <div className="flex flex-wrap gap-8">
-                <Link href="/about" className="hover:text-muted-foreground transition">About</Link>
-                <Link href="/contact" className="hover:text-muted-foreground transition">Contact</Link>
-                <Link href="/privacy" className="hover:text-muted-foreground transition">Privacy</Link>
-                <Link href="/terms" className="hover:text-muted-foreground transition">Terms</Link>
-              </div>
-            </div>
-            <div className="border-t border-gray-200 mt-8 pt-8 text-center text-muted-foreground">
-              <p>&copy; 2024 Journly. All rights reserved.</p>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }
