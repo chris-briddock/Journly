@@ -28,10 +28,18 @@ jobs:
 
       - name: Run Prisma Migrate
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL: ${{
+            (github.ref_name == 'main' && secrets.DATABASE_URL_PRODUCTION) ||
+            (github.ref_name == 'preview' && secrets.DATABASE_URL_PREVIEW) ||
+            secrets.DATABASE_URL_DEV
+          }}
         run: npx prisma migrate deploy
 
       - name: Seed Database
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL: ${{
+            (github.ref_name == 'main' && secrets.DATABASE_URL_PRODUCTION) ||
+            (github.ref_name == 'preview' && secrets.DATABASE_URL_PREVIEW) ||
+            secrets.DATABASE_URL_DEV
+          }}
         run: npx prisma db seed
