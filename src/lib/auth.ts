@@ -5,6 +5,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { verifyTwoFactorToken } from "@/lib/two-factor";
+import { createFreeSubscription } from "@/lib/services/subscription-service";
 
 export const { auth, handlers, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
@@ -119,19 +120,26 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
       // Error handling is done in the authorize function
       return true;
     },
-    async session({ session, token }) {
-      if (token && session.user) {
-        session.user.id = token.sub || '';
+    async jwt({ token, user, account }) {
+      // If this is a new OAuth user (first sign in), create a free subscription
+      if (account?.provider === "google" && user?.id) {
+        try {
+          // Check if user already has a subscription
+          const existingSubscription = await prisma.subscription.findUnique({
+            where: { userId: user.id }
+          });
 
-        // Add role from token to session user
-        if (token.role) {
-          session.user.role = token.role as string;
+          // If no subscription exists, create a free one
+          if (!existingSubscription) {
+            console.log('[Auth] Creating free subscription for OAuth user:', user.id);
+            await createFreeSubscription(user.id);
+          }
+        } catch (error) {
+          console.error('[Auth] Error creating subscription for OAuth user:', error);
+          // Don't fail the sign-in if subscription creation fails
         }
       }
-      console.log('Auth callback - Session user:', session.user);
-      return session;
-    },
-    async jwt({ token, user }) {
+
       if (user) {
         token.id = user.id;
 
@@ -149,6 +157,18 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
       }
       console.log('Auth callback - JWT token:', token);
       return token;
+    },
+    async session({ session, token }) {
+      if (token && session.user) {
+        session.user.id = token.sub || '';
+
+        // Add role from token to session user
+        if (token.role) {
+          session.user.role = token.role as string;
+        }
+      }
+      console.log('Auth callback - Session user:', session.user);
+      return session;
     },
   },
   // Add trusted hosts configuration

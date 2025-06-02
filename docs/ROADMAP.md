@@ -126,7 +126,7 @@
 - ✅ Password reset via email
 - ✅ User account confirmation via email
 - ✅ Two-factor authentication (2FA)
-- ❌ Enhanced social logins (Google, Microsoft, GitHub)
+- ✅ Enhanced social logins (Google, Microsoft, GitHub)
 - ❌ Account security settings and session management
 
 ## Phase 3: Premium Features - ❌ NOT STARTED

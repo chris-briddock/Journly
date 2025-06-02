@@ -10,6 +10,7 @@ import { AlertCircle, Loader2, Mail, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useResendVerification } from "@/hooks/use-auth";
 import { TwoFactorVerificationForm } from "@/app/components/auth/TwoFactorVerificationForm";
+import { GoogleIcon } from "@/app/components/icons/Google";
 
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
@@ -314,18 +315,32 @@ export default function LoginForm({ from }: LoginFormProps) {
         </form>
       </Form>
 
+      {providers && Object.values(providers).filter((provider) => provider.id !== "credentials").length > 0 && (
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+          </div>
+        </div>
+      )}
+
       {providers && Object.values(providers)
         .filter((provider) => provider.id !== "credentials")
         .map((provider) => {
           const callbackUrl = from && from !== '/login' ? from : '/dashboard';
+          const isGoogle = provider.id === 'google';
+
           return (
             <Button
               key={provider.id}
               variant="outline"
-              className="w-full"
+              className="w-full flex items-center justify-center gap-3 border-gray-300 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800"
               onClick={() => signIn(provider.id, { callbackUrl })}
             >
-              Sign in with {provider.name}
+              {isGoogle && <GoogleIcon className="w-5 h-5" />}
+              <span>Sign in with {provider.name}</span>
             </Button>
           );
         })}
