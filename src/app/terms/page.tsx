@@ -4,10 +4,10 @@ import { ArrowLeft, FileText, Users, Shield, AlertTriangle, CheckCircle, XCircle
 import Footer from '@/app/components/Footer';
 
 export const metadata: Metadata = {
-  title: 'Terms of Service - Journly',
+  title: 'Terms of Service',
   description: 'Read our terms of service to understand the rules and guidelines for using Journly.',
   openGraph: {
-    title: 'Terms of Service - Journly',
+    title: 'Terms of Service',
     description: 'Read our terms of service to understand the rules and guidelines for using Journly.',
     type: 'website',
   },

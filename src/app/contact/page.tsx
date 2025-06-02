@@ -4,10 +4,10 @@ import { ArrowLeft, Mail, MessageCircle, HelpCircle, Bug, Lightbulb } from 'luci
 import Footer from '@/app/components/Footer';
 
 export const metadata: Metadata = {
-  title: 'Contact Us - Journly',
+  title: 'Contact Us',
   description: 'Get in touch with the Journly team. We\'re here to help with questions, feedback, and support.',
   openGraph: {
-    title: 'Contact Us - Journly',
+    title: 'Contact Us',
     description: 'Get in touch with the Journly team. We\'re here to help with questions, feedback, and support.',
     type: 'website',
   },

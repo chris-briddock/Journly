@@ -129,7 +129,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     console.error('Error generating metadata for post:', error);
 
     return {
-      title: "Post Not Found - Journly",
+      title: "Post Not Found",
       description: "The requested post could not be found.",
     };
   }
