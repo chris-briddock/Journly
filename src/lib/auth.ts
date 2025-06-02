@@ -1,5 +1,6 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import Google from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
@@ -8,6 +9,15 @@ import { verifyTwoFactorToken } from "@/lib/two-factor";
 export const { auth, handlers, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   providers: [
+    Google({
+      authorization: {
+        params: {
+          prompt: "consent",
+          access_type: "offline",
+          response_type: "code",
+        },
+      },
+    }),
     CredentialsProvider({
       name: "Credentials",
       credentials: {
@@ -97,8 +107,16 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
     signIn: "/login",
   },
   callbacks: {
-    async signIn() {
-      // Allow all sign-ins to proceed - error handling is done in the authorize function
+    async signIn({ account, profile }) {
+      // For OAuth providers (like Google), verify email is verified
+      if (account?.provider === "google") {
+        // Google provides email_verified property
+        const googleProfile = profile as { email_verified?: boolean; email?: string };
+        return googleProfile.email_verified === true;
+      }
+
+      // For credentials provider, allow all sign-ins to proceed
+      // Error handling is done in the authorize function
       return true;
     },
     async session({ session, token }) {

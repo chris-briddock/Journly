@@ -10,6 +10,9 @@ jest.mock('@/lib/auth', () => ({
     },
     providers: [
       {
+        id: 'google',
+      },
+      {
         id: 'credentials',
       },
     ],
@@ -35,8 +38,9 @@ describe('Auth Configuration', () => {
   });
 
   it('has the correct providers configuration', () => {
-    expect(authConfig.providers).toHaveLength(1);
-    expect(authConfig.providers[0].id).toBe('credentials');
+    expect(authConfig.providers).toHaveLength(2);
+    expect(authConfig.providers[0].id).toBe('google');
+    expect(authConfig.providers[1].id).toBe('credentials');
   });
 
   it('has the correct callbacks configuration', () => {
