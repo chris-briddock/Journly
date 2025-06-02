@@ -40,11 +40,9 @@ DATABASE_URL="postgresql://username:password@localhost:5432/journly"
 NEXTAUTH_URL="http://localhost:3000"
 NEXTAUTH_SECRET="your-secret-key"
 
-# Optional OAuth providers
-GOOGLE_CLIENT_ID=""
-GOOGLE_CLIENT_SECRET=""
-GITHUB_ID=""
-GITHUB_SECRET=""
+# OAuth Providers
+AUTH_GOOGLE_ID="your-google-client-id"
+AUTH_GOOGLE_SECRET="your-google-client-secret"
 ```
 
 4. Run database migrations:
@@ -58,6 +56,37 @@ npx prisma migrate dev
 ```bash
 npm run dev
 ```
+
+## Setting up Google OAuth (Optional)
+
+To enable Google OAuth authentication:
+
+1. **Create a Google Cloud Project**
+   - Go to the [Google Cloud Console](https://console.cloud.google.com/)
+   - Create a new project or select an existing one
+
+2. **Enable Google+ API**
+   - In the Google Cloud Console, go to "APIs & Services" > "Library"
+   - Search for "Google+ API" and enable it
+
+3. **Create OAuth 2.0 Credentials**
+   - Go to "APIs & Services" > "Credentials"
+   - Click "Create Credentials" > "OAuth 2.0 Client IDs"
+   - Choose "Web application" as the application type
+   - Add authorized redirect URIs:
+     - For development: `http://localhost:3000/api/auth/callback/google`
+     - For production: `https://yourdomain.com/api/auth/callback/google`
+
+4. **Configure Environment Variables**
+   - Copy the Client ID and Client Secret from Google Cloud Console
+   - Add them to your `.env.local` file:
+
+   ```bash
+   AUTH_GOOGLE_ID="your-google-client-id"
+   AUTH_GOOGLE_SECRET="your-google-client-secret"
+   ```
+
+5. **Restart your development server** for the changes to take effect
 
 ## Building for Production
 
