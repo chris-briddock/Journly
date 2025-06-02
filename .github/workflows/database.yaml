@@ -26,20 +26,24 @@ jobs:
       - name: Generate Prisma Client
         run: npx prisma generate
 
+      - name: Set DATABASE_URL
+        id: set_db_url # Assign an ID to this step to reference its outputs
+        run: |
+          if [ "${{ github.ref_name }}" == "main" ]; then
+            echo "DB_URL=${{ secrets.DATABASE_URL_PRODUCTION }}" >> $GITHUB_ENV
+          elif [ "${{ github.ref_name }}" == "preview" ]; then
+            echo "DB_URL=${{ secrets.DATABASE_URL_PREVIEW }}" >> $GITHUB_ENV
+          else
+            # Default for 'dev' or any other branch
+            echo "DB_URL=${{ secrets.DATABASE_URL_DEV }}" >> $GITHUB_ENV
+          fi
+
       - name: Run Prisma Migrate
         env:
-          DATABASE_URL: ${{
-            (github.ref_name == 'main' && secrets.DATABASE_URL_PRODUCTION) ||
-            (github.ref_name == 'preview' && secrets.DATABASE_URL_PREVIEW) ||
-            secrets.DATABASE_URL_DEV
-          }}
+          DATABASE_URL: ${{ env.DB_URL }} # Reference the environment variable set in the previous step
         run: npx prisma migrate deploy
 
       - name: Seed Database
         env:
-          DATABASE_URL: ${{
-            (github.ref_name == 'main' && secrets.DATABASE_URL_PRODUCTION) ||
-            (github.ref_name == 'preview' && secrets.DATABASE_URL_PREVIEW) ||
-            secrets.DATABASE_URL_DEV
-          }}
+          DATABASE_URL: ${{ env.DB_URL }} # Reference the environment variable again
         run: npx prisma db seed
