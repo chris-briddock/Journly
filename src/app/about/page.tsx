@@ -4,10 +4,10 @@ import { ArrowLeft, Users, Target, Heart, Zap } from 'lucide-react';
 import Footer from '@/app/components/Footer';
 
 export const metadata: Metadata = {
-  title: 'About Us - Journly',
+  title: 'About Us',
   description: 'Learn about Journly, our mission to democratize content creation, and the team behind the platform.',
   openGraph: {
-    title: 'About Us - Journly',
+    title: 'About Us',
     description: 'Learn about Journly, our mission to democratize content creation, and the team behind the platform.',
     type: 'website',
   },

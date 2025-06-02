@@ -4,10 +4,10 @@ import { ArrowLeft, Shield, Eye, Lock, Database } from 'lucide-react';
 import Footer from '@/app/components/Footer';
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy - Journly',
+  title: 'Privacy Policy',
   description: 'Learn how Journly collects, uses, and protects your personal information. Your privacy is our priority.',
   openGraph: {
-    title: 'Privacy Policy - Journly',
+    title: 'Privacy Policy',
     description: 'Learn how Journly collects, uses, and protects your personal information. Your privacy is our priority.',
     type: 'website',
   },

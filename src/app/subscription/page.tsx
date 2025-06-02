@@ -11,7 +11,7 @@ import { hasActiveSubscription } from "@/lib/services/subscription-service";
 import { SubscriptionButton } from "@/app/components/subscription/SubscriptionButton";
 
 export const metadata: Metadata = {
-  title: "Subscription Plans - Journly",
+  title: "Subscription Plans",
   description: "Choose a subscription plan to access unlimited articles on Journly.",
 };
 
