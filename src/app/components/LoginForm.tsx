@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { signIn, getProviders } from "next-auth/react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,6 +11,8 @@ import Link from "next/link";
 import { useResendVerification } from "@/hooks/use-auth";
 import { TwoFactorVerificationForm } from "@/app/components/auth/TwoFactorVerificationForm";
 import { GoogleIcon } from "@/app/components/icons/Google";
+import { GitHubIcon } from "@/app/components/icons/GitHub";
+import { MicrosoftIcon } from "@/app/components/icons/Microsoft";
 
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
@@ -48,6 +50,7 @@ interface LoginFormProps {
 
 export default function LoginForm({ from }: LoginFormProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [providers, setProviders] = useState<Record<string, Provider> | null>(null);
@@ -68,6 +71,52 @@ export default function LoginForm({ from }: LoginFormProps) {
     };
     loadProviders();
   }, []);
+
+  // Check for OAuth errors in URL parameters
+  useEffect(() => {
+    const oauthError = searchParams.get('error');
+    if (oauthError) {
+      switch (oauthError) {
+        case 'OAuthAccountNotLinked':
+          setError("An account with this email already exists. The OAuth account has been automatically linked to your existing account. Please try signing in again.");
+          break;
+        case 'OAuthSignin':
+          setError("There was an error signing in with the OAuth provider. Please try again.");
+          break;
+        case 'OAuthCallback':
+          setError("There was an error during the OAuth callback. Please try again.");
+          break;
+        case 'OAuthCreateAccount':
+          setError("There was an error creating your account with the OAuth provider. Please try again.");
+          break;
+        case 'EmailCreateAccount':
+          setError("There was an error creating your account. Please try again.");
+          break;
+        case 'Callback':
+          setError("There was an error during authentication. Please try again.");
+          break;
+        case 'OAuthProfile':
+          setError("There was an error retrieving your profile from the OAuth provider. Please try again.");
+          break;
+        case 'EmailSignin':
+          setError("There was an error sending the verification email. Please try again.");
+          break;
+        case 'CredentialsSignin':
+          setError("Invalid email or password. Please check your credentials and try again.");
+          break;
+        case 'SessionRequired':
+          setError("You must be signed in to access this page.");
+          break;
+        default:
+          setError("An authentication error occurred. Please try again.");
+      }
+
+      // Clear the error from URL after showing it
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('error');
+      router.replace(newUrl.pathname + newUrl.search, { scroll: false });
+    }
+  }, [searchParams, router]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(loginSchema),
@@ -330,7 +379,28 @@ export default function LoginForm({ from }: LoginFormProps) {
         .filter((provider) => provider.id !== "credentials")
         .map((provider) => {
           const callbackUrl = from && from !== '/login' ? from : '/dashboard';
-          const isGoogle = provider.id === 'google';
+
+          const getProviderIcon = (providerId: string) => {
+            switch (providerId) {
+              case 'google':
+                return <GoogleIcon className="w-5 h-5" />;
+              case 'github':
+                return <GitHubIcon className="w-5 h-5" />;
+              case 'microsoft-entra-id':
+                return <MicrosoftIcon className="w-5 h-5" />;
+              default:
+                return null;
+            }
+          };
+
+          const getProviderName = (providerId: string, providerName: string) => {
+            switch (providerId) {
+              case 'microsoft-entra-id':
+                return 'Microsoft';
+              default:
+                return providerName;
+            }
+          };
 
           return (
             <Button
@@ -339,8 +409,8 @@ export default function LoginForm({ from }: LoginFormProps) {
               className="w-full flex items-center justify-center gap-3 border-gray-300 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800"
               onClick={() => signIn(provider.id, { callbackUrl })}
             >
-              {isGoogle && <GoogleIcon className="w-5 h-5" />}
-              <span>Sign in with {provider.name}</span>
+              {getProviderIcon(provider.id)}
+              <span>Sign in with {getProviderName(provider.id, provider.name)}</span>
             </Button>
           );
         })}

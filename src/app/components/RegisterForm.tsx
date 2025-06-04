@@ -7,6 +7,8 @@ import { AlertCircle, Loader2 } from "lucide-react";
 import { signIn, getProviders } from "next-auth/react";
 import { useRegisterUser } from "@/hooks/use-users";
 import { GoogleIcon } from "@/app/components/icons/Google";
+import { GitHubIcon } from "@/app/components/icons/GitHub";
+import { MicrosoftIcon } from "@/app/components/icons/Microsoft";
 
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -167,7 +169,27 @@ export default function RegisterForm() {
       {providers && Object.values(providers)
         .filter((provider) => provider.id !== "credentials")
         .map((provider) => {
-          const isGoogle = provider.id === 'google';
+          const getProviderIcon = (providerId: string) => {
+            switch (providerId) {
+              case 'google':
+                return <GoogleIcon className="w-5 h-5" />;
+              case 'github':
+                return <GitHubIcon className="w-5 h-5" />;
+              case 'microsoft-entra-id':
+                return <MicrosoftIcon className="w-5 h-5" />;
+              default:
+                return null;
+            }
+          };
+
+          const getProviderName = (providerId: string, providerName: string) => {
+            switch (providerId) {
+              case 'microsoft-entra-id':
+                return 'Microsoft';
+              default:
+                return providerName;
+            }
+          };
 
           return (
             <Button
@@ -176,8 +198,8 @@ export default function RegisterForm() {
               className="w-full flex items-center justify-center gap-3 border-gray-300 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800"
               onClick={() => signIn(provider.id, { callbackUrl: '/dashboard' })}
             >
-              {isGoogle && <GoogleIcon className="w-5 h-5" />}
-              <span>Register with {provider.name}</span>
+              {getProviderIcon(provider.id)}
+              <span>Register with {getProviderName(provider.id, provider.name)}</span>
             </Button>
           );
         })}
