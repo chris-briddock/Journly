@@ -57,9 +57,11 @@ npx prisma migrate dev
 npm run dev
 ```
 
-## Setting up Google OAuth (Optional)
+## Setting up OAuth Providers (Optional)
 
-To enable Google OAuth authentication:
+The application supports multiple OAuth providers. Configure only the ones you want to use:
+
+### Google OAuth
 
 1. **Create a Google Cloud Project**
    - Go to the [Google Cloud Console](https://console.cloud.google.com/)
@@ -78,15 +80,48 @@ To enable Google OAuth authentication:
      - For production: `https://yourdomain.com/api/auth/callback/google`
 
 4. **Configure Environment Variables**
-   - Copy the Client ID and Client Secret from Google Cloud Console
-   - Add them to your `.env.local` file:
-
    ```bash
    AUTH_GOOGLE_ID="your-google-client-id"
    AUTH_GOOGLE_SECRET="your-google-client-secret"
    ```
 
-5. **Restart your development server** for the changes to take effect
+### GitHub OAuth
+
+1. **Create a GitHub OAuth App**
+   - Go to GitHub Settings > Developer settings > OAuth Apps
+   - Click "New OAuth App"
+   - Set Authorization callback URL:
+     - For development: `http://localhost:3000/api/auth/callback/github`
+     - For production: `https://yourdomain.com/api/auth/callback/github`
+
+2. **Configure Environment Variables**
+   ```bash
+   AUTH_GITHUB_ID="your-github-client-id"
+   AUTH_GITHUB_SECRET="your-github-client-secret"
+   ```
+
+### Microsoft OAuth (Personal Microsoft Accounts)
+
+1. **Create an Azure AD App Registration**
+   - Go to Azure Portal > Azure Active Directory > App registrations
+   - Click "New registration"
+   - **Important**: Set "Supported account types" to "Personal Microsoft accounts only"
+   - Add redirect URIs:
+     - For development: `http://localhost:3000/api/auth/callback/microsoft-entra-id`
+     - For production: `https://yourdomain.com/api/auth/callback/microsoft-entra-id`
+
+2. **Configure API Permissions**
+   - Add Microsoft Graph permissions: `openid`, `profile`, `email`, `User.Read`
+   - Grant admin consent for these permissions
+
+3. **Configure Environment Variables**
+
+   ```bash
+   AUTH_MICROSOFT_ENTRA_ID_ID="your-microsoft-client-id"
+   AUTH_MICROSOFT_ENTRA_ID_SECRET="your-microsoft-client-secret"
+   ```
+
+**Note:** After configuring any OAuth provider, restart your development server for the changes to take effect.
 
 ## Building for Production
 

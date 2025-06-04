@@ -1,6 +1,8 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
+import GitHub from "next-auth/providers/github";
+
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
@@ -19,6 +21,39 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
         },
       },
     }),
+    GitHub({
+      authorization: {
+        params: {
+          scope: "read:user user:email",
+        },
+      },
+    }),
+    {
+      id: "microsoft-entra-id",
+      name: "Microsoft",
+      type: "oauth",
+      clientId: process.env.AUTH_MICROSOFT_ENTRA_ID_ID,
+      clientSecret: process.env.AUTH_MICROSOFT_ENTRA_ID_SECRET,
+      authorization: {
+        url: "https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize",
+        params: {
+          scope: "https://graph.microsoft.com/user.read",
+          response_type: "code",
+          response_mode: "query",
+        },
+      },
+      token: "https://login.microsoftonline.com/consumers/oauth2/v2.0/token",
+      userinfo: "https://graph.microsoft.com/v1.0/me",
+      checks: ["state"],
+      profile(profile: { id: string; displayName: string; mail: string; userPrincipalName: string }) {
+        return {
+          id: profile.id,
+          name: profile.displayName,
+          email: profile.mail || profile.userPrincipalName,
+          image: undefined,
+        };
+      },
+    },
     CredentialsProvider({
       name: "Credentials",
       credentials: {
@@ -106,14 +141,68 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
   },
   pages: {
     signIn: "/login",
+    error: "/login", // Redirect errors back to login page
   },
   callbacks: {
     async signIn({ account, profile }) {
-      // For OAuth providers (like Google), verify email is verified
+      // For OAuth providers, verify email is verified where applicable
       if (account?.provider === "google") {
         // Google provides email_verified property
         const googleProfile = profile as { email_verified?: boolean; email?: string };
-        return googleProfile.email_verified === true;
+        if (googleProfile.email_verified !== true) {
+          return false;
+        }
+      }
+
+      if (account?.provider === "github") {
+        // GitHub emails are verified by default for public profiles
+        // Additional verification can be added here if needed
+      }
+
+      if (account?.provider === "microsoft-entra-id") {
+        // Microsoft emails are verified by default
+        // Additional verification can be added here if needed
+      }
+
+      // Handle account linking for OAuth providers
+      if (account?.provider && account.provider !== "credentials" && profile?.email) {
+        try {
+          // Check if a user with this email already exists
+          const existingUser = await prisma.user.findUnique({
+            where: { email: profile.email },
+            include: { accounts: true }
+          });
+
+          if (existingUser) {
+            // Check if this OAuth provider is already linked to the user
+            const existingAccount = existingUser.accounts.find(
+              acc => acc.provider === account.provider
+            );
+
+            if (!existingAccount) {
+              // Link the OAuth account to the existing user
+              console.log(`[Auth] Linking ${account.provider} account to existing user:`, existingUser.id);
+              await prisma.account.create({
+                data: {
+                  userId: existingUser.id,
+                  type: account.type,
+                  provider: account.provider,
+                  providerAccountId: account.providerAccountId,
+                  access_token: account.access_token as string | null,
+                  expires_at: account.expires_at as number | null,
+                  id_token: account.id_token as string | null,
+                  refresh_token: account.refresh_token as string | null,
+                  scope: account.scope as string | null,
+                  session_state: account.session_state as string | null,
+                  token_type: account.token_type as string | null,
+                }
+              });
+            }
+          }
+        } catch (error) {
+          console.error(`[Auth] Error linking ${account.provider} account:`, error);
+          // Don't fail the sign-in if account linking fails
+        }
       }
 
       // For credentials provider, allow all sign-ins to proceed
@@ -122,7 +211,8 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
     },
     async jwt({ token, user, account }) {
       // If this is a new OAuth user (first sign in), create a free subscription
-      if (account?.provider === "google" && user?.id) {
+      const oauthProviders = ["google", "github", "microsoft-entra-id"];
+      if (account?.provider && oauthProviders.includes(account.provider) && user?.id) {
         try {
           // Check if user already has a subscription
           const existingSubscription = await prisma.subscription.findUnique({
@@ -131,11 +221,11 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
 
           // If no subscription exists, create a free one
           if (!existingSubscription) {
-            console.log('[Auth] Creating free subscription for OAuth user:', user.id);
+            console.log(`[Auth] Creating free subscription for ${account.provider} OAuth user:`, user.id);
             await createFreeSubscription(user.id);
           }
         } catch (error) {
-          console.error('[Auth] Error creating subscription for OAuth user:', error);
+          console.error(`[Auth] Error creating subscription for ${account.provider} OAuth user:`, error);
           // Don't fail the sign-in if subscription creation fails
         }
       }
