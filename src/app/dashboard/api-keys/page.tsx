@@ -41,6 +41,7 @@ export default function ApiKeysPage() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newlyCreatedKey, setNewlyCreatedKey] = useState<CreateApiKeyResponse | null>(null);
   const [showFullKey, setShowFullKey] = useState(false);
+  const API_URL: string = `${process.env.NEXT_PUBLIC_APP_URL}/api/posts` || 'http://localhost:3000/api/posts';
 
   // Fetch API keys
   const fetchApiKeys = async () => {
@@ -334,13 +335,23 @@ export default function ApiKeysPage() {
             <div>
               <h4 className="font-medium mb-2">Using with cURL:</h4>
               <pre className="bg-muted p-3 rounded text-sm overflow-x-auto">
-{`curl -X POST http://localhost:3000/api/posts \\
+{`curl -X POST ${API_URL} \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -d '{
-    "title": "My Post Title",
-    "content": "<p>Post content here</p>",
-    "status": "draft"
+  {
+  "title": "Your Post Title",
+  "content": "Your content",
+  "excerpt": "Your excerpt",
+  "status": "draft",
+  "featuredImage": "",
+  "categoryIds": [],
+  "seoTitle": "Your title that appears on a search engine",
+  "seoDescription": "Your description that appears on a search engine",
+  "seoKeywords": "Your keywords for SEO",
+  "seoCanonicalUrl": "",
+  "ogImage": "",
+  "noIndex": false
   }'`}
               </pre>
             </div>
