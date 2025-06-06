@@ -13,6 +13,7 @@ import {
   Clock,
   CreditCard,
   Bookmark,
+  Key,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -62,6 +63,11 @@ function DashboardNav() {
       title: "Analytics",
       href: "/dashboard/analytics",
       icon: BarChart2,
+    },
+    {
+      title: "API Keys",
+      href: "/dashboard/api-keys",
+      icon: Key,
     },
     {
       title: "Subscription",

@@ -5,6 +5,7 @@ import { calculateReadingTime } from '@/lib/readingTime';
 import { processPostMentions } from '@/lib/mentions';
 import { createNewPostNotification } from '@/lib/notifications';
 import { SubscriptionTier, SubscriptionStatus } from '@/lib/types';
+import { authenticateApiKey } from '@/lib/middleware/api-key-auth';
 
 // Force Node.js runtime for subscription service compatibility
 export const runtime = 'nodejs';
@@ -91,17 +92,33 @@ export async function GET(request: NextRequest) {
 // POST /api/posts - Create a new post
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth();
+    let userId: string;
 
-    if (!session || !session.user || !session.user.id) {
-      return NextResponse.json(
-        { error: 'You must be logged in to create a post' },
-        { status: 401 }
-      );
+    // Try API key authentication first
+    const apiKeyAuth = await authenticateApiKey(request, 'posts:create');
+
+    if (apiKeyAuth.isValid && apiKeyAuth.userId) {
+      userId = apiKeyAuth.userId;
+      console.log('Creating post with API key authentication for user ID:', userId);
+    } else {
+      // Fall back to session authentication
+      const session = await auth();
+
+      if (!session || !session.user || !session.user.id) {
+        return NextResponse.json(
+          {
+            error: 'Authentication required. Please log in or provide a valid API key.',
+            details: apiKeyAuth.error || 'No session found'
+          },
+          { status: 401 }
+        );
+      }
+
+      userId = session.user.id;
+      console.log('Creating post with session authentication for user ID:', userId);
     }
 
     // Verify that the user exists in the database
-    const userId = session.user.id;
     console.log('Creating post with user ID:', userId);
 
     const userExists = await prisma.user.findUnique({

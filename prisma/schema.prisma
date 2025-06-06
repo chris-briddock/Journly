@@ -51,6 +51,7 @@ model User {
   emailVerificationTokens EmailVerificationToken[]
   accounts                Account[]
   sessions                Session[]
+  apiKeys                 ApiKey[]
 }
 
 model Post {
@@ -364,4 +365,26 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+// API Keys for programmatic access
+model ApiKey {
+  id          String   @id @default(cuid())
+  name        String   // User-friendly name for the key
+  key         String   @unique // The actual API key (hashed)
+  keyPrefix   String   // First 8 characters for display (e.g., "jk_12345...")
+  permissions String[] @default(["posts:create"]) // Allowed permissions
+  lastUsedAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  expiresAt   DateTime? // Optional expiration
+  isActive    Boolean  @default(true)
+
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+
+  @@index([key])
+  @@index([userId])
+  @@index([isActive])
 }
