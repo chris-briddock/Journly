@@ -4,13 +4,14 @@ import bcrypt from 'bcryptjs';
 import { createFreeSubscription } from '@/lib/services/subscription-service';
 import { createEmailVerificationToken } from '@/lib/auth-tokens';
 import { sendEmailVerificationEmail } from '@/lib/email';
+import { RecaptchaService } from '@/lib/services/recaptcha-service';
 
 // Force Node.js runtime for subscription service compatibility
 export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, email, password } = await request.json();
+    const { name, email, password, recaptchaToken } = await request.json();
 
     // Validate input
     if (!name || !email || !password) {
@@ -18,6 +19,26 @@ export async function POST(request: NextRequest) {
         { error: 'Name, email, and password are required' },
         { status: 400 }
       );
+    }
+
+    // Verify reCAPTCHA if enabled
+    if (RecaptchaService.isEnabled()) {
+      if (!recaptchaToken) {
+        return NextResponse.json(
+          { error: 'Please complete the reCAPTCHA verification' },
+          { status: 400 }
+        );
+      }
+
+      const clientIP = RecaptchaService.getClientIP(request);
+      const captchaResult = await RecaptchaService.verifyToken(recaptchaToken, clientIP);
+
+      if (!captchaResult.success) {
+        return NextResponse.json(
+          { error: captchaResult.error || 'reCAPTCHA verification failed' },
+          { status: 400 }
+        );
+      }
     }
 
     // Check if user already exists

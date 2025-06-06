@@ -8,6 +8,7 @@ import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { verifyTwoFactorToken } from "@/lib/two-factor";
 import { createFreeSubscription } from "@/lib/services/subscription-service";
+import { RecaptchaService } from "@/lib/services/recaptcha-service";
 
 export const { auth, handlers, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
@@ -59,11 +60,34 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
-        twoFactorToken: { label: "2FA Token", type: "text" }
+        twoFactorToken: { label: "2FA Token", type: "text" },
+        recaptchaToken: { label: "reCAPTCHA Token", type: "text" }
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (!credentials?.email || !credentials?.password) {
           throw new Error("Email and password are required");
+        }
+
+        // Verify reCAPTCHA if enabled
+        if (RecaptchaService.isEnabled()) {
+          const credentialsWithCaptcha = credentials as typeof credentials & {
+            recaptchaToken?: string;
+          };
+
+          if (!credentialsWithCaptcha.recaptchaToken) {
+            throw new Error("Please complete the reCAPTCHA verification");
+          }
+
+          // Get client IP from request
+          const clientIP = req ? RecaptchaService.getClientIP(req as Request) : undefined;
+          const captchaResult = await RecaptchaService.verifyToken(
+            credentialsWithCaptcha.recaptchaToken,
+            clientIP
+          );
+
+          if (!captchaResult.success) {
+            throw new Error(captchaResult.error || "reCAPTCHA verification failed");
+          }
         }
 
         const user = await prisma.user.findUnique({

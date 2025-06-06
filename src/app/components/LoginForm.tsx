@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn, getProviders } from "next-auth/react";
 import { useForm } from "react-hook-form";
@@ -13,6 +13,7 @@ import { TwoFactorVerificationForm } from "@/app/components/auth/TwoFactorVerifi
 import { GoogleIcon } from "@/app/components/icons/Google";
 import { GitHubIcon } from "@/app/components/icons/GitHub";
 import { MicrosoftIcon } from "@/app/components/icons/Microsoft";
+import { Recaptcha, RecaptchaRef } from "@/app/components/ui/recaptcha";
 
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
@@ -60,6 +61,7 @@ export default function LoginForm({ from }: LoginFormProps) {
   const [showTwoFactor, setShowTwoFactor] = useState(false);
   const [twoFactorUserId, setTwoFactorUserId] = useState("");
   const [twoFactorCredentials, setTwoFactorCredentials] = useState({ email: "", password: "" });
+  const recaptchaRef = useRef<RecaptchaRef>(null);
 
   // Use TanStack Query mutation for resend verification
   const resendVerificationMutation = useResendVerification();
@@ -135,6 +137,17 @@ export default function LoginForm({ from }: LoginFormProps) {
     setShowTwoFactor(false);
 
     try {
+      // Get reCAPTCHA token if enabled
+      const recaptchaToken = recaptchaRef.current?.getValue();
+
+      // Check if reCAPTCHA is required
+      const isRecaptchaEnabled = !!process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+      if (isRecaptchaEnabled && !recaptchaToken) {
+        setError("Please complete the reCAPTCHA verification");
+        setIsLoading(false);
+        return;
+      }
+
       // First, check if the user requires 2FA
       const checkResponse = await fetch('/api/auth/check-2fa', {
         method: 'POST',
@@ -176,6 +189,7 @@ export default function LoginForm({ from }: LoginFormProps) {
         redirect: false,
         email: values.email,
         password: values.password,
+        recaptchaToken: recaptchaToken,
       });
 
       if (result?.error) {
@@ -192,6 +206,8 @@ export default function LoginForm({ from }: LoginFormProps) {
     } catch (error) {
       console.error('[LoginForm] Login error:', error);
       setError("An unexpected error occurred");
+      // Reset reCAPTCHA on error
+      recaptchaRef.current?.reset();
     } finally {
       setIsLoading(false);
     }
@@ -350,6 +366,27 @@ export default function LoginForm({ from }: LoginFormProps) {
               Forgot your password?
             </Link>
           </div>
+
+          {/* reCAPTCHA */}
+          {process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY && (
+            <div className="flex justify-center">
+              <Recaptcha
+                ref={recaptchaRef}
+                onChange={(token) => {
+                  // Clear any existing error when user completes CAPTCHA
+                  if (token && error.includes("reCAPTCHA")) {
+                    setError("");
+                  }
+                }}
+                onExpired={() => {
+                  setError("reCAPTCHA has expired, please try again");
+                }}
+                onError={() => {
+                  setError("reCAPTCHA error, please try again");
+                }}
+              />
+            </div>
+          )}
 
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? (

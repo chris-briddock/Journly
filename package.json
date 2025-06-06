@@ -55,6 +55,8 @@
     "@tiptap/react": "^2.12.0",
     "@tiptap/starter-kit": "^2.12.0",
     "@tiptap/suggestion": "^2.12.0",
+    "@types/react-google-recaptcha": "^2.1.9",
+    "@types/ua-parser-js": "^0.7.39",
     "@vercel/analytics": "^1.5.0",
     "@vercel/speed-insights": "^1.2.0",
     "bcryptjs": "^3.0.2",
@@ -69,6 +71,7 @@
     "qrcode": "^1.5.4",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "react-google-recaptcha": "^3.1.0",
     "react-hook-form": "^7.56.4",
     "resend": "^4.5.1",
     "shadcn-ui": "^0.9.5",
@@ -76,6 +79,7 @@
     "speakeasy": "^2.0.0",
     "stripe": "^18.2.0",
     "tailwind-merge": "^3.3.0",
+    "ua-parser-js": "^2.0.3",
     "zod": "^3.25.42"
   },
   "devDependencies": {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { AlertCircle, Loader2 } from "lucide-react";
@@ -9,6 +9,7 @@ import { useRegisterUser } from "@/hooks/use-users";
 import { GoogleIcon } from "@/app/components/icons/Google";
 import { GitHubIcon } from "@/app/components/icons/GitHub";
 import { MicrosoftIcon } from "@/app/components/icons/Microsoft";
+import { Recaptcha, RecaptchaRef } from "@/app/components/ui/recaptcha";
 
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -26,6 +27,7 @@ type FormValues = {
   name: string;
   email: string;
   password: string;
+  recaptchaToken?: string;
 };
 
 interface Provider {
@@ -40,6 +42,7 @@ export default function RegisterForm() {
   const router = useRouter();
   const [error, setError] = useState("");
   const [providers, setProviders] = useState<Record<string, Provider> | null>(null);
+  const recaptchaRef = useRef<RecaptchaRef>(null);
 
   // Use TanStack Query mutation
   const registerUserMutation = useRegisterUser();
@@ -63,8 +66,24 @@ export default function RegisterForm() {
   const onSubmit = async (values: FormValues) => {
     setError("");
 
+    // Get reCAPTCHA token if enabled
+    const recaptchaToken = recaptchaRef.current?.getValue();
+
+    // Check if reCAPTCHA is required
+    const isRecaptchaEnabled = !!process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+    if (isRecaptchaEnabled && !recaptchaToken) {
+      setError("Please complete the reCAPTCHA verification");
+      return;
+    }
+
+    // Add reCAPTCHA token to form data
+    const formData = {
+      ...values,
+      recaptchaToken: recaptchaToken || undefined,
+    };
+
     // Use TanStack Query mutation
-    registerUserMutation.mutate(values, {
+    registerUserMutation.mutate(formData, {
       onSuccess: async () => {
         // Store email in sessionStorage for the success page
         sessionStorage.setItem("registered_email", values.email);
@@ -75,6 +94,8 @@ export default function RegisterForm() {
       },
       onError: (error: Error) => {
         setError(error.message || "Registration failed");
+        // Reset reCAPTCHA on error
+        recaptchaRef.current?.reset();
       },
     });
   };
@@ -141,6 +162,27 @@ export default function RegisterForm() {
               </FormItem>
             )}
           />
+
+          {/* reCAPTCHA */}
+          {process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY && (
+            <div className="flex justify-center">
+              <Recaptcha
+                ref={recaptchaRef}
+                onChange={(token) => {
+                  // Clear any existing error when user completes CAPTCHA
+                  if (token && error.includes("reCAPTCHA")) {
+                    setError("");
+                  }
+                }}
+                onExpired={() => {
+                  setError("reCAPTCHA has expired, please try again");
+                }}
+                onError={() => {
+                  setError("reCAPTCHA error, please try again");
+                }}
+              />
+            </div>
+          )}
 
           <Button type="submit" className="w-full" disabled={registerUserMutation.isPending}>
             {registerUserMutation.isPending ? (
