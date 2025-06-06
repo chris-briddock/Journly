@@ -358,7 +358,7 @@ export default function ApiKeysPage() {
             <div>
               <h4 className="font-medium mb-2">Using with Postman:</h4>
               <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
-                <li>Set method to POST and URL to <code>http://localhost:3000/api/posts</code></li>
+                <li>Set method to POST and URL to <code>{API_URL}</code></li>
                 <li>Add header: <code>Authorization: Bearer YOUR_API_KEY</code></li>
                 <li>Set body to raw JSON with your post data</li>
                 <li>Send the request</li>
