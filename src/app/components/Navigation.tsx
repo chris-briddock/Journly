@@ -37,6 +37,8 @@ export default function Navigation() {
     { href: "/", label: "Home" },
     { href: "/posts", label: "Posts" },
     { href: "/categories", label: "Categories" },
+    // Only show API docs in development
+    ...(process.env.NODE_ENV === 'development' ? [{ href: "/swagger", label: "API Docs" }] : []),
   ];
 
   // Dynamic user nav items that depend on the session
