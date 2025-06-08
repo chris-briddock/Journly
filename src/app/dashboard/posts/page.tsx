@@ -59,7 +59,18 @@ export default function PostsPage() {
     !!session?.user?.id
   );
 
-  if (sessionStatus === "loading" || isLoading) {
+  // Handle all conditional logic without early returns to maintain hook order
+  const isLoadingState = sessionStatus === "loading" || isLoading;
+  const isAuthenticated = !!session?.user;
+  const hasError = !!error;
+
+  // Authentication redirect (only if not loading)
+  if (!isLoadingState && !isAuthenticated) {
+    redirect("/login");
+  }
+
+  // Show loading state
+  if (isLoadingState) {
     return (
       <div className="min-h-screen bg-background">
         <DashboardShell>
@@ -75,11 +86,8 @@ export default function PostsPage() {
     );
   }
 
-  if (!session || !session.user) {
-    redirect("/login");
-  }
-
-  if (error) {
+  // Show error state
+  if (hasError) {
     return (
       <div className="min-h-screen bg-background">
         <DashboardShell>
@@ -110,11 +118,12 @@ export default function PostsPage() {
   // Check if the user has reached their post limit (free users can only create 1 post)
   const posts = (postsData?.posts || []).map(post => ({
     ...post,
-    viewCount: 0, // Default values for missing properties
-    likeCount: 0,
-    commentCount: 0,
-    createdAt: new Date(post.createdAt),
-    publishedAt: post.publishedAt ? new Date(post.publishedAt) : null,
+    viewCount: post.viewCount || 0, // Use actual values or defaults
+    likeCount: post.likeCount || 0,
+    commentCount: post.commentCount || 0,
+    // Keep dates as strings to avoid hydration mismatches
+    createdAt: post.createdAt,
+    publishedAt: post.publishedAt,
   }));
   const pagination = postsData?.pagination || { total: 0, page: 1, limit: 10, totalPages: 0 };
   const hasReachedPostLimit = !hasPaidSubscription && posts.length >= 1;

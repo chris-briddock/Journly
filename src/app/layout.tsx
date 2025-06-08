@@ -6,11 +6,11 @@ import "./globals.css";
 import { ThemeProvider } from "@/app/components/ThemeProvider";
 import { SessionProvider } from "@/app/components/SessionProvider";
 import { QueryProvider } from "@/app/components/providers/query-provider";
+import { PollingProvider } from "@/app/components/providers/polling-provider";
 import { auth } from "@/lib/auth";
 import { Analytics } from "@vercel/analytics/next"
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import SimpleNavigation from "./components/SimpleNavigation";
-import { ArticleResetCheck } from "./components/ArticleResetCheck";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -42,7 +42,7 @@ export default async function RootLayout({
         >
           <QueryProvider>
             <SessionProvider session={session}>
-              <ArticleResetCheck />
+              <PollingProvider />
               <SimpleNavigation />
               {children}
               <Toaster position="top-right" />

@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { AlertCircle, Loader2, Upload, CalendarIcon } from "lucide-react";
@@ -84,11 +84,25 @@ export default function PostForm({
   const router = useRouter();
   const [error, setError] = useState("");
   const [content, setContent] = useState(initialData?.content || "");
+  const [shouldNavigate, setShouldNavigate] = useState(false);
 
   // Use TanStack Query mutations
   const createPostMutation = useCreatePost();
   const updatePostMutation = useUpdatePost();
   const schedulePostMutation = useSchedulePost();
+
+  // Handle navigation in useEffect to prevent hook order issues
+  useEffect(() => {
+    if (shouldNavigate) {
+      router.push("/dashboard/posts");
+      setShouldNavigate(false);
+    }
+  }, [shouldNavigate, router]);
+
+  // Stable navigation function that sets state instead of direct navigation
+  const navigateToDashboard = useCallback(() => {
+    setShouldNavigate(true);
+  }, []);
 
 
 
@@ -149,7 +163,6 @@ export default function PostForm({
                 {
                   onSuccess: () => {
                     router.push("/dashboard/posts");
-                    router.refresh();
                   },
                   onError: (error: Error) => {
                     setError(error.message || "Failed to schedule post");
@@ -175,8 +188,7 @@ export default function PostForm({
               { postId: savedPost.id, publishAt: values.publishAt! },
               {
                 onSuccess: () => {
-                  router.push("/dashboard/posts");
-                  router.refresh();
+                  navigateToDashboard();
                 },
                 onError: (error: Error) => {
                   setError(error.message || "Failed to schedule post");
@@ -201,8 +213,7 @@ export default function PostForm({
           { id: initialData.id, data: postData },
           {
             onSuccess: () => {
-              router.push("/dashboard/posts");
-              router.refresh();
+              navigateToDashboard();
             },
             onError: (error: Error) => {
               if (error.message.includes("subscription")) {
@@ -217,8 +228,7 @@ export default function PostForm({
         // Create new post
         createPostMutation.mutate(postData, {
           onSuccess: () => {
-            router.push("/dashboard/posts");
-            router.refresh();
+            navigateToDashboard();
           },
           onError: (error: Error) => {
             if (error.message.includes("subscription")) {

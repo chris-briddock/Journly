@@ -11,6 +11,8 @@ import { NotificationSettingsForm } from "@/app/components/dashboard/Notificatio
 import { PasswordUpdateForm } from "@/app/components/dashboard/PasswordUpdateForm";
 import { DisplaySettingsForm } from "@/app/components/dashboard/DisplaySettingsForm";
 import { TwoFactorSettings } from "@/app/components/dashboard/TwoFactorSettings";
+import { SecuritySettings } from "@/app/components/dashboard/SecuritySettings";
+import { SessionManagement } from "@/app/components/dashboard/SessionManagement";
 import { useUser } from "@/hooks/use-users";
 
 export default function SettingsPage() {
@@ -55,6 +57,7 @@ export default function SettingsPage() {
         <TabsList>
           <TabsTrigger value="account">Account</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>
+          <TabsTrigger value="sessions">Sessions</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="display">Display</TabsTrigger>
         </TabsList>
@@ -65,7 +68,12 @@ export default function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="security" className="space-y-6">
+          <SecuritySettings />
           <TwoFactorSettings user={user} />
+        </TabsContent>
+
+        <TabsContent value="sessions" className="space-y-6">
+          <SessionManagement />
         </TabsContent>
 
         <TabsContent value="notifications">

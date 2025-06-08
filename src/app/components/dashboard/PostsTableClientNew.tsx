@@ -38,8 +38,8 @@ interface Post {
   viewCount: number;
   likeCount: number;
   commentCount: number;
-  createdAt: Date;
-  publishedAt: Date | null;
+  createdAt: string | Date;
+  publishedAt: string | Date | null;
   categories?: {
     category: {
       id: string;

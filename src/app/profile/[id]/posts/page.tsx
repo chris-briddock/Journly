@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from "react";
+import React from "react";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
@@ -27,16 +27,10 @@ export default function UserPostsPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<SearchParams>;
 }) {
-  const [id, setId] = useState<string>('');
-  const [page, setPage] = useState(1);
-
-  // Get the ID and search params from props
-  useEffect(() => {
-    Promise.all([params, searchParams]).then(([paramsData, searchParamsData]) => {
-      setId(paramsData.id);
-      setPage(Number(searchParamsData.page) || 1);
-    });
-  }, [params, searchParams]);
+  // Use React.use() to avoid hook order issues
+  const { id } = React.use(params);
+  const searchParamsData = React.use(searchParams);
+  const page = Number(searchParamsData.page) || 1;
 
   const { data: user, isLoading: userLoading, error: userError } = useUser(id, !!id);
   const { data: postsData, isLoading: postsLoading, error: postsError } = useUserPosts(

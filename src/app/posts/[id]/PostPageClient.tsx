@@ -57,12 +57,18 @@ export function PostPageClient({ postId }: PostPageClientProps) {
   const { data: comments } = usePostComments(postId);
   const { data: articleCountData } = useArticleCount();
 
+  // Handle all conditional logic without early returns to maintain hook order
+  const isLoading = postLoading || accessLoading;
+  const hasError = postError || !post;
+  const isAuthenticated = !!session?.user?.id;
+  const hasAccessError = accessError || (accessData && !accessData.canAccess);
+
   // Handle access control and redirects
   useEffect(() => {
     // Only redirect if not loading and not already redirected
-    if (postLoading || accessLoading) return;
+    if (isLoading) return;
 
-    if (!session?.user?.id) {
+    if (!isAuthenticated) {
       router.push(`/login?from=/posts/${postId}`);
       return;
     }
@@ -76,14 +82,14 @@ export function PostPageClient({ postId }: PostPageClientProps) {
       router.push(`/subscription?from=/posts/${postId}`);
       return;
     }
-  }, [session, accessData, accessError, postId, router, postLoading, accessLoading]);
+  }, [session, accessData, accessError, postId, router, isLoading, isAuthenticated]);
 
   const formatDate = (date: Date) => {
     return format(new Date(date), "MMMM d, yyyy");
   };
 
   // Loading state
-  if (postLoading || accessLoading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-8">
@@ -98,7 +104,7 @@ export function PostPageClient({ postId }: PostPageClientProps) {
   }
 
   // Error state or post not found
-  if (postError || !post) {
+  if (hasError) {
     return (
       <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-8">
@@ -117,7 +123,7 @@ export function PostPageClient({ postId }: PostPageClientProps) {
   }
 
   // Authentication check
-  if (!session?.user?.id) {
+  if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -132,7 +138,7 @@ export function PostPageClient({ postId }: PostPageClientProps) {
   }
 
   // Access control check
-  if (accessError || (accessData && !accessData.canAccess)) {
+  if (hasAccessError) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">

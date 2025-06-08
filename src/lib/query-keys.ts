@@ -58,6 +58,10 @@ export const queryKeys = {
       [...queryKeys.users.all, 'articleResetStatus'] as const,
     notificationPreferences: () =>
       [...queryKeys.users.all, 'notificationPreferences'] as const,
+    sessions: () =>
+      [...queryKeys.users.all, 'sessions'] as const,
+    security: () =>
+      [...queryKeys.users.all, 'security'] as const,
   },
 
   // Comments

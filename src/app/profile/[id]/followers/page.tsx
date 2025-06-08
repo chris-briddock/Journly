@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from "react";
+import React from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
@@ -21,18 +21,12 @@ interface FollowersPageProps {
 
 export default function FollowersPage({ params, searchParams }: FollowersPageProps) {
   const { data: session } = useSession();
-  const [id, setId] = useState<string>('');
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(20);
 
-  // Get the ID and search params from props
-  useEffect(() => {
-    Promise.all([params, searchParams]).then(([paramsData, searchParamsData]) => {
-      setId(paramsData.id);
-      setPage(parseInt(searchParamsData.page || "1"));
-      setLimit(parseInt(searchParamsData.limit || "20"));
-    });
-  }, [params, searchParams]);
+  // Use React.use() to avoid hook order issues
+  const { id } = React.use(params);
+  const searchParamsData = React.use(searchParams);
+  const page = parseInt(searchParamsData.page || "1");
+  const limit = parseInt(searchParamsData.limit || "20");
 
   const currentUserId = session?.user?.id;
 

@@ -33,7 +33,7 @@ export function createQueryClient() {
 }
 
 /**
- * Global query client instance for server-side usage
+ * Global query client instance for browser-side usage
  */
 let browserQueryClient: QueryClient | undefined = undefined;
 
@@ -43,7 +43,10 @@ export function getQueryClient() {
     return createQueryClient();
   } else {
     // Browser: make a new query client if we don't already have one
-    if (!browserQueryClient) browserQueryClient = createQueryClient();
+    // This ensures we don't share state between different app instances
+    if (!browserQueryClient) {
+      browserQueryClient = createQueryClient();
+    }
     return browserQueryClient;
   }
 }

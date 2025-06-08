@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import DashboardContent from "@/app/components/DashboardContent";
-import { SessionProvider } from "@/app/components/SessionProvider";
 import { Metadata } from "next/types";
 
 export const metadata: Metadata = {
@@ -19,9 +18,5 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  return (
-    <SessionProvider session={session}>
-        <DashboardContent />
-    </SessionProvider>
-    );
+  return <DashboardContent />;
 }

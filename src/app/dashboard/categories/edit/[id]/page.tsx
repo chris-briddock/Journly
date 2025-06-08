@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
@@ -21,12 +21,9 @@ type Props = {
 export default function EditCategoryPage({ params }: Props) {
   const { data: session } = useSession();
   const router = useRouter();
-  const [id, setId] = useState<string>('');
 
-  // Get the ID from params
-  useEffect(() => {
-    params.then(({ id }) => setId(id));
-  }, [params]);
+  // Use React.use() to avoid hook order issues
+  const { id } = React.use(params);
 
   const { data: category, isLoading, error } = useCategory(id, !!id);
 

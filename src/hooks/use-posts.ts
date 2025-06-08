@@ -204,6 +204,9 @@ export function useCreatePost() {
       queryClient.invalidateQueries({ queryKey: queryKeys.posts.lists() });
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
 
+      // Invalidate user posts (for dashboard posts page)
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
+
       toast.success('Post created successfully!');
     },
     onError: (error) => {
@@ -230,6 +233,9 @@ export function useUpdatePost() {
       queryClient.invalidateQueries({ queryKey: queryKeys.posts.lists() });
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
 
+      // Invalidate user posts (for dashboard posts page)
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
+
       toast.success('Post updated successfully!');
     },
     onError: (error) => {
@@ -254,6 +260,9 @@ export function useDeletePost() {
       // Invalidate lists
       queryClient.invalidateQueries({ queryKey: queryKeys.posts.lists() });
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
+
+      // Invalidate user posts (for dashboard posts page)
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
 
       toast.success('Post deleted successfully!');
     },

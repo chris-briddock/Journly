@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from "react";
+import React from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { format } from "date-fns";
@@ -24,13 +24,9 @@ export default function ProfilePage({
   params: Promise<{ id: string }>;
 }) {
   const { data: session } = useSession();
-  const [id, setId] = useState<string>('');
 
-  // Get the ID from params
-  useEffect(() => {
-    params.then(({ id }) => setId(id));
-  }, [params]);
-
+  // Use React.use() to avoid hook order issues
+  const { id } = React.use(params);
   const currentUserId = session?.user?.id;
 
   const { data: user, isLoading: userLoading, error: userError } = useUser(id, !!id);

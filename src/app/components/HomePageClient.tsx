@@ -12,9 +12,10 @@ export function HomePageClient() {
   const { data: recentPosts = [], isLoading: postsLoading } = useRecentPosts(10);
   const { data: categories = [], isLoading: categoriesLoading } = usePopularCategories(10);
 
+  // Handle loading state without early return to maintain hook order
+  const isLoading = postsLoading || categoriesLoading;
 
-
-  if (postsLoading || categoriesLoading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
         <section className="border-b border-gray-200 pt-10 pb-16">

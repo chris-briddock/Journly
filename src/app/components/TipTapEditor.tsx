@@ -68,7 +68,6 @@ export function TipTapEditor({
   const [imageAlt, setImageAlt] = useState('');
   const [embedDialogOpen, setEmbedDialogOpen] = useState(false);
 
-
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -169,8 +168,24 @@ export function TipTapEditor({
     setImageDialogOpen(true);
   }, [editor]);
 
+  // Show loading state instead of returning null to maintain hook order
   if (!editor) {
-    return null;
+    return (
+      <div
+        data-testid="tiptap-editor"
+        className={cn(
+          "border border-input rounded-md overflow-hidden",
+          className
+        )}
+      >
+        <div className="bg-muted/50 p-1 border-b flex items-center justify-center h-12">
+          <div className="text-sm text-muted-foreground">Loading editor...</div>
+        </div>
+        <div className="min-h-[200px] p-4 flex items-center justify-center">
+          <div className="text-sm text-muted-foreground">Initializing...</div>
+        </div>
+      </div>
+    );
   }
 
   return (
