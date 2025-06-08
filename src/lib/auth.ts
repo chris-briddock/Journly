@@ -7,7 +7,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { verifyTwoFactorToken } from "@/lib/two-factor";
-import { createFreeSubscription } from "@/lib/services/subscription-service";
+
 import { RecaptchaService } from "@/lib/services/recaptcha-service";
 
 export const { auth, handlers, signIn, signOut } = NextAuth({
@@ -68,20 +68,22 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
           throw new Error("Email and password are required");
         }
 
-        // Verify reCAPTCHA if enabled
-        if (RecaptchaService.isEnabled()) {
-          const credentialsWithCaptcha = credentials as typeof credentials & {
-            recaptchaToken?: string;
-          };
+        // Verify reCAPTCHA if enabled (but skip for 2FA submissions)
+        const credentialsWithTwoFactor = credentials as typeof credentials & {
+          twoFactorToken?: string;
+          recaptchaToken?: string;
+        };
 
-          if (!credentialsWithCaptcha.recaptchaToken) {
+        // Only require reCAPTCHA for initial login, not for 2FA token submission
+        if (RecaptchaService.isEnabled() && !credentialsWithTwoFactor.twoFactorToken) {
+          if (!credentialsWithTwoFactor.recaptchaToken) {
             throw new Error("Please complete the reCAPTCHA verification");
           }
 
           // Get client IP from request
           const clientIP = req ? RecaptchaService.getClientIP(req as Request) : undefined;
           const captchaResult = await RecaptchaService.verifyToken(
-            credentialsWithCaptcha.recaptchaToken,
+            credentialsWithTwoFactor.recaptchaToken,
             clientIP
           );
 
@@ -128,9 +130,6 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
         if (userWithTwoFactor.twoFactorEnabled) {
           // For 2FA users, we need to verify the TOTP token
           // The token should be provided in credentials.twoFactorToken
-          const credentialsWithTwoFactor = credentials as typeof credentials & {
-            twoFactorToken?: string;
-          };
           const twoFactorToken = credentialsWithTwoFactor.twoFactorToken;
 
           if (!twoFactorToken) {
@@ -160,7 +159,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
     }),
   ],
   session: {
-    strategy: "database",
+    strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
     updateAge: 24 * 60 * 60, // 24 hours
   },
@@ -169,27 +168,12 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
     error: "/login", // Redirect errors back to login page
   },
   callbacks: {
-    async signIn({ account, profile }) {
-      // For OAuth providers, verify email is verified where applicable
-      if (account?.provider === "google") {
-        // Google provides email_verified property
-        const googleProfile = profile as { email_verified?: boolean; email?: string };
-        if (googleProfile.email_verified !== true) {
-          return false;
-        }
-      }
+    async signIn({ account, profile, user }) {
+      console.log('[Auth] SignIn callback - Account:', account?.provider);
+      console.log('[Auth] SignIn callback - Profile email:', profile?.email);
+      console.log('[Auth] SignIn callback - User:', user?.email);
 
-      if (account?.provider === "github") {
-        // GitHub emails are verified by default for public profiles
-        // Additional verification can be added here if needed
-      }
-
-      if (account?.provider === "microsoft-entra-id") {
-        // Microsoft emails are verified by default
-        // Additional verification can be added here if needed
-      }
-
-      // Handle account linking for OAuth providers
+      // For OAuth providers, handle account linking
       if (account?.provider && account.provider !== "credentials" && profile?.email) {
         try {
           // Check if a user with this email already exists
@@ -201,7 +185,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
           if (existingUser) {
             // Check if this OAuth provider is already linked to the user
             const existingAccount = existingUser.accounts.find(
-              acc => acc.provider === account.provider
+              (acc: { provider: string }) => acc.provider === account.provider
             );
 
             if (!existingAccount) {
@@ -222,6 +206,9 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
                   token_type: account.token_type as string | null,
                 }
               });
+              console.log(`[Auth] Successfully linked ${account.provider} account`);
+            } else {
+              console.log(`[Auth] ${account.provider} account already linked to user`);
             }
           }
         } catch (error) {
@@ -230,35 +217,19 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
         }
       }
 
-      // For credentials provider, allow all sign-ins to proceed
-      // Error handling is done in the authorize function
+      // Allow all sign-ins to proceed
       return true;
     },
-    async jwt({ token, user, account }) {
-      // If this is a new OAuth user (first sign in), create a free subscription
-      const oauthProviders = ["google", "github", "microsoft-entra-id"];
-      if (account?.provider && oauthProviders.includes(account.provider) && user?.id) {
-        try {
-          // Check if user already has a subscription
-          const existingSubscription = await prisma.subscription.findUnique({
-            where: { userId: user.id }
-          });
 
-          // If no subscription exists, create a free one
-          if (!existingSubscription) {
-            console.log(`[Auth] Creating free subscription for ${account.provider} OAuth user:`, user.id);
-            await createFreeSubscription(user.id);
-          }
-        } catch (error) {
-          console.error(`[Auth] Error creating subscription for ${account.provider} OAuth user:`, error);
-          // Don't fail the sign-in if subscription creation fails
-        }
-      }
+    async jwt({ token, user }) {
+      console.log('[Auth] JWT callback - Input user:', user);
+      console.log('[Auth] JWT callback - Input token:', token);
 
+      // If user is available (during sign-in), add user data to token
       if (user) {
         token.id = user.id;
 
-        // If this is the first sign in, fetch the user's role
+        // Fetch user role from database if not already in token
         if (!token.role) {
           const dbUser = await prisma.user.findUnique({
             where: { id: user.id },
@@ -269,20 +240,26 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
             token.role = dbUser.role;
           }
         }
+
+        console.log('[Auth] JWT callback - Updated token:', token);
       }
-      console.log('Auth callback - JWT token:', token);
+
       return token;
     },
-    async session({ session, token }) {
-      if (token && session.user) {
-        session.user.id = token.sub || '';
 
-        // Add role from token to session user
-        if (token.role) {
-          session.user.role = token.role as string;
-        }
+    async session({ session, token }) {
+      console.log('[Auth] Session callback - Input token:', token);
+      console.log('[Auth] Session callback - Input session:', session);
+
+      // With JWT strategy, we get the user data from the token
+      if (token && session.user) {
+        session.user.id = token.id as string;
+        session.user.role = token.role as string;
+        console.log('[Auth] Session callback - Updated session user:', session.user);
+      } else {
+        console.log('[Auth] Session callback - Missing token or session.user');
       }
-      console.log('Auth callback - Session user:', session.user);
+
       return session;
     },
   },

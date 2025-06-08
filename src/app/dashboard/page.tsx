@@ -14,9 +14,15 @@ export const metadata: Metadata = {
 export default async function DashboardPage() {
   const session = await auth();
 
+  console.log('[Dashboard] Server-side auth check - Session:', session);
+  console.log('[Dashboard] Server-side auth check - User:', session?.user);
+
   if (!session || !session.user) {
+    console.log('[Dashboard] No session or user found, redirecting to login');
     redirect("/login");
   }
+
+  console.log('[Dashboard] Session valid, rendering dashboard');
 
   return <DashboardContent />;
 }
